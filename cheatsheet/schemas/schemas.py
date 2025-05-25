@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class CheatsheetBase(BaseModel):
@@ -10,7 +10,7 @@ class CheatsheetBase(BaseModel):
     title: str
     content: str
     user_id: UUID
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime
     updated_at: datetime | None = None
 
     model_config = ConfigDict(
@@ -19,21 +19,27 @@ class CheatsheetBase(BaseModel):
     )
 
 
-class CheatsheetCreate(CheatsheetBase):
-    pass
+class CheatsheetCreate(BaseModel):
+    tag: str
+    title: str
+    content: str
+    user_id: UUID
 
 
-class CheatsheetUpdate(CheatsheetCreate):
-    pass
+class CheatsheetUpdate(BaseModel):
+    cheatsheet_id: int
+    tag: str | None = None
+    title: str | None = None
+    content: str | None
+    user_id: UUID
 
 
-class CheatsheetUpdatePartial(CheatsheetCreate):
-    cheatsheet_id: int | None = None
+class CheatsheetUpdatePartial(BaseModel):
+    cheatsheet_id: int
     tag: str | None = None
     title: str | None = None
     content: str | None = None
-    author_id: UUID | None = None
-    updated_at: datetime = Field(default_factory=datetime.now)
+    user_id: UUID
 
 
 class TagBase(BaseModel):
