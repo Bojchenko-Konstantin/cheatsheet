@@ -9,7 +9,7 @@ class CheatsheetBase(BaseModel):
     tag: str
     title: str
     content: str
-    author_id: UUID
+    user_id: UUID
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime | None = None
 
