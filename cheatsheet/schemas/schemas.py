@@ -11,7 +11,7 @@ class CheatsheetBase(BaseModel):
     content: str
     author_id: UUID
     created_at: datetime = Field(default_factory=datetime.now)
-    update_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(
         extra="forbid",
@@ -33,8 +33,7 @@ class CheatsheetUpdatePartial(CheatsheetCreate):
     title: str | None = None
     content: str | None = None
     author_id: UUID | None = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    update_at: datetime | None = None
+    updated_at: datetime = Field(default_factory=datetime.now)
 
 
 class TagBase(BaseModel):
