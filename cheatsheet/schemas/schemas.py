@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 class CheatsheetBase(BaseModel):
     cheatsheet_id: int
-    tag: str
+    tag_id: int | list[int]
     title: str
     content: str
     user_id: UUID
@@ -20,7 +20,7 @@ class CheatsheetBase(BaseModel):
 
 
 class CheatsheetCreate(BaseModel):
-    tag: str
+    tag_id: int | list[int]
     title: str
     content: str
     user_id: UUID
@@ -28,7 +28,7 @@ class CheatsheetCreate(BaseModel):
 
 class CheatsheetUpdate(BaseModel):
     cheatsheet_id: int
-    tag: str | None = None
+    tag_id: int | list[int] | None = None
     title: str | None = None
     content: str | None
     user_id: UUID
@@ -36,11 +36,12 @@ class CheatsheetUpdate(BaseModel):
 
 class CheatsheetUpdatePartial(BaseModel):
     cheatsheet_id: int
-    tag: str | None = None
+    tag_id: int | list[int] | None = None
     title: str | None = None
     content: str | None = None
     user_id: UUID
 
 
 class TagBase(BaseModel):
+    tag_id: int | list[int]
     tag_name: str
