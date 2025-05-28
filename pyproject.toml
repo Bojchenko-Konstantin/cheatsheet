@@ -18,4 +18,5 @@ dependencies = [
 dev = [
     "black>=25.1.0",
     "pre-commit>=4.2.0",
+    "ruff>=0.11.11",
 ]
