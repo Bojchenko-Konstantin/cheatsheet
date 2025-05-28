@@ -6,7 +6,7 @@ repos:
     -   id: check-toml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
-    -   id: check-added_large_files
+    -   id: check-added-larg-files
 -   repo: https://github.com/psf/black
     rev: 25.1.0 # здесь пишем актуальную версию Black
     hooks:
