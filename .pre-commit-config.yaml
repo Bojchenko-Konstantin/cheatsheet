@@ -6,7 +6,16 @@ repos:
     -   id: check-toml
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
+
 -   repo: https://github.com/psf/black
     rev: 25.1.0 # здесь пишем актуальную версию Black
     hooks:
     -   id: black
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.11.11
+  hooks:
+    # Run the linter.
+    - id: ruff-check
+      args:
+        - --fix
