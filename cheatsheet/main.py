@@ -1,9 +1,13 @@
 from contextlib import asynccontextmanager
+from logging.config import dictConfig
 
 import uvicorn
 from database.database_helper import db_helper
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
+from logging_config import LOGGING
+
+dictConfig(LOGGING)
 
 
 @asynccontextmanager

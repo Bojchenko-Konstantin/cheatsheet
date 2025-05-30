@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from pydantic import BaseModel, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class DatabaseConfig(BaseModel):
@@ -10,6 +14,10 @@ class DatabaseConfig(BaseModel):
     max_overflow: int = 10
 
 
+class LoggingConfig(BaseModel):
+    log_level: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env.template", ".env"),
@@ -18,6 +26,7 @@ class Settings(BaseSettings):
         env_prefix="APP_CONFIG__",
     )
     db: DatabaseConfig
+    logging: LoggingConfig
 
 
 settings = Settings()  # type: ignore
