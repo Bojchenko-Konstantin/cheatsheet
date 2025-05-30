@@ -10,6 +10,10 @@ class DatabaseConfig(BaseModel):
     max_overflow: int = 10
 
 
+class LoggingConfig(BaseModel):
+    log_level: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env.template", ".env"),
@@ -18,6 +22,7 @@ class Settings(BaseSettings):
         env_prefix="APP_CONFIG__",
     )
     db: DatabaseConfig
+    logging: LoggingConfig
 
 
 settings = Settings()  # type: ignore
