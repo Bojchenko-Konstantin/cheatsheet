@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from logging.config import dictConfig
 
 import uvicorn
-from database.database_helper import db_helper
+from database import db_helper
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from logging_config import LOGGING
@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
-)  # type: ignore[unused-ignore]
+)
 
 if __name__ == "__main__":
     uvicorn.run(
