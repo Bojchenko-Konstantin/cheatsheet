@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from logging.config import dictConfig
 
 from config import BASE_DIR, settings
 
@@ -130,3 +131,7 @@ LOGGING = {
         },
     },
 }
+
+
+def setup_logging():
+    dictConfig(LOGGING)
