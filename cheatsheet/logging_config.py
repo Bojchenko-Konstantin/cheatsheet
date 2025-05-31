@@ -34,7 +34,7 @@ LOGGING = {
         },
         "sql": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(levelprefix)s %(asctime)s %(module)s\n%(message)s",
+            "fmt": "%(levelprefix)s %(name)s %(asctime)s %(module)s\n%(message)s",
             "use_colors": False,
         },
     },
