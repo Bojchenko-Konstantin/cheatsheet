@@ -1,9 +1,9 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    CheckConstraint,
     DateTime,
     Identity,
     String,
@@ -15,9 +15,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from .base import Base
-from .tag import Tag
 
 # from uuid_extensions import uuid7
+
+
+if TYPE_CHECKING:
+    from .cheatsheet_stats import CheatsheetStats
+    from .tag import Tag
 
 
 class Cheatsheet(Base):
@@ -59,6 +63,8 @@ class Cheatsheet(Base):
         nullable=False,
         server_default="0",
     )
+
+    # FUTURE: Uncomment when implementing User
     # user_id: Mapped[UUID] = mapped_column(
     #     UUID(as_uuid=True),
     #     ForeignKey("user.id"),
@@ -69,12 +75,15 @@ class Cheatsheet(Base):
     # user: Mapped["User"] = relationship(
     #     back_populates="cheatsheet"
     # )
+
+    stats: Mapped["CheatsheetStats"] = relationship(
+        back_populates="cheatsheet",
+        cascade="all, delete-orphan",
+        single_parent=True,
+        uselist=False,
+    )
+
     tags: Mapped[list["Tag"]] = relationship(
         secondary="cheatsheet_to_tag",
         back_populates="cheatsheet",
-    )
-
-    __table_args__ = (
-        CheckConstraint("count_like >= 0", name="ck_count_like_positive"),
-        CheckConstraint("count_view >= 0", name="ck_count_view_positive"),
     )

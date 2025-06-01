@@ -1,0 +1,32 @@
+from typing import TYPE_CHECKING
+
+from sqlalchemy import BigInteger, CheckConstraint, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base
+
+if TYPE_CHECKING:
+    from .cheatsheet import Cheatsheet
+
+
+class CheatsheetStats(Base):
+    __tablename__ = "cheatsheet_stats"  # type: ignore[assignment]
+
+    cheatsheet_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("cheatsheet.cheatsheet_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    count_like: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default="0"
+    )
+    count_view: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default="0"
+    )
+
+    cheatsheet: Mapped["Cheatsheet"] = relationship(back_populates="stats")
+
+    __table_args__ = (
+        CheckConstraint("count_like >= 0", name="ck_count_like_positive"),
+        CheckConstraint("count_view >= 0", name="ck_count_view_positive"),
+    )
