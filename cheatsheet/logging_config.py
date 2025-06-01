@@ -1,4 +1,6 @@
 import logging
+from collections.abc import Callable
+from logging.config import dictConfig
 
 from config import BASE_DIR, settings
 
@@ -6,11 +8,11 @@ LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def filter_maker(level):
-    level = getattr(logging, level)
+def filter_maker(level: str) -> Callable:
+    level_priority = getattr(logging, level)
 
-    def filter(record):
-        return record.levelno < level
+    def filter(record: logging.LogRecord):
+        return record.levelno < level_priority
 
     return filter
 
@@ -33,7 +35,7 @@ LOGGING = {
         },
         "sql": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(levelprefix)s %(asctime)s %(module)s\n%(message)s",
+            "fmt": "%(levelprefix)s %(name)s %(asctime)s %(module)s\n%(message)s",
             "use_colors": False,
         },
     },
@@ -129,3 +131,7 @@ LOGGING = {
         },
     },
 }
+
+
+def setup_logging():
+    dictConfig(LOGGING)
