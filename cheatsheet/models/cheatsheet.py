@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from sqlalchemy import (
     BigInteger,
@@ -64,7 +63,7 @@ class Cheatsheet(Base):
     # user: Mapped["User"] = relationship(
     #     back_populates="cheatsheet"
     # )
-    tags: Mapped[List["Tag"]] = relationship(
+    tags: Mapped[list["Tag"]] = relationship(
         secondary="cheatsheet_to_tag",
         back_populates="cheatsheet",
     )
