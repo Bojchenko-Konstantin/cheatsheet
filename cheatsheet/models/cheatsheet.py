@@ -9,13 +9,13 @@ from sqlalchemy import (
     String,
     Text,
 )
-
-# from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from .base import Base
 
+# FUTURE: Uncomment when implementing User
+# from sqlalchemy.dialects.postgresql import UUID
 # from uuid_extensions import uuid7
 
 
