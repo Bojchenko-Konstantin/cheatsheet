@@ -1,7 +1,14 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Identity, String
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    Identity,
+    Index,
+    String,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 
 from .base import Base
 
@@ -25,4 +32,9 @@ class Tag(Base):
 
     cheatsheets_association: Mapped[list["CheatsheetToTag"]] = relationship(
         back_populates="tag"
+    )
+
+    __table_args__ = (
+        CheckConstraint("LENGTH(TRIM(tag_name)) > 0", name="ck_tag_name_non_empty"),
+        Index("ix_tag_name_lower", func.lower(tag_name), unique=True),
     )
