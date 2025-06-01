@@ -14,11 +14,6 @@ from sqlalchemy.sql import func
 
 from .base import Base
 
-# FUTURE: Uncomment when implementing User
-# from sqlalchemy.dialects.postgresql import UUID
-# from uuid_extensions import uuid7
-
-
 if TYPE_CHECKING:
     from .cheatsheet_stats import CheatsheetStats
     from .tag import Tag
@@ -63,18 +58,6 @@ class Cheatsheet(Base):
         nullable=False,
         server_default="0",
     )
-
-    # FUTURE: Uncomment when implementing User
-    # user_id: Mapped[UUID] = mapped_column(
-    #     UUID(as_uuid=True),
-    #     ForeignKey("user.id"),
-    #     default=uuid7,
-    #     nullable=False,
-    # )
-    #
-    # user: Mapped["User"] = relationship(
-    #     back_populates="cheatsheet"
-    # )
 
     stats: Mapped["CheatsheetStats"] = relationship(
         back_populates="cheatsheet",
