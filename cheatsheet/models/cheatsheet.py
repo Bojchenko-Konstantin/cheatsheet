@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Identity,
@@ -42,6 +43,11 @@ class Cheatsheet(Base):
         DateTime(timezone=False),
         server_default=func.now(),
         onupdate=func.now(),
+    )
+    is_public: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="true",
     )
     count_like: Mapped[int] = mapped_column(
         BigInteger,
