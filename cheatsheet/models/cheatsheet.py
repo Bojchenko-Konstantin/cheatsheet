@@ -48,16 +48,6 @@ class Cheatsheet(Base):
         nullable=False,
         server_default="true",
     )
-    count_like: Mapped[int] = mapped_column(
-        BigInteger,
-        nullable=False,
-        server_default="0",
-    )
-    count_view: Mapped[int] = mapped_column(
-        BigInteger,
-        nullable=False,
-        server_default="0",
-    )
 
     stats: Mapped["CheatsheetStats"] = relationship(
         back_populates="cheatsheet",
