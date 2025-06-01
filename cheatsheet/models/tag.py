@@ -18,7 +18,7 @@ class Tag(Base):
         server_default=Identity(always=True),
     )
     tag_name: Mapped[str] = mapped_column(
-        String(20),
+        String(35),
         nullable=False,
         unique=True,
     )
