@@ -1,10 +1,10 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-from database import db_helper
+from core.database.database_helper import db_helper
+from core.logging_config import setup_logging
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from logging_config import setup_logging
 
 setup_logging()
 
