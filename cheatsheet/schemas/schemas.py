@@ -1,47 +1,41 @@
-from datetime import datetime
-from uuid import UUID
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+type PositiveInt = Annotated[int, Field(ge=0)]
+type PositiveListInt = list[PositiveInt]
+type TagList = Annotated[PositiveListInt, Field(max_length=6)]
+type Title = Annotated[str, Field(min_length=3, max_length=50)]
 
 
-class CheatsheetBase(BaseModel):
-    cheatsheet_id: int
-    tag_id: int | list[int]
-    title: str
-    content: str
-    user_id: UUID
-    created_at: datetime
-    updated_at: datetime | None = None
-
+class Schema(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         from_attributes=True,
+        revalidate_instances="always",
     )
 
 
-class CheatsheetCreate(BaseModel):
-    tag_id: int | list[int]
-    title: str
+class CheatsheetCreate(Schema):
+    tag_id: TagList
+    title: Title
+    is_public: bool
     content: str
-    user_id: UUID
 
 
-class CheatsheetUpdate(BaseModel):
-    cheatsheet_id: int
-    tag_id: int | list[int] | None = None
-    title: str | None = None
-    content: str | None
-    user_id: UUID
+class CheatsheetUpdate(Schema):
+    tag_id: TagList
+    title: Title
+    is_public: bool
+    content: str
 
 
-class CheatsheetUpdatePartial(BaseModel):
-    cheatsheet_id: int
-    tag_id: int | list[int] | None = None
-    title: str | None = None
+class CheatsheetUpdatePartial(Schema):
+    tag_ids: TagList | None = None
+    title: Title | None = None
+    is_public: bool | None = None
     content: str | None = None
-    user_id: UUID
 
 
-class TagBase(BaseModel):
-    tag_id: int | list[int]
-    tag_name: str
+class CreateTag(Schema):
+    tag_name: Annotated[str, Field(max_length=35)]
