@@ -27,6 +27,8 @@ class CheatsheetBase(Schema):
 
 class CheatsheetRead(CheatsheetBase):
     cheatsheet_id: int
+    count_like: PositiveInt
+    count_view: PositiveInt
 
 
 class CheatsheetCreate(CheatsheetBase):
