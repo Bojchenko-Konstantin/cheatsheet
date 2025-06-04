@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi_users import schemas
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 type PositiveInt = Annotated[int, Field(ge=0)]
 type PositiveListInt = list[PositiveInt]
@@ -18,18 +18,23 @@ class Schema(BaseModel):
     )
 
 
-class CheatsheetCreate(Schema):
-    tag_id: TagList
+class CheatsheetBase(Schema):
+    tag_ids: TagList
     title: Title
-    is_public: bool
+    is_public: StrictBool
     content: str
 
 
-class CheatsheetUpdate(Schema):
-    tag_id: TagList
-    title: Title
-    is_public: bool
-    content: str
+class CheatsheetRead(CheatsheetBase):
+    cheatsheet_id: int
+
+
+class CheatsheetCreate(CheatsheetBase):
+    pass
+
+
+class CheatsheetUpdate(CheatsheetBase):
+    pass
 
 
 class CheatsheetUpdatePartial(Schema):
@@ -39,11 +44,20 @@ class CheatsheetUpdatePartial(Schema):
     content: str | None = None
 
 
-class CreateTag(Schema):
+class TagBase(Schema):
     tag_name: Annotated[str, Field(max_length=35)]
 
 
+class TagRead(TagBase):
+    tag_id: int
+
+
+class TagCreate(TagBase):
+    pass
+
+
 class UserRead(schemas.BaseUser[UUID]):
+    user_id: UUID
     first_name: str
     last_name: str
     login: str
