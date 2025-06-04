@@ -42,7 +42,7 @@ class CheatsheetUpdate(CheatsheetBase):
 class CheatsheetUpdatePartial(Schema):
     tag_ids: TagList | None = None
     title: Title | None = None
-    is_public: bool | None = None
+    is_public: StrictBool | None = None
     content: str | None = None
 
 
