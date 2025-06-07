@@ -1,6 +1,5 @@
 from collections.abc import AsyncGenerator
 
-from config import settings
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -8,6 +7,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+
+from cheatsheet.core.config import settings
 
 
 class Base(DeclarativeBase):
