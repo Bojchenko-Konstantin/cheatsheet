@@ -66,7 +66,7 @@ class UserRead(schemas.BaseUser[UUID]):
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt
-    profile_url: str | list[str]
+    profile_url: list[str]
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -76,7 +76,7 @@ class UserCreate(schemas.BaseUserCreate):
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt
-    profile_url: str | list[str]
+    profile_url: list[str]
 
 
 class UserUpdate(schemas.BaseUserUpdate):
@@ -86,4 +86,4 @@ class UserUpdate(schemas.BaseUserUpdate):
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt | None = None
-    profile_url: str | list[str] | None = None
+    profile_url: list[str] | None = None
