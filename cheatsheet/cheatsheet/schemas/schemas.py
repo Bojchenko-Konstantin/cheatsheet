@@ -1,47 +1,89 @@
-from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from fastapi_users import schemas
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
+
+type PositiveInt = Annotated[int, Field(ge=0)]
+type PositiveListInt = list[PositiveInt]
+type TagList = Annotated[PositiveListInt, Field(max_length=6)]
+type Title = Annotated[str, Field(min_length=3, max_length=50)]
 
 
-class CheatsheetBase(BaseModel):
-    cheatsheet_id: int
-    tag_id: int | list[int]
-    title: str
-    content: str
-    user_id: UUID
-    created_at: datetime
-    updated_at: datetime | None = None
-
+class Schema(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         from_attributes=True,
+        revalidate_instances="always",
     )
 
 
-class CheatsheetCreate(BaseModel):
-    tag_id: int | list[int]
-    title: str
+class CheatsheetBase(Schema):
+    tag_ids: TagList
+    title: Title
+    is_public: StrictBool
     content: str
-    user_id: UUID
 
 
-class CheatsheetUpdate(BaseModel):
+class CheatsheetRead(CheatsheetBase):
     cheatsheet_id: int
-    tag_id: int | list[int] | None = None
-    title: str | None = None
-    content: str | None
-    user_id: UUID
+    count_like: PositiveInt
+    count_view: PositiveInt
 
 
-class CheatsheetUpdatePartial(BaseModel):
-    cheatsheet_id: int
-    tag_id: int | list[int] | None = None
-    title: str | None = None
+class CheatsheetCreate(CheatsheetBase):
+    pass
+
+
+class CheatsheetUpdate(CheatsheetBase):
+    pass
+
+
+class CheatsheetUpdatePartial(Schema):
+    tag_ids: TagList | None = None
+    title: Title | None = None
+    is_public: StrictBool | None = None
     content: str | None = None
+
+
+class TagBase(Schema):
+    tag_name: Annotated[str, Field(max_length=35)]
+
+
+class TagRead(TagBase):
+    tag_id: int
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class UserRead(schemas.BaseUser[UUID]):
     user_id: UUID
+    first_name: str
+    last_name: str
+    login: str
+    profile_description: str | None = None
+    image_url: str | None = None
+    social_network_id: PositiveListInt
+    profile_url: list[str]
 
 
-class TagBase(BaseModel):
-    tag_id: int | list[int]
-    tag_name: str
+class UserCreate(schemas.BaseUserCreate):
+    first_name: str
+    last_name: str
+    login: str
+    profile_description: str | None = None
+    image_url: str | None = None
+    social_network_id: PositiveListInt
+    profile_url: list[str]
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    first_name: str | None = None
+    last_name: str | None = None
+    login: str | None = None
+    profile_description: str | None = None
+    image_url: str | None = None
+    social_network_id: PositiveListInt | None = None
+    profile_url: list[str] | None = None
