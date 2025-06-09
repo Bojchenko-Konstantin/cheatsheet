@@ -2,10 +2,7 @@ import logging
 from collections.abc import Callable
 from logging.config import dictConfig
 
-from core.config import BASE_DIR, settings
-
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+from core.config import settings
 
 
 def filter_maker(level: str) -> Callable:
@@ -31,12 +28,10 @@ LOGGING = {
                 "%(levelprefix)s %(name)s %(asctime)s %(module)s "
                 "%(process)d %(thread)d %(message)s"
             ),
-            "use_colors": False,
         },
         "sql": {
             "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(levelprefix)s %(name)s %(asctime)s %(module)s\n%(message)s",
-            "use_colors": False,
+            "fmt": "%(levelprefix)s %(name)s %(asctime)s %(module)s %(message)s",
         },
     },
     "filters": {
@@ -46,86 +41,30 @@ LOGGING = {
         }
     },
     "handlers": {
-        "app_debug": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 5,
-            "maxBytes": 10**7,
-            "formatter": "verbose",
-            "filename": LOG_DIR / "app_debug.log",
-            "filters": ["level_filter"],
-            "level": "DEBUG",
-        },
-        "app_error": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 5,
-            "maxBytes": 10**7,
-            "formatter": "verbose",
-            "filename": LOG_DIR / "app_error.log",
-            "level": "WARNING",
-        },
-        "sql_debug": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 5,
-            "maxBytes": 10**7,
-            "formatter": "sql",
-            "filename": LOG_DIR / "sql_debug.log",
-            "filters": ["level_filter"],
-            "level": "DEBUG",
-        },
-        "sql_error": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 5,
-            "maxBytes": 10**7,
-            "formatter": "verbose",
-            "filename": LOG_DIR / "sql_error.log",
-            "level": "WARNING",
-        },
-        "uvicorn_debug": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 10,
-            "maxBytes": 10**7,
-            "formatter": "verbose",
-            "filename": LOG_DIR / "uvicorn_debug.log",
-            "filters": ["level_filter"],
-            "level": "DEBUG",
-        },
-        "uvicorn_error": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "backupCount": 10,
-            "maxBytes": 10**7,
-            "formatter": "verbose",
-            "filename": LOG_DIR / "uvicorn_error.log",
-            "level": "WARNING",
-        },
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "simple",
-            "level": "INFO",
+            "formatter": "verbose",
+            "level": "DEBUG",
+        },
+        "sql_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "sql",
+            "level": "DEBUG",
         },
     },
     "loggers": {
         "": {
-            "handlers": ["console", "app_debug", "app_error"],
+            "handlers": ["console"],
             "level": settings.logging.log_level,
             "propagate": False,
         },
         "uvicorn": {
-            "handlers": ["console", "uvicorn_debug", "uvicorn_error"],
-            "level": settings.logging.log_level,
-            "propagate": False,
-        },
-        "uvicorn.access": {
             "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "alembic": {
-            "handlers": ["sql_debug", "sql_error"],
             "level": settings.logging.log_level,
             "propagate": False,
         },
         "sqlalchemy": {
-            "handlers": ["sql_debug", "sql_error"],
+            "handlers": ["sql_console"],
             "level": settings.logging.log_level,
             "propagate": False,
         },
