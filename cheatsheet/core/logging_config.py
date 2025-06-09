@@ -6,10 +6,6 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "simple": {
-            "()": "uvicorn.logging.ColourizedFormatter",
-            "fmt": "%(levelprefix)s %(asctime)s %(message)s",
-        },
         "verbose": {
             "()": "uvicorn.logging.DefaultFormatter",
             "fmt": (
