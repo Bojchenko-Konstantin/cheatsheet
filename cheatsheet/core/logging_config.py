@@ -40,11 +40,6 @@ LOGGING = {
             "level": settings.logging.log_level,
             "propagate": False,
         },
-        "uvicorn": {
-            "handlers": ["console"],
-            "level": settings.logging.log_level,
-            "propagate": False,
-        },
         "sqlalchemy": {
             "handlers": ["sql_console"],
             "level": settings.logging.log_level,
