@@ -11,11 +11,7 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # FastAPI is initialized, but does not accept requests yet.
-    # Here you can, for example, check the connection to the database.
     yield
-    # Ensures that all database connections are closed gracefully
-    # when the application terminates
     await db_helper.dispose()
 
 
