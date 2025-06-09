@@ -1,18 +1,6 @@
-import logging
-from collections.abc import Callable
 from logging.config import dictConfig
 
 from core.config import settings
-
-
-def filter_maker(level: str) -> Callable:
-    level_priority = getattr(logging, level)
-
-    def filter(record: logging.LogRecord):
-        return record.levelno < level_priority
-
-    return filter
-
 
 LOGGING = {
     "version": 1,
@@ -33,12 +21,6 @@ LOGGING = {
             "()": "uvicorn.logging.DefaultFormatter",
             "fmt": "%(levelprefix)s %(name)s %(asctime)s %(module)s %(message)s",
         },
-    },
-    "filters": {
-        "level_filter": {
-            "()": f"{__name__}.filter_maker",
-            "level": "WARNING",
-        }
     },
     "handlers": {
         "console": {
