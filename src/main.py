@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
 from core.logging_config import setup_logging
-from infrastructure.database.database_helper import db_helper
+from infrastructure.database_helper import db_helper
 
 setup_logging()
 
