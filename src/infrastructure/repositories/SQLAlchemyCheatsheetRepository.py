@@ -20,7 +20,7 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
         self._session = session
 
     async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
-        stmt = (
+        statement = (
             select(CheatsheetModel)
             .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)
             .options(
@@ -28,7 +28,7 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
                 selectinload(CheatsheetModel.stats),
             )
         )
-        result = await self._session.execute(stmt)
+        result = await self._session.execute(statement)
         model = result.scalar_one_or_none()
 
         if not model:
