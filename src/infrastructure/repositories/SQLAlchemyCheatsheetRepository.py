@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        self._session = session
 
     async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
         stmt = (
@@ -28,7 +28,7 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
                 selectinload(CheatsheetModel.stats),
             )
         )
-        result = await self.session.execute(stmt)
+        result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if not model:
@@ -41,7 +41,10 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
             created_at=model.created_at,
             updated_at=model.updated_at,
             is_public=model.is_public,
-            tags=[Tag(tag_id=tag.tag_id, tag_name=tag.tag_name) for tag in model.tags],
+            tags=[
+                Tag(tag_id=tag.tag_id, tag_name=tag.tag_name)
+                for tag in model.tags
+            ],
             count_like=model.stats.count_like if model.stats else 0,
             count_view=model.stats.count_view if model.stats else 0,
         )
@@ -55,6 +58,6 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
             count_like=cheatsheet.count_like,
             count_view=cheatsheet.count_view,
         )
-        self.session.add(model)
-        await self.session.flush()
+        self._session.add(model)
+        await self._session.flush()
         return cheatsheet
