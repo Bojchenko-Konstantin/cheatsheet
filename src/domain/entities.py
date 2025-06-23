@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+
+
+@dataclass
+class Tag:
+    tag_id: int
+    tag_name: str
 
 
 @dataclass
@@ -9,14 +14,8 @@ class Cheatsheet:
     title: str
     content: str
     created_at: datetime
-    update_at: datetime
+    updated_at: datetime
     is_public: bool
-    tag_ids: List["Tag"]
+    tags: list[Tag]
     count_like: int
     count_view: int
-
-
-@dataclass
-class Tag:
-    tag_id: int
-    tag_name: str
