@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from domain.entities import Cheatsheet, Tag
 from domain.repositories.cheatsheet_repository import (
@@ -25,7 +25,7 @@ class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
             .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)
             .options(
                 selectinload(CheatsheetModel.tags),
-                selectinload(CheatsheetModel.stats),
+                joinedload(CheatsheetModel.stats),
             )
         )
         result = await self._session.execute(statement)
