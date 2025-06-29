@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from domain.entities import Cheatsheet, Tag
@@ -12,9 +11,6 @@ from infrastructure.database.models.cheatsheet_stats import (
     CheatsheetStats as StatsModel,
 )
 from infrastructure.database.models.tag import Tag as TagModel
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
