@@ -22,7 +22,7 @@ class CheatsheetToTag(Base):
         primary_key=True,
     )
 
-    cheatsheet: Mapped["Cheatsheet"] = relationship(back_populates="tags_association")
-    tag: Mapped["Tag"] = relationship(
-        back_populates="cheatsheets_association",
+    cheatsheet: Mapped["Cheatsheet"] = relationship(
+        back_populates="tags_association"
     )
+    tag: Mapped["Tag"] = relationship(back_populates="cheatsheets_association")
