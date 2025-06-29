@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from dataclasses import asdict
 
-from application.dto.schemas import CheatsheetRead, TagRead
+from application.dto.schemas import CheatsheetRead
 from infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
@@ -29,17 +30,4 @@ class CheatsheetUseCase(ICheatsheetUseCase):
         if not cheatsheet:
             return None
 
-        return CheatsheetRead(
-            cheatsheet_id=cheatsheet.cheatsheet_id,
-            title=cheatsheet.title,
-            content=cheatsheet.content,
-            created_at=cheatsheet.created_at,
-            updated_at=cheatsheet.updated_at,
-            is_public=cheatsheet.is_public,
-            tags=[
-                TagRead(tag_id=tag.tag_id, tag_name=tag.tag_name)
-                for tag in cheatsheet.tags
-            ],
-            count_like=cheatsheet.count_like,
-            count_view=cheatsheet.count_view,
-        )
+        return CheatsheetRead(**asdict(cheatsheet))
