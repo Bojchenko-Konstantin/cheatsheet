@@ -31,10 +31,7 @@ class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
             is_public=model.is_public,
             count_like=model.stats.count_like if model.stats else 0,
             count_view=model.stats.count_view if model.stats else 0,
-            tags=[
-                Tag(tag_id=tag.tag_id, tag_name=tag.tag_name)
-                for tag in model.tags
-            ],
+            tags=[Tag(tag_id=tag.tag_id, tag_name=tag.tag_name) for tag in model.tags],
         )
 
     def _to_model(self, entity: Cheatsheet) -> CheatsheetModel:
