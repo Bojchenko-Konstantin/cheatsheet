@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from domain.repositories.cheatsheet import (
-    AbstractCheatsheetRepository,
+    ICheatsheetRepo,
 )
 from domain.unit_of_work import UnitOfWork
 from infrastructure.repositories.cheatsheet_repository import (
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 class SQLAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session: AsyncSession):
         self._session = session
-        self.cheatsheets: AbstractCheatsheetRepository = (
-            SQLAlchemyCheatsheetRepository(session)
+        self._cheatsheet: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
+            session
         )
 
     async def commit(self):
