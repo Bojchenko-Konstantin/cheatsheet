@@ -4,9 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from domain.entities import Cheatsheet, Tag
-from domain.repositories.cheatsheet import (
-    AbstractCheatsheetRepository,
-)
+from domain.repositories.cheatsheet import ICheatsheetRepo
 from infrastructure.database.models.cheatsheet import (
     Cheatsheet as CheatsheetModel,
 )
@@ -19,7 +17,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-class SQLAlchemyCheatsheetRepository(AbstractCheatsheetRepository):
+class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 

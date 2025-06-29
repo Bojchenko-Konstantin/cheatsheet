@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from domain.entities import Cheatsheet
 
 
-class AbstractCheatsheetRepository(ABC):
+class ICheatsheetRepo(ABC):
     @abstractmethod
     async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
         pass
