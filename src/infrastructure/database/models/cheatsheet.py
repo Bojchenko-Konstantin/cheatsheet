@@ -16,7 +16,7 @@ from .base import Base
 
 if TYPE_CHECKING:
     from .cheatsheet_stats import CheatsheetStats
-    from .tag import Tag
+    from .cheatsheet_to_tag import CheatsheetToTag
 
 
 class Cheatsheet(Base):
@@ -56,7 +56,6 @@ class Cheatsheet(Base):
         uselist=False,
     )
 
-    tags: Mapped[list["Tag"]] = relationship(
-        secondary="cheatsheet_to_tag",
-        back_populates="cheatsheet",
+    tags_association: Mapped[list["CheatsheetToTag"]] = relationship(
+        back_populates="cheatsheet", cascade="all, delete-orphan"
     )

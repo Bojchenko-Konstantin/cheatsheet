@@ -4,6 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
+from api.v1.routers.cheatsheet import router as router_cheatsheet
 from core.logging_config import setup_logging
 from infrastructure.database.database_helper import db_helper
 
@@ -20,6 +21,8 @@ app = FastAPI(
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
+
+app.include_router(router_cheatsheet)
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -18,6 +19,19 @@ class Schema(BaseModel):
     )
 
 
+class TagBase(Schema):
+    tag_name: Annotated[str, Field(max_length=35)]
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class TagRead(BaseModel):
+    tag_id: int
+    tag_name: str
+
+
 class CheatsheetBase(Schema):
     tag_ids: TagList
     title: Title
@@ -25,10 +39,16 @@ class CheatsheetBase(Schema):
     content: str
 
 
-class CheatsheetRead(CheatsheetBase):
+class CheatsheetRead(BaseModel):
     cheatsheet_id: int
-    count_like: PositiveInt
-    count_view: PositiveInt
+    title: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    is_public: bool
+    tags: list[TagRead]
+    count_like: int
+    count_view: int
 
 
 class CheatsheetCreate(CheatsheetBase):
@@ -44,18 +64,6 @@ class CheatsheetUpdatePartial(Schema):
     title: Title | None = None
     is_public: StrictBool | None = None
     content: str | None = None
-
-
-class TagBase(Schema):
-    tag_name: Annotated[str, Field(max_length=35)]
-
-
-class TagRead(TagBase):
-    tag_id: int
-
-
-class TagCreate(TagBase):
-    pass
 
 
 class UserRead(schemas.BaseUser[UUID]):
