@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
-@dataclass
+@dataclass(slots=True)
 class Tag:
     tag_id: int
     tag_name: str
 
 
-@dataclass
+@dataclass(slots=True)
 class Cheatsheet:
     cheatsheet_id: int
     title: str

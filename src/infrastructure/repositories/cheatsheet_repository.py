@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -6,9 +8,6 @@ from domain.entities import Cheatsheet, Tag
 from domain.repositories.cheatsheet import ICheatsheetRepo
 from infrastructure.database.models.cheatsheet import (
     Cheatsheet as CheatsheetModel,
-)
-from infrastructure.database.models.cheatsheet_stats import (
-    CheatsheetStats as StatsModel,
 )
 from infrastructure.database.models.cheatsheet_to_tag import (
     CheatsheetToTag as CheatsheetToTagModel,
@@ -40,19 +39,7 @@ class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
         )
 
     def _to_model(self, entity: Cheatsheet) -> CheatsheetModel:
-        model = CheatsheetModel(
-            cheatsheet_id=entity.cheatsheet_id,
-            title=entity.title,
-            content=entity.content,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-            is_public=entity.is_public,
-            stats=StatsModel(
-                count_like=entity.count_like,
-                count_view=entity.count_view,
-                cheatsheet_id=entity.cheatsheet_id,
-            ),
-        )
+        model = CheatsheetModel(**asdict(entity))
 
         if hasattr(entity, "tags") and entity.tags:
             model.tags_association = [

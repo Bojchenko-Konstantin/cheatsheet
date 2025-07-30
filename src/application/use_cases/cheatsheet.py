@@ -10,9 +10,7 @@ from infrastructure.repositories.cheatsheet_repository import (
 class ICheatsheetUseCase(ABC):
 
     @abstractmethod
-    async def get_cheatsheet_by_id(
-        self, cheatsheet_id: int
-    ) -> CheatsheetRead | None:
+    async def get_cheatsheet_by_id(self, cheatsheet_id: int) -> CheatsheetRead | None:
         pass
 
 
@@ -23,9 +21,7 @@ class CheatsheetUseCase(ICheatsheetUseCase):
     ):
         self._repo = repo
 
-    async def get_cheatsheet_by_id(
-        self, cheatsheet_id: int
-    ) -> CheatsheetRead | None:
+    async def get_cheatsheet_by_id(self, cheatsheet_id: int) -> CheatsheetRead | None:
         cheatsheet = await self._repo.get_by_id(cheatsheet_id)
         if not cheatsheet:
             return None
