@@ -3,9 +3,9 @@ from typing import AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from application.use_cases.cheatsheet import CheatsheetUseCase
-from infrastructure.database.database_helper import db_helper
-from infrastructure.repositories.cheatsheet_repository import (
+from src.application.use_cases.cheatsheet import CheatsheetUseCase
+from src.infrastructure.database.database_helper import db_helper
+from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
 

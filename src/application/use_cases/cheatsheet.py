@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 
-from application.dto.schemas import CheatsheetRead
-from infrastructure.repositories.cheatsheet_repository import (
+from src.application.dto.schemas import CheatsheetRead
+from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
 

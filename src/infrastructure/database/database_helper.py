@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
-from core.config import settings
+from src.core.config import settings
 
 
 class Base(DeclarativeBase):
@@ -43,11 +43,7 @@ class DatabaseHelper:
 
     async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
         async with self._session_factory() as session:
-            try:
-                yield session
-            except Exception:
-                await session.rollback()
-                raise
+            yield session
 
 
 db_helper = DatabaseHelper(

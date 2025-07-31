@@ -4,9 +4,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
-from api.v1.routers.cheatsheet import router as router_cheatsheet
-from core.logging_config import setup_logging
-from infrastructure.database.database_helper import db_helper
+from src.api.v1.routers.cheatsheet import router as router_cheatsheet
+from src.core.logging_config import setup_logging
+from src.infrastructure.database.database_helper import db_helper
 
 setup_logging()
 

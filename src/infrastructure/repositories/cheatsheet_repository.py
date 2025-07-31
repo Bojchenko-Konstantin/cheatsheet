@@ -4,15 +4,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
-from domain.entities import Cheatsheet, Tag
-from domain.repositories.cheatsheet import ICheatsheetRepo
-from infrastructure.database.models.cheatsheet import (
+from src.domain.entities import Cheatsheet, Tag
+from src.domain.repositories.cheatsheet import ICheatsheetRepo
+from src.infrastructure.database.models.cheatsheet import (
     Cheatsheet as CheatsheetModel,
 )
-from infrastructure.database.models.cheatsheet_to_tag import (
+from src.infrastructure.database.models.cheatsheet_to_tag import (
     CheatsheetToTag as CheatsheetToTagModel,
 )
-from infrastructure.database.models.tag import Tag as TagModel
+from src.infrastructure.database.models.tag import Tag as TagModel
 
 
 class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
