@@ -6,11 +6,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet import Cheatsheet
+    from .cheatsheet import CheatsheetModel
 
 
-class CheatsheetStats(Base):
-    __tablename__ = "cheatsheet_stats"  # type: ignore[assignment]
+class CheatsheetStatsModel(Base):
 
     cheatsheet_id: Mapped[int] = mapped_column(
         BigInteger,
@@ -24,7 +23,9 @@ class CheatsheetStats(Base):
         BigInteger, nullable=False, server_default="0"
     )
 
-    cheatsheet: Mapped["Cheatsheet"] = relationship(back_populates="stats")
+    cheatsheet: Mapped["CheatsheetModel"] = relationship(
+        back_populates="stats"
+    )
 
     __table_args__ = (
         CheckConstraint("count_like >= 0", name="ck_count_like_positive"),

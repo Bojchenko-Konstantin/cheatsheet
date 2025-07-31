@@ -15,11 +15,11 @@ from sqlalchemy.sql import func
 from .base import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet_stats import CheatsheetStats
-    from .cheatsheet_to_tag import CheatsheetToTag
+    from .cheatsheet_stats import CheatsheetStatsModel
+    from .cheatsheet_to_tag import CheatsheetToTagModel
 
 
-class Cheatsheet(Base):
+class CheatsheetModel(Base):
     cheatsheet_id: Mapped[int] = mapped_column(
         BigInteger,
         primary_key=True,
@@ -49,13 +49,13 @@ class Cheatsheet(Base):
         server_default="true",
     )
 
-    stats: Mapped["CheatsheetStats"] = relationship(
+    stats: Mapped["CheatsheetStatsModel"] = relationship(
         back_populates="cheatsheet",
         cascade="all, delete-orphan",
         single_parent=True,
         uselist=False,
     )
 
-    tags_association: Mapped[list["CheatsheetToTag"]] = relationship(
+    tags_association: Mapped[list["CheatsheetToTagModel"]] = relationship(
         back_populates="cheatsheet", cascade="all, delete-orphan"
     )

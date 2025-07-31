@@ -6,12 +6,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet import Cheatsheet
-    from .tag import Tag
+    from .cheatsheet import CheatsheetModel
+    from .tag import TagModel
 
 
-class CheatsheetToTag(Base):
-    __tablename__ = "cheatsheet_to_tag"  # type: ignore[assignment]
+class CheatsheetToTagModel(Base):
 
     cheatsheet_id: Mapped[int] = mapped_column(
         ForeignKey("cheatsheet.cheatsheet_id"),
@@ -22,5 +21,9 @@ class CheatsheetToTag(Base):
         primary_key=True,
     )
 
-    cheatsheet: Mapped["Cheatsheet"] = relationship(back_populates="tags_association")
-    tag: Mapped["Tag"] = relationship(back_populates="cheatsheets_association")
+    cheatsheet: Mapped["CheatsheetModel"] = relationship(
+        back_populates="tags_association"
+    )
+    tag: Mapped["TagModel"] = relationship(
+        back_populates="cheatsheets_association"
+    )
