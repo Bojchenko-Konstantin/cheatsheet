@@ -1,7 +1,13 @@
-__all__ = ("Base", "Cheatsheet", "Tag", "CheatsheetToTag", "CheatsheetStats")
+__all__ = (
+    "Base",
+    "CheatsheetModel",
+    "TagModel",
+    "CheatsheetToTagModel",
+    "CheatsheetStatsModel",
+)
 
 from .base import Base
-from .cheatsheet import Cheatsheet
-from .cheatsheet_stats import CheatsheetStats
-from .cheatsheet_to_tag import CheatsheetToTag
-from .tag import Tag
+from .cheatsheet import CheatsheetModel
+from .cheatsheet_stats import CheatsheetStatsModel
+from .cheatsheet_to_tag import CheatsheetToTagModel
+from .tag import TagModel
