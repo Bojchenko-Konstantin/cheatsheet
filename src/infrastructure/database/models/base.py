@@ -2,7 +2,7 @@ from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 
 from src.core.config import settings
-from src.core.utils.case_converter import camel_case_to_snake_case
+from src.core.utils import model_class_to_table_name
 
 
 class Base(DeclarativeBase):
@@ -14,4 +14,4 @@ class Base(DeclarativeBase):
 
     @declared_attr.directive
     def __tablename__(cls) -> str:  # noqa: N805
-        return f"{camel_case_to_snake_case(cls.__name__)}"
+        return f"{model_class_to_table_name(cls.__name__)}"
