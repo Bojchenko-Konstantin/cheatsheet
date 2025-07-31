@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from domain.entities import Cheatsheet
+from src.domain.entities import Cheatsheet
 
 
 class ICheatsheetRepo(ABC):

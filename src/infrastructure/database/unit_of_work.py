@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Any, Self
 
-from domain.repositories.cheatsheet import (
+from src.domain.repositories.cheatsheet import (
     ICheatsheetRepo,
 )
-from domain.unit_of_work import UnitOfWork
-from infrastructure.repositories.cheatsheet_repository import (
+from src.domain.unit_of_work import UnitOfWork
+from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
 
