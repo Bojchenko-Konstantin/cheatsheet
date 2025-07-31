@@ -1,3 +1,3 @@
-__all__ = ("camel_case_to_snake_case",)
+__all__ = ("model_class_to_table_name",)
 
-from .case_converter import camel_case_to_snake_case
+from .model_class_to_table_name import model_class_to_table_name

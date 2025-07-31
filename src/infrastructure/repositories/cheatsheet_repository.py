@@ -6,13 +6,11 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.entities import Cheatsheet, Tag
 from src.domain.repositories.cheatsheet import ICheatsheetRepo
-from src.infrastructure.database.models.cheatsheet import (
-    Cheatsheet as CheatsheetModel,
+from src.infrastructure.database.models import (
+    CheatsheetModel,
+    CheatsheetToTagModel,
+    TagModel,
 )
-from src.infrastructure.database.models.cheatsheet_to_tag import (
-    CheatsheetToTag as CheatsheetToTagModel,
-)
-from src.infrastructure.database.models.tag import Tag as TagModel
 
 
 class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
