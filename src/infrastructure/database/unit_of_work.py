@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 
 from domain.repositories.cheatsheet import (
     ICheatsheetRepo,
@@ -15,7 +15,15 @@ if TYPE_CHECKING:
 class SQLAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session: AsyncSession):
         self._session = session
-        self._cheatsheet: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(session)
+
+    async def __aenter__(self) -> Self:
+        self._cheatsheet: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
+            self._session
+        )
+        return await super().__aenter__()
+
+    async def __aexit__(self, *args: Any):
+        return await super().__aexit__(*args)
 
     async def commit(self):
         await self._session.commit()

@@ -7,7 +7,7 @@ class UnitOfWork(ABC):
         return self
 
     async def __aexit__(self, *_: Any) -> None:
-        pass
+        await self.rollback()
 
     @abstractmethod
     async def commit(self) -> None:
