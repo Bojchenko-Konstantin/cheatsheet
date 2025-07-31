@@ -12,9 +12,7 @@ def model_class_to_table_name(model_class: str) -> str:
     for c_idx, char in enumerate(model_class):
         if c_idx and char.isupper():
             nxt_idx = c_idx + 1
-            flag = (
-                nxt_idx >= len(model_class) or model_class[nxt_idx].isupper()
-            )
+            flag = nxt_idx >= len(model_class) or model_class[nxt_idx].isupper()
             prev_char = model_class[c_idx - 1]
             if prev_char.isupper() and flag:
                 pass

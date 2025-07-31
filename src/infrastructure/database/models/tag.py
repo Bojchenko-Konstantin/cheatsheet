@@ -30,13 +30,11 @@ class TagModel(Base):
         unique=True,
     )
 
-    cheatsheets_association: Mapped[list["CheatsheetToTagModel"]] = (
-        relationship(back_populates="tag")
+    cheatsheets_association: Mapped[list["CheatsheetToTagModel"]] = relationship(
+        back_populates="tag"
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "LENGTH(TRIM(tag_name)) > 0", name="ck_tag_name_non_empty"
-        ),
+        CheckConstraint("LENGTH(TRIM(tag_name)) > 0", name="ck_tag_name_non_empty"),
         Index("ix_tag_name_lower", func.lower(tag_name), unique=True),
     )
