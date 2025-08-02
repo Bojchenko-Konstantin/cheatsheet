@@ -1,22 +1,30 @@
-def model_class_to_table_name(model_class: str) -> str:
+def model_class_to_table_name(model_class_name: str) -> str:
     """
     >>> model_class_to_table_name("CheatsheetModel")
     'cheatsheet'
     >>> model_class_to_table_name("TagModel")
     'tag'
     """
-    if model_class.endswith("Model"):
-        model_class = model_class[:-5]
+    if model_class_name.endswith("Model"):
+        class_name_without_model = model_class_name[:-5]
+    else:
+        class_name_without_model = model_class_name
 
-    chars = []
-    for c_idx, char in enumerate(model_class):
-        if c_idx and char.isupper():
-            nxt_idx = c_idx + 1
-            flag = nxt_idx >= len(model_class) or model_class[nxt_idx].isupper()
-            prev_char = model_class[c_idx - 1]
-            if prev_char.isupper() and flag:
+    table_name_chars = []
+    for char_index, current_char in enumerate(class_name_without_model):
+        if char_index > 0 and current_char.isupper():
+            next_char_index = char_index + 1
+            is_next_char_upper = (
+                next_char_index >= len(class_name_without_model)
+                or class_name_without_model[next_char_index].isupper()
+            )
+            previous_char = class_name_without_model[char_index - 1]
+
+            if previous_char.isupper() and is_next_char_upper:
                 pass
             else:
-                chars.append("_")
-        chars.append(char.lower())
-    return "".join(chars)
+                table_name_chars.append("_")
+
+        table_name_chars.append(current_char.lower())
+
+    return "".join(table_name_chars)
