@@ -16,7 +16,7 @@ class SQLAlchemyUnitOfWork(UnitOfWork):
         self._session = session
 
     async def __aenter__(self) -> Self:
-        self._cheatsheet: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
+        self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
             self._session
         )
         return await super().__aenter__()
