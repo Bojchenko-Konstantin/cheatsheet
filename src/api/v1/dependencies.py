@@ -3,11 +3,9 @@ from typing import AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.application.use_cases.cheatsheet import CheatsheetUseCase
 from src.infrastructure.database.database_helper import db_helper
-from src.infrastructure.repositories.cheatsheet_repository import (
-    SQLAlchemyCheatsheetRepository,
-)
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -15,13 +13,14 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_cheatsheet_repo(
+async def get_unit_of_work(
     session: AsyncSession = Depends(get_db_session),
-) -> SQLAlchemyCheatsheetRepository:
-    return SQLAlchemyCheatsheetRepository(session)
+) -> SQLAlchemyUnitOfWork:
+    async with SQLAlchemyUnitOfWork(session) as unit_of_work:
+        return unit_of_work
 
 
 async def get_cheatsheet_use_case(
-    repo: SQLAlchemyCheatsheetRepository = Depends(get_cheatsheet_repo),
+    unit_of_work: SQLAlchemyUnitOfWork = Depends(get_unit_of_work),
 ) -> CheatsheetUseCase:
-    return CheatsheetUseCase(repo=repo)
+    return CheatsheetUseCase(unit_of_work=unit_of_work)
