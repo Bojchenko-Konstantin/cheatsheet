@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any, Self
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.cheatsheet import (
     ICheatsheetRepo,
@@ -7,9 +9,6 @@ from src.domain.unit_of_work import UnitOfWork
 from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SQLAlchemyUnitOfWork(UnitOfWork):
