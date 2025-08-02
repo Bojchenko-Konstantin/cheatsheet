@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 
-from domain.unit_of_work import UnitOfWork
 from src.application.dto.schemas import CheatsheetRead
+from src.domain.unit_of_work import UnitOfWork
 
 
 class ICheatsheetUseCase(ABC):
