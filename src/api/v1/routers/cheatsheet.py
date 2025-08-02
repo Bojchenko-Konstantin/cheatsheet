@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,6 +9,8 @@ from src.application.use_cases.cheatsheet import CheatsheetUseCase
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 
+logger = logging.getLogger(__name__)
+
 
 @router.get("/{cheatsheet_id}", response_model=CheatsheetRead)
 async def get_cheatsheet_by_id(
@@ -16,8 +19,10 @@ async def get_cheatsheet_by_id(
 ):
     cheatsheet = await use_case.get_cheatsheet_by_id(cheatsheet_id)
     if not cheatsheet:
+        logger.debug("Cheatsheet with id %s was not found", cheatsheet_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cheatsheet was not found",
         )
+    logger.debug("Cheatsheet with id %s: %s", cheatsheet_id, cheatsheet)
     return cheatsheet
