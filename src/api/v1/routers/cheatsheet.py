@@ -18,6 +18,6 @@ async def get_cheatsheet_by_id(
     if not cheatsheet:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Шпаргалка не найдена",
+            detail="Cheatsheet was not found",
         )
     return cheatsheet
