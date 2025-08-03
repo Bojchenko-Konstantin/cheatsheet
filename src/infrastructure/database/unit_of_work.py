@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any, Self
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.cheatsheet import (
     ICheatsheetRepo,
@@ -8,16 +10,13 @@ from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
 )
 
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
-
 
 class SQLAlchemyUnitOfWork(UnitOfWork):
     def __init__(self, session: AsyncSession):
         self._session = session
 
     async def __aenter__(self) -> Self:
-        self._cheatsheet: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
+        self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
             self._session
         )
         return await super().__aenter__()

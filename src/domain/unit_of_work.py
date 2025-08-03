@@ -1,8 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any, Self
 
+from src.domain.repositories.cheatsheet import ICheatsheetRepo
+
 
 class UnitOfWork(ABC):
+    cheatsheet_repo: ICheatsheetRepo
+
     async def __aenter__(self) -> Self:
         return self
 
