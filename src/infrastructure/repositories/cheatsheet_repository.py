@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from src.domain.entities import Cheatsheet, Tag
-from src.domain.repositories.cheatsheet import ICheatsheetRepo
+from src.domain.repositories import ICheatsheetRepo
 from src.infrastructure.database.models import (
     CheatsheetModel,
     CheatsheetToTagModel,

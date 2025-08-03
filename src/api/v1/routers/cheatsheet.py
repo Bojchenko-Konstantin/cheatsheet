@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.v1.dependencies import get_cheatsheet_use_case
 from src.application.dto.schemas import CheatsheetRead
-from src.application.use_cases.cheatsheet import CheatsheetUseCase
+from src.application.use_cases import CheatsheetUseCase
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 
