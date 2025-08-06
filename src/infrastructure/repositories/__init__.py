@@ -1,3 +1,3 @@
-__all__ = ("SQLAlchemyCheatsheetRepository",)
+__all__ = ("SQLAlchemyCheatsheetRepo",)
 
-from .cheatsheet_repository import SQLAlchemyCheatsheetRepository
+from .cheatsheet_repository import SQLAlchemyCheatsheetRepo

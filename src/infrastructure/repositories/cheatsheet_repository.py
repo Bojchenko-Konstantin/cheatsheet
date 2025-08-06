@@ -13,7 +13,7 @@ from src.infrastructure.database.models import (
 )
 
 
-class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
+class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 

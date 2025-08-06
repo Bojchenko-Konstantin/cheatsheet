@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories import ICheatsheetRepo
 from src.domain.unit_of_work import IUnitOfWork
-from src.infrastructure.repositories import SQLAlchemyCheatsheetRepository
+from src.infrastructure.repositories import SQLAlchemyCheatsheetRepo
 
 
 class SQLAlchemyUnitOfWork(IUnitOfWork):
@@ -12,9 +12,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self._session = session
 
     async def __aenter__(self) -> Self:
-        self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepository(
-            self._session
-        )
+        self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepo(self._session)
         return await super().__aenter__()
 
     async def __aexit__(self, *args: Any):
