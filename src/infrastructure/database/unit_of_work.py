@@ -2,9 +2,7 @@ from typing import Any, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.domain.repositories.cheatsheet import (
-    ICheatsheetRepo,
-)
+from src.domain.repositories import ICheatsheetRepo
 from src.domain.unit_of_work import IUnitOfWork
 from src.infrastructure.repositories.cheatsheet_repository import (
     SQLAlchemyCheatsheetRepository,
