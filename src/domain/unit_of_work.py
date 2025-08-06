@@ -4,7 +4,7 @@ from typing import Any, Self
 from src.domain.repositories.cheatsheet import ICheatsheetRepo
 
 
-class UnitOfWork(ABC):
+class IUnitOfWork(ABC):
     cheatsheet_repo: ICheatsheetRepo
 
     async def __aenter__(self) -> Self:
