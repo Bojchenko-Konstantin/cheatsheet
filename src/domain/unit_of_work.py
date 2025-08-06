@@ -15,8 +15,8 @@ class IUnitOfWork(ABC):
 
     @abstractmethod
     async def commit(self) -> None:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     async def rollback(self) -> None:
-        raise NotImplementedError
+        pass
