@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 
 class CheatsheetStatsModel(Base):
-
     cheatsheet_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("cheatsheet.cheatsheet_id", ondelete="CASCADE"),

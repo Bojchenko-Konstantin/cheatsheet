@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class CheatsheetToTagModel(Base):
-
     cheatsheet_id: Mapped[int] = mapped_column(
         ForeignKey("cheatsheet.cheatsheet_id"),
         primary_key=True,
