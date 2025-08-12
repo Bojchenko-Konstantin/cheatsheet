@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
@@ -20,7 +22,7 @@ class CheatsheetToTagModel(Base):
         primary_key=True,
     )
 
-    cheatsheet: Mapped["CheatsheetModel"] = relationship(
+    cheatsheet: Mapped[CheatsheetModel] = relationship(
         back_populates="tags_association"
     )
-    tag: Mapped["TagModel"] = relationship(back_populates="cheatsheets_association")
+    tag: Mapped[TagModel] = relationship(back_populates="cheatsheets_association")

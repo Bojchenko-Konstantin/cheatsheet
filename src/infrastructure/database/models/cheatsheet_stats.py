@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, CheckConstraint, ForeignKey
@@ -22,7 +24,7 @@ class CheatsheetStatsModel(Base):
         BigInteger, nullable=False, server_default="0"
     )
 
-    cheatsheet: Mapped["CheatsheetModel"] = relationship(back_populates="stats")
+    cheatsheet: Mapped[CheatsheetModel] = relationship(back_populates="stats")
 
     __table_args__ = (
         CheckConstraint("count_like >= 0", name="ck_count_like_positive"),

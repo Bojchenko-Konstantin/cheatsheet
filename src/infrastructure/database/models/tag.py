@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -30,7 +32,7 @@ class TagModel(Base):
         unique=True,
     )
 
-    cheatsheets_association: Mapped[list["CheatsheetToTagModel"]] = relationship(
+    cheatsheets_association: Mapped[list[CheatsheetToTagModel]] = relationship(
         back_populates="tag"
     )
 
