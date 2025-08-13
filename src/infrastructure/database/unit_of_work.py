@@ -15,11 +15,11 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepo(self._session)
         return await super().__aenter__()
 
-    async def __aexit__(self, *args: Any):
+    async def __aexit__(self, *args: Any) -> None:
         return await super().__aexit__(*args)
 
-    async def commit(self):
+    async def commit(self) -> None:
         await self._session.commit()
 
-    async def rollback(self):
+    async def rollback(self) -> None:
         await self._session.rollback()
