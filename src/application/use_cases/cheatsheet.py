@@ -1,23 +1,14 @@
-from abc import ABC, abstractmethod
-from dataclasses import asdict
-
-from src.application.dto.schemas import CheatsheetRead
-from src.domain.unit_of_work import IUnitOfWork
+from src.application.interfaces import IUnitOfWork
+from src.domain.entities import Cheatsheet
 
 
-class ICheatsheetUseCase(ABC):
-    @abstractmethod
-    async def get_by_id(self, cheatsheet_id: int) -> CheatsheetRead | None:
-        pass
-
-
-class CheatsheetUseCase(ICheatsheetUseCase):
+class CheatsheetUseCase:
     def __init__(self, unit_of_work: IUnitOfWork):
         self._repo = unit_of_work.cheatsheet_repo
 
-    async def get_by_id(self, cheatsheet_id: int) -> CheatsheetRead | None:
+    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
         cheatsheet = await self._repo.get_by_id(cheatsheet_id)
         if not cheatsheet:
             return None
 
-        return CheatsheetRead(**asdict(cheatsheet))
+        return cheatsheet
