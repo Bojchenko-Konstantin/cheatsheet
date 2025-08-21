@@ -8,11 +8,10 @@ from src.api.v1.routers.cheatsheet import router as router_cheatsheet
 from src.core.logging_config import setup_logging
 from src.infrastructure.database.database_helper import db_helper
 
-setup_logging()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
     yield
     await db_helper.dispose()
 
