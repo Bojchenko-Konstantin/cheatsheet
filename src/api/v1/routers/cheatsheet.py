@@ -12,7 +12,7 @@ router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{cheatsheet_id}", response_model=CheatsheetRead)
+@router.get("/{cheatsheet_id}")
 async def get_cheatsheet_by_id(
     cheatsheet_id: int,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
