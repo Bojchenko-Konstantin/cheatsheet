@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Self
 
-from src.domain.repositories import ICheatsheetRepo
+from src.application.interfaces.repositories import ICheatsheetRepo
 
 
 class IUnitOfWork(ABC):
