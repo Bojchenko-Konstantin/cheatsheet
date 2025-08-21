@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Self
 
-from src.domain.repositories.cheatsheet import ICheatsheetRepo
+from src.domain.repositories import ICheatsheetRepo
 
 
-class UnitOfWork(ABC):
+class IUnitOfWork(ABC):
     cheatsheet_repo: ICheatsheetRepo
 
     async def __aenter__(self) -> Self:
@@ -15,8 +15,8 @@ class UnitOfWork(ABC):
 
     @abstractmethod
     async def commit(self) -> None:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     async def rollback(self) -> None:
-        raise NotImplementedError
+        pass

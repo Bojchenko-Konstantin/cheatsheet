@@ -13,7 +13,7 @@ from src.infrastructure.database.models import (
 )
 
 
-class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
+class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
@@ -27,27 +27,26 @@ class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
             is_public=model.is_public,
             tags=[
                 Tag(
-                    tag_id=tag_assoc.tag.tag_id,
-                    tag_name=tag_assoc.tag.tag_name,
+                    tag_id=tag_association.tag.tag_id,
+                    tag_name=tag_association.tag.tag_name,
                 )
-                for tag_assoc in model.tags_association
+                for tag_association in model.tags_association
             ],
-            count_like=model.stats.count_like if model.stats else 0,
-            count_view=model.stats.count_view if model.stats else 0,
+            count_like=model.stats.count_like,
+            count_view=model.stats.count_view,
         )
 
     def _to_model(self, entity: Cheatsheet) -> CheatsheetModel:
         model = CheatsheetModel(**asdict(entity))
 
-        if hasattr(entity, "tags") and entity.tags:
-            model.tags_association = [
-                CheatsheetToTagModel(
-                    cheatsheet_id=entity.cheatsheet_id,
-                    tag_id=tag.tag_id,
-                    tag=TagModel(tag_id=tag.tag_id, tag_name=tag.tag_name),
-                )
-                for tag in entity.tags
-            ]
+        model.tags_association = [
+            CheatsheetToTagModel(
+                cheatsheet_id=entity.cheatsheet_id,
+                tag_id=tag.tag_id,
+                tag=TagModel(tag_id=tag.tag_id, tag_name=tag.tag_name),
+            )
+            for tag in entity.tags
+        ]
         return model
 
     async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
@@ -72,7 +71,6 @@ class SQLAlchemyCheatsheetRepository(ICheatsheetRepo):
     async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
         model = self._to_model(cheatsheet)
         self._session.add(model)
-        await self._session.flush()
         await self._session.refresh(
             model, ["stats", "tags_association", "tags_association.tag"]
         )

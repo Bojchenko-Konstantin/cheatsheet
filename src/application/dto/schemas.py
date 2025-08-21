@@ -27,9 +27,8 @@ class TagCreate(TagBase):
     pass
 
 
-class TagRead(BaseModel):
-    tag_id: int
-    tag_name: str
+class TagRead(TagBase):
+    tag_id: PositiveInt
 
 
 class CheatsheetBase(Schema):
@@ -39,16 +38,16 @@ class CheatsheetBase(Schema):
     content: str
 
 
-class CheatsheetRead(BaseModel):
-    cheatsheet_id: int
-    title: str
+class CheatsheetRead(Schema):
+    cheatsheet_id: PositiveInt
+    title: Title
     content: str
     created_at: datetime
     updated_at: datetime
-    is_public: bool
+    is_public: StrictBool
     tags: list[TagRead]
-    count_like: int
-    count_view: int
+    count_like: PositiveInt
+    count_view: PositiveInt
 
 
 class CheatsheetCreate(CheatsheetBase):

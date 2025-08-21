@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -49,13 +51,13 @@ class CheatsheetModel(Base):
         server_default="true",
     )
 
-    stats: Mapped["CheatsheetStatsModel"] = relationship(
+    stats: Mapped[CheatsheetStatsModel] = relationship(
         back_populates="cheatsheet",
         cascade="all, delete-orphan",
         single_parent=True,
         uselist=False,
     )
 
-    tags_association: Mapped[list["CheatsheetToTagModel"]] = relationship(
+    tags_association: Mapped[list[CheatsheetToTagModel]] = relationship(
         back_populates="cheatsheet", cascade="all, delete-orphan"
     )

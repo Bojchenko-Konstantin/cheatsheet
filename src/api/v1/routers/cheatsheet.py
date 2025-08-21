@@ -12,12 +12,12 @@ router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{cheatsheet_id}", response_model=CheatsheetRead)
+@router.get("/{cheatsheet_id}")
 async def get_cheatsheet_by_id(
     cheatsheet_id: int,
-    use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
-):
-    cheatsheet = await use_case.get_cheatsheet_by_id(cheatsheet_id)
+    cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
+) -> CheatsheetRead:
+    cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
     if not cheatsheet:
         logger.debug("Cheatsheet with id %s was not found", cheatsheet_id)
         raise HTTPException(
