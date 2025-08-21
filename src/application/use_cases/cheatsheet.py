@@ -4,11 +4,12 @@ from src.domain.entities import Cheatsheet
 
 class CheatsheetUseCase:
     def __init__(self, unit_of_work: IUnitOfWork):
-        self._repo = unit_of_work.cheatsheet_repo
+        self._unit_of_work = unit_of_work
 
     async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
-        cheatsheet = await self._repo.get_by_id(cheatsheet_id)
-        if not cheatsheet:
-            return None
+        async with self._unit_of_work as uow:
+            cheatsheet = await uow.cheatsheet_repo.get_by_id(cheatsheet_id)
+            if not cheatsheet:
+                return None
 
-        return cheatsheet
+            return cheatsheet
