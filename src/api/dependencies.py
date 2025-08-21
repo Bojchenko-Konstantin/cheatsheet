@@ -1,23 +1,12 @@
-from typing import AsyncGenerator
-
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.interfaces import IUnitOfWork
 from src.application.use_cases import CheatsheetUseCase
-from src.infrastructure.database.database_helper import db_helper
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    async for session in db_helper.session_getter():
-        yield session
-
-
-async def get_unit_of_work(
-    session: AsyncSession = Depends(get_db_session),
-) -> IUnitOfWork:
-    async with SQLAlchemyUnitOfWork(session) as unit_of_work:
+async def get_unit_of_work() -> IUnitOfWork:
+    async with SQLAlchemyUnitOfWork() as unit_of_work:
         return unit_of_work
 
 
