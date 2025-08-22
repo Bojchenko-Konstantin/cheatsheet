@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -6,14 +7,14 @@ from fastapi.responses import ORJSONResponse
 
 from src.api.v1.routers.cheatsheet import router as router_cheatsheet
 from src.core.logging_config import setup_logging
-from src.infrastructure.database.database_helper import db_helper
+from src.infrastructure.database import dispose
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator:
     setup_logging()
     yield
-    await db_helper.dispose()
+    await dispose()
 
 
 app = FastAPI(
