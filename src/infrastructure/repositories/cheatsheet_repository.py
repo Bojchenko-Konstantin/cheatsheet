@@ -15,6 +15,10 @@ from src.infrastructure.database.models import (
 
 
 class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
+    """
+    Class for operations with cheatsheets that interact with database using SQLAlchemy.
+    """
+
     def __init__(self, session: AsyncSession):
         self._session = session
 
