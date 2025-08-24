@@ -5,7 +5,7 @@ from src.application.use_cases import CheatsheetUseCase
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
-async def get_unit_of_work() -> IUnitOfWork:
+async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
     async with SQLAlchemyUnitOfWork() as unit_of_work:
         return unit_of_work
 
