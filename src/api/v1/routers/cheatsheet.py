@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.dependencies import get_cheatsheet_use_case
 from src.api.schemas import CheatsheetRead
+from src.application.exceptions import CheatsheetNotFoundError
 from src.application.use_cases import CheatsheetUseCase
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
@@ -17,12 +18,13 @@ async def get_cheatsheet_by_id(
     cheatsheet_id: int,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
-    cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
-    if not cheatsheet:
+    try:
+        cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
+    except CheatsheetNotFoundError as e:
         logger.debug("Cheatsheet with id %s was not found", cheatsheet_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Cheatsheet was not found",
-        )
+            detail=f"Cheatsheet with id {cheatsheet_id} was not found",
+        ) from e
     logger.debug("Cheatsheet with id %s: %s", cheatsheet_id, cheatsheet)
     return cheatsheet

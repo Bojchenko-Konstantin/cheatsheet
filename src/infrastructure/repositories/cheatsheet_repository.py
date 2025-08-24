@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from src.application.exceptions import CheatsheetNotFoundError
 from src.application.interfaces import ICheatsheetRepo
 from src.domain.entities import Cheatsheet, Tag
 from src.infrastructure.database.models import (
@@ -25,13 +26,13 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
             created_at=model.created_at,
             updated_at=model.updated_at,
             is_public=model.is_public,
-            tags=set(
+            tags=[
                 Tag(
                     tag_id=tag_association.tag.tag_id,
                     tag_name=tag_association.tag.tag_name,
                 )
                 for tag_association in model.tags_association
-            ),
+            ],
             count_like=model.stats.count_like,
             count_view=model.stats.count_view,
         )
@@ -49,7 +50,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         ]
         return model
 
-    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet | None:
+    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet:
         statement = (
             select(CheatsheetModel)
             .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)
@@ -64,7 +65,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         model = result.unique().scalar_one_or_none()
 
         if not model:
-            return None
+            raise CheatsheetNotFoundError
 
         return self._to_entity(model)
 

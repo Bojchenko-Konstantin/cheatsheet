@@ -16,6 +16,6 @@ class Cheatsheet:
     created_at: datetime
     updated_at: datetime
     is_public: bool
-    tags: set[Tag]
+    tags: list[Tag]
     count_like: int
     count_view: int
