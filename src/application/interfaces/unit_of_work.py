@@ -6,6 +6,11 @@ from src.application.interfaces import ICheatsheetRepo
 
 
 class IUnitOfWork(ABC):
+    """
+    Abstract class for atomicity, consistency and data integrity
+    during operations with data.
+    """
+
     cheatsheet_repo: ICheatsheetRepo
 
     async def __aenter__(self) -> Self:
@@ -17,6 +22,10 @@ class IUnitOfWork(ABC):
         exc_value: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        """
+        The commit and rollback are made automatically on exit from context manager
+        for simplicity sake. Also it is possible only due to low system load.
+        """
         if exc_type is None:
             await self._commit()
         else:
