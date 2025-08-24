@@ -45,7 +45,7 @@ class CheatsheetRead(Schema):
     created_at: datetime
     updated_at: datetime
     is_public: StrictBool
-    tags: set[TagRead]
+    tags: list[TagRead]
     count_like: PositiveInt
     count_view: PositiveInt
 
