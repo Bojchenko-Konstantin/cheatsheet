@@ -25,13 +25,13 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
             created_at=model.created_at,
             updated_at=model.updated_at,
             is_public=model.is_public,
-            tags=[
+            tags=set(
                 Tag(
                     tag_id=tag_association.tag.tag_id,
                     tag_name=tag_association.tag.tag_name,
                 )
                 for tag_association in model.tags_association
-            ],
+            ),
             count_like=model.stats.count_like,
             count_view=model.stats.count_view,
         )
