@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi_users import schemas
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 type PositiveInt = Annotated[int, Field(ge=0)]
 type PositiveListInt = list[PositiveInt]
@@ -48,6 +48,11 @@ class CheatsheetRead(Schema):
     tags: list[TagRead]
     count_like: PositiveInt
     count_view: PositiveInt
+
+    @model_validator(mode="after")
+    def sort_tags(self) -> Self:
+        self.tags.sort(key=lambda x: x.tag_id)
+        return self
 
 
 class CheatsheetCreate(CheatsheetBase):
