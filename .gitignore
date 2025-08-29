@@ -8,6 +8,8 @@ wheels/
 *.egg-info
 .env
 .env.dev
+.env.test
+.env.prod
 
 # Virtual environments
 .venv

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from pydantic import BaseModel, PostgresDsn
@@ -28,12 +29,11 @@ class LoggingConfig(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(f"{BASE_DIR}/.env.template", f"{BASE_DIR}/.env"),
+        env_file=(f"{BASE_DIR}/.env.{os.getenv('ENV_FILE')}"),
         case_sensitive=False,
         env_nested_delimiter="__",
-        env_prefix="APP_CONFIG__",
     )
-    db: DatabaseConfig
+    database: DatabaseConfig
     logging: LoggingConfig
 
 
