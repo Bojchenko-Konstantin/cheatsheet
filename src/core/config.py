@@ -5,6 +5,7 @@ from pydantic import BaseModel, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_FILE = os.getenv("ENV_FILE")
 
 
 class DatabaseConfig(BaseModel):
@@ -29,7 +30,7 @@ class LoggingConfig(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(f"{BASE_DIR}/.env.{os.getenv('ENV_FILE')}"),
+        env_file=(f"{BASE_DIR}/{ENV_FILE}"),
         case_sensitive=False,
         env_nested_delimiter="__",
     )

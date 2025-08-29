@@ -1,11 +1,13 @@
-ENV_FILE ?= dev
+ENV ?= dev
+
+ENV_PATH = .env.$(ENV)
 
 # Run the server, default mode - dev,
-# to change it you have to include ENV_FILE variable.
-# Example: make runserver ENV_FILE="prod".
+# to change it you have to add ENV variable.
+# Example: make runserver ENV=dev
 runserver:
-	ENV_FILE=$(ENV_FILE) uvicorn src.main:app --reload
+	ENV_FILE=$(ENV_PATH) uvicorn src.main:app --reload
 
 # Run tests.
 tests:
-	ENV_FILE="test" pytest
+	ENV_FILE=.env.test pytest
