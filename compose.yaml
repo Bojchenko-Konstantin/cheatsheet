@@ -1,0 +1,23 @@
+services:
+  postgres-test:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DATABASE__DB_NAME:?error}
+      POSTGRES_PASSWORD: ${DATABASE__DB_PASSWORD:?error}
+      POSTGRES_USER: ${DATABASE__DB_USER:?error}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+    profiles: [test]
+  migrations:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    env_file: .env.test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    profiles: [test]
