@@ -29,7 +29,7 @@ class DatabaseConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    log_level: str
+    log_level: str = "ERROR"
 
 
 class Settings(BaseSettings):
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
         env_nested_delimiter="__",
     )
     database: DatabaseConfig
-    logging: LoggingConfig
+    logging: LoggingConfig = LoggingConfig()
 
 
 settings = Settings()  # type: ignore
