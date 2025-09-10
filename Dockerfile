@@ -6,8 +6,8 @@ COPY pyproject.toml .
 
 RUN uv sync
 
-COPY src/ src/
-COPY alembic/ alembic/
+COPY src src/
+COPY alembic alembic/
 COPY alembic.ini .
 
 CMD ["uv", "run", "alembic", "upgrade", "head"]
