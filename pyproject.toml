@@ -1,8 +1,8 @@
 [project]
 name = "cheatsheet"
 authors = [
-  {name = "Denis Matsuga", email = "HitokiriDeepWeb@yandex.ru"},
-  {name = "Konstantin Bojchenko", email = "Bojchenko_k@mail.ru"},
+    {name = "Denis Matsuga", email = "HitokiriDeepWeb@yandex.ru"},
+    {name = "Konstantin Bojchenko", email = "Bojchenko_k@mail.ru"},
 ]
 version = "0.1.0"
 description = """
@@ -35,6 +35,9 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ". src"
+markers = [
+    "integration: integration tests"
+]
 
 [tool.ruff.lint]
 select = [
