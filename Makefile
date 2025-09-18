@@ -8,6 +8,14 @@ ENV_PATH = .env.$(ENV)
 runserver:
 	ENV_FILE=$(ENV_PATH) uvicorn src.main:app --reload
 
-# Run tests.
-tests:
+# Run all tests.
+run_tests:
 	ENV_FILE=.env.test pytest
+
+# Run unit tests.
+run_unit_tests:
+	ENV_FILE=.env.test pytest -m "not integration"
+
+# Run integration tests.
+run_integration_tests:
+	ENV_FILE=.env.test pytest -m "integration"

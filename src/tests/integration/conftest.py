@@ -20,6 +20,8 @@ def run_db_container() -> None:
         "test",
         "--env-file",
         env_file,
+        "-f",
+        "compose.test.yaml",
         "up",
         "-d",
         "--build",
@@ -134,7 +136,15 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
 
 def _run_compose_down() -> None:
     env_file = os.getenv("ENV_FILE", ".env.test")
-    command = ["docker", "compose", "--env-file", env_file, "down"]
+    command = [
+        "docker",
+        "compose",
+        "--env-file",
+        env_file,
+        "-f",
+        "compose.test.yaml",
+        "down",
+    ]
     subprocess.run(
         command,
         capture_output=True,

@@ -2,7 +2,7 @@ services:
   postgres-test:
     image: postgres:17
     ports:
-      - "5468:5432"
+      - "${DATABASE__DB_PORT}:5432"
     environment:
       POSTGRES_DB: ${DATABASE__DB_NAME:?error}
       POSTGRES_PASSWORD: ${DATABASE__DB_PASSWORD:?error}
