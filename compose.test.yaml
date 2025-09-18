@@ -17,8 +17,20 @@ services:
 
   migrations:
     build:
-      dockerfile: Dockerfile
-      context: .
+      dockerfile_inline: |
+        FROM ghcr.io/astral-sh/uv:python3.13-alpine
+
+        WORKDIR /app
+
+        COPY pyproject.toml .
+
+        RUN uv sync
+
+        COPY src src/
+        COPY alembic alembic/
+        COPY alembic.ini .
+
+        CMD ["uv", "run", "alembic", "upgrade", "head"]
     environment:
       DATABASE__DB_NAME: ${DATABASE__DB_NAME:?error}
       DATABASE__DB_PASSWORD: ${DATABASE__DB_PASSWORD:?error}
