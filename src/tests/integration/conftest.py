@@ -1,5 +1,7 @@
 import os
 import subprocess
+import time
+from collections.abc import Iterator
 from datetime import datetime
 
 import pytest
@@ -11,13 +13,18 @@ from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 
 
 @pytest.fixture(scope="session", autouse=True)
-def run_db_container() -> None:
+def manage_db_container() -> Iterator[None]:
+    _run_db_container()
+    time.sleep(5)
+    yield
+    _down_db_container()
+
+
+def _run_db_container() -> None:
     env_file = os.getenv("ENV_FILE", ".env.test")
     command = [
         "docker",
         "compose",
-        "--profile",
-        "test",
         "--env-file",
         env_file,
         "-f",
@@ -34,11 +41,29 @@ def run_db_container() -> None:
     )
 
 
+def _down_db_container() -> None:
+    env_file = os.getenv("ENV_FILE", ".env.test")
+    command = [
+        "docker",
+        "compose",
+        "--env-file",
+        env_file,
+        "-f",
+        "compose.test.yaml",
+        "down",
+    ]
+    subprocess.run(
+        command,
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+
 @pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet(run_db_container):
+async def populate_db_for_single_cheatsheet():
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_id = await _populate_cheatsheet(session, quantity=2)
-    print(cheatsheet_id)
     await _populate_md_tag(session, quantity=10)
     await _populate_cheatsheet_stats(session, quantity=2)
     await _populate_cheatsheet_to_tag(session, quantity=3)
@@ -47,7 +72,6 @@ async def populate_db_for_single_cheatsheet(run_db_container):
     yield cheatsheet_id, tags
 
     await _truncate_all_tables(session)
-    _run_compose_down()
 
 
 async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> int:
@@ -132,22 +156,3 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
     )
     await session.execute(query)
     await session.commit()
-
-
-def _run_compose_down() -> None:
-    env_file = os.getenv("ENV_FILE", ".env.test")
-    command = [
-        "docker",
-        "compose",
-        "--env-file",
-        env_file,
-        "-f",
-        "compose.test.yaml",
-        "down",
-    ]
-    subprocess.run(
-        command,
-        capture_output=True,
-        check=True,
-        text=True,
-    )
