@@ -13,7 +13,6 @@ services:
       retries: 5
       timeout: 5s
       start_period: 10s
-    profiles: [test]
 
   migrations:
     build:
@@ -40,4 +39,3 @@ services:
     depends_on:
       postgres-test:
         condition: service_healthy
-    profiles: [test]
