@@ -18,4 +18,5 @@ run_unit_tests:
 
 # Run integration tests.
 run_integration_tests:
-	ENV_FILE=.env.test pytest -m "integration"
+	docker compose --env-file .env.test -f compose.test.yaml up && \
+	docker compose --env-file .env.test -f compose.test.yaml down

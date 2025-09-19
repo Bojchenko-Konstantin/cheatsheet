@@ -1,63 +1,10 @@
-import os
-import subprocess
-import time
-from collections.abc import Iterator
 from datetime import datetime
 
-import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
-
-
-@pytest.fixture(scope="session", autouse=True)
-def manage_db_container() -> Iterator[None]:
-    _run_db_container()
-    time.sleep(5)
-    yield
-    _down_db_container()
-
-
-def _run_db_container() -> None:
-    env_file = os.getenv("ENV_FILE", ".env.test")
-    command = [
-        "docker",
-        "compose",
-        "--env-file",
-        env_file,
-        "-f",
-        "compose.test.yaml",
-        "up",
-        "-d",
-        "--build",
-    ]
-    subprocess.run(
-        command,
-        capture_output=True,
-        check=True,
-        text=True,
-    )
-
-
-def _down_db_container() -> None:
-    env_file = os.getenv("ENV_FILE", ".env.test")
-    command = [
-        "docker",
-        "compose",
-        "--env-file",
-        env_file,
-        "-f",
-        "compose.test.yaml",
-        "down",
-    ]
-    subprocess.run(
-        command,
-        capture_output=True,
-        check=True,
-        text=True,
-    )
 
 
 @pytest_asyncio.fixture()

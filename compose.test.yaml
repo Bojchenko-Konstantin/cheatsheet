@@ -1,3 +1,11 @@
+x-env: &env
+  environment:
+    DATABASE__DB_NAME: ${DATABASE__DB_NAME:?error}
+    DATABASE__DB_PASSWORD: ${DATABASE__DB_PASSWORD:?error}
+    DATABASE__DB_USER: ${DATABASE__DB_USER:?error}
+    DATABASE__DB_HOST: postgres-test
+    DATABASE__DB_PORT: 5432
+
 services:
   postgres-test:
     image: postgres:17
@@ -16,26 +24,20 @@ services:
 
   migrations:
     build:
-      dockerfile_inline: |
-        FROM ghcr.io/astral-sh/uv:python3.13-alpine
-
-        WORKDIR /app
-
-        COPY pyproject.toml .
-
-        RUN uv sync
-
-        COPY src src/
-        COPY alembic alembic/
-        COPY alembic.ini .
-
-        CMD ["uv", "run", "alembic", "upgrade", "head"]
-    environment:
-      DATABASE__DB_NAME: ${DATABASE__DB_NAME:?error}
-      DATABASE__DB_PASSWORD: ${DATABASE__DB_PASSWORD:?error}
-      DATABASE__DB_USER: ${DATABASE__DB_USER:?error}
-      DATABASE__DB_HOST: postgres-test
-      DATABASE__DB_PORT: 5432
+      dockerfile: tests.Dockerfile
+      context: .
+      target: migrations
+    <<: *env
     depends_on:
       postgres-test:
         condition: service_healthy
+
+  tests:
+    build:
+      dockerfile: tests.Dockerfile
+      context: .
+      target: tests
+    <<: *env
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
