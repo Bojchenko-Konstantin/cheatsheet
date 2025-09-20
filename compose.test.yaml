@@ -8,7 +8,7 @@ x-env: &env
 
 services:
   postgres-test:
-    image: postgres:17
+    image: postgres:17-alpine
     ports:
       - "${DATABASE__DB_PORT}:5432"
     environment:
