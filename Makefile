@@ -18,5 +18,5 @@ run_unit_tests:
 
 # Run integration tests.
 run_integration_tests:
-	docker compose --env-file .env.test -f compose.test.yaml up && \
+	docker compose --env-file .env.test -f compose.test.yaml up --exit-code-from tests && \
 	docker compose --env-file .env.test -f compose.test.yaml down
