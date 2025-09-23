@@ -1,10 +1,129 @@
+import contextlib
+import time
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
+import docker
+import pytest
 import pytest_asyncio
+from docker import errors
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.config import settings
 from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+
+
+class HealthcheckStatus(str, Enum):
+    STARTING = "starting"
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
+
+
+class UnhealthyContainerException(Exception):
+    pass
+
+
+ENV_VARIABLES: dict[str, Any] = {
+    "dbname": settings.database.db_name,
+    "username": settings.database.db_user,
+    "port": settings.database.db_port,
+    "password": settings.database.db_password,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class DatabaseConfig:
+    host: str
+    port: int
+    dbname: str
+    user: str
+    password: str
+
+
+DATABASE_ENV = DatabaseConfig(
+    host="localhost",
+    port=settings.database.db_port,
+    dbname=settings.database.db_name,
+    user=settings.database.db_user,
+    password=settings.database.db_password,
+)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_containers(request):
+    client = docker.from_env()
+
+    with contextlib.suppress(errors.APIError):
+        client.networks.create(name="test", driver="bridge")
+
+    postgres_test = client.containers.run(
+        image="postgres:17-alpine",
+        environment={
+            "POSTGRES_DB": DATABASE_ENV.dbname,
+            "POSTGRES_PASSWORD": DATABASE_ENV.password,
+            "POSTGRES_USER": DATABASE_ENV.user,
+        },
+        healthcheck={
+            "test": [
+                "CMD-SHELL",
+                f"pg_isready -U {DATABASE_ENV.user} -d {DATABASE_ENV.dbname}",
+            ],
+            "interval": 5 * 10**9,
+            "retries": 5,
+            "timeout": 5 * 10**9,
+            "start_period": 10**10,
+        },
+        network="test",
+        hostname="postgres-host",
+        name="postgres-test",
+        ports={"5432/tcp": DATABASE_ENV.port},
+        detach=True,
+    )
+
+    postgres_test.reload()
+
+    while (
+        status := postgres_test.attrs["State"]["Health"]["Status"]
+    ) != HealthcheckStatus.HEALTHY:
+        if status == HealthcheckStatus.UNHEALTHY:
+            raise UnhealthyContainerException("Container healthcheck failed")
+        postgres_test.reload()
+        time.sleep(1)
+
+    try:
+        migrations_image = client.images.get("migrations:latest")
+    except errors.ImageNotFound:
+        migrations_image, _ = client.images.build(
+            path=".",
+            dockerfile="tests.Dockerfile",
+            tag="migrations:latest",
+            forcerm=True,
+            nocache=True,
+        )
+    migrations = client.containers.run(
+        image=migrations_image,
+        environment={
+            "DATABASE__DB_NAME": DATABASE_ENV.dbname,
+            "DATABASE__DB_PASSWORD": DATABASE_ENV.password,
+            "DATABASE__DB_USER": DATABASE_ENV.user,
+            "DATABASE__DB_HOST": "postgres-host",
+            "DATABASE__DB_PORT": "5432",
+        },
+        network="test",
+        detach=True,
+        remove=True,
+        auto_remove=True,
+    )
+    migrations.wait()
+
+    def remove_containers():
+        postgres_test.stop()
+        postgres_test.remove()
+
+    request.addfinalizer(remove_containers)
 
 
 @pytest_asyncio.fixture()
