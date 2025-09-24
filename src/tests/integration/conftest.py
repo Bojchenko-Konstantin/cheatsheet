@@ -3,17 +3,19 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 import docker
 import pytest
 import pytest_asyncio
-from docker import errors
+from docker import DockerClient
+from docker.errors import APIError, ImageNotFound
+from docker.models.containers import Container
+from docker.models.images import Image
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 
 class HealthcheckStatus(str, Enum):
@@ -26,14 +28,6 @@ class UnhealthyContainerException(Exception):
     pass
 
 
-ENV_VARIABLES: dict[str, Any] = {
-    "dbname": settings.database.db_name,
-    "username": settings.database.db_user,
-    "port": settings.database.db_port,
-    "password": settings.database.db_password,
-}
-
-
 @dataclass(frozen=True, slots=True)
 class DatabaseConfig:
     host: str
@@ -41,25 +35,55 @@ class DatabaseConfig:
     dbname: str
     user: str
     password: str
+    internal_container_port: str
+    internal_container_host: str
 
 
 DATABASE_ENV = DatabaseConfig(
-    host="localhost",
+    host=settings.database.db_host,
     port=settings.database.db_port,
     dbname=settings.database.db_name,
     user=settings.database.db_user,
     password=settings.database.db_password,
+    internal_container_port="5432",
+    internal_container_host="postgres-host",
 )
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_containers(request):
-    client = docker.from_env()
+def test_environment_lifecycle(request):
+    client = _create_docker_client()
 
-    with contextlib.suppress(errors.APIError):
-        client.networks.create(name="test", driver="bridge")
+    _create_docker_network(client)
 
-    postgres_test = client.containers.run(
+    postgres_container = _setup_postgres_container(client)
+
+    _wait_for_container_healthcheck(postgres_container)
+
+    migration_image = _build_migrations_image(client)
+
+    _run_database_migrations(client, migration_image)
+
+    def remove_container():
+        postgres_container.stop()
+        postgres_container.remove()
+
+    request.addfinalizer(remove_container)
+
+
+def _create_docker_client() -> DockerClient:
+    return docker.from_env()
+
+
+def _create_docker_network(client: DockerClient) -> None:
+    with contextlib.suppress(APIError):
+        client.networks.create(
+            name="cheatsheet_test", driver="bridge", check_duplicate=True
+        )
+
+
+def _setup_postgres_container(client: DockerClient) -> Container:
+    container = client.containers.run(
         image="postgres:17-alpine",
         environment={
             "POSTGRES_DB": DATABASE_ENV.dbname,
@@ -76,26 +100,30 @@ def setup_containers(request):
             "timeout": 5 * 10**9,
             "start_period": 10**10,
         },
-        network="test",
-        hostname="postgres-host",
-        name="postgres-test",
-        ports={"5432/tcp": DATABASE_ENV.port},
+        network="cheatsheet_test",
+        hostname=DATABASE_ENV.internal_container_host,
+        ports={f"{DATABASE_ENV.internal_container_port}/tcp": DATABASE_ENV.port},
         detach=True,
     )
+    return container
 
-    postgres_test.reload()
 
+def _wait_for_container_healthcheck(container: Container) -> None:
+    container.reload()
     while (
-        status := postgres_test.attrs["State"]["Health"]["Status"]
+        status := container.attrs["State"]["Health"]["Status"]
     ) != HealthcheckStatus.HEALTHY:
         if status == HealthcheckStatus.UNHEALTHY:
             raise UnhealthyContainerException("Container healthcheck failed")
-        postgres_test.reload()
+        container.reload()
         time.sleep(1)
 
+
+def _build_migrations_image(client: DockerClient) -> Image:
     try:
         migrations_image = client.images.get("migrations:latest")
-    except errors.ImageNotFound:
+        return migrations_image
+    except ImageNotFound:
         migrations_image, _ = client.images.build(
             path=".",
             dockerfile="tests.Dockerfile",
@@ -103,36 +131,36 @@ def setup_containers(request):
             forcerm=True,
             nocache=True,
         )
-    migrations = client.containers.run(
+        return migrations_image
+
+
+def _run_database_migrations(client: DockerClient, migrations_image: Image) -> None:
+    migrations_container = client.containers.run(
         image=migrations_image,
         environment={
             "DATABASE__DB_NAME": DATABASE_ENV.dbname,
             "DATABASE__DB_PASSWORD": DATABASE_ENV.password,
             "DATABASE__DB_USER": DATABASE_ENV.user,
-            "DATABASE__DB_HOST": "postgres-host",
-            "DATABASE__DB_PORT": "5432",
+            "DATABASE__DB_HOST": DATABASE_ENV.internal_container_host,
+            "DATABASE__DB_PORT": DATABASE_ENV.internal_container_port,
         },
-        network="test",
+        network="cheatsheet_test",
         detach=True,
         remove=True,
         auto_remove=True,
     )
-    migrations.wait()
-
-    def remove_containers():
-        postgres_test.stop()
-        postgres_test.remove()
-
-    request.addfinalizer(remove_containers)
+    migrations_container.wait()
 
 
 @pytest_asyncio.fixture()
 async def populate_db_for_single_cheatsheet():
     session = DEFAULT_SESSION_FACTORY()
-    cheatsheet_id = await _populate_cheatsheet(session, quantity=2)
-    await _populate_md_tag(session, quantity=10)
-    await _populate_cheatsheet_stats(session, quantity=2)
-    await _populate_cheatsheet_to_tag(session, quantity=3)
+    cheatsheet_quantity = 2
+    tag_quantity = 3
+    cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
+    await _populate_md_tag(session, quantity=tag_quantity)
+    await _populate_cheatsheet_stats(session, quantity=cheatsheet_quantity)
+    await _populate_cheatsheet_to_tag(session)
     tags = await _get_required_tags(session, cheatsheet_id)
 
     yield cheatsheet_id, tags
@@ -181,17 +209,15 @@ async def _populate_cheatsheet_stats(session: AsyncSession, quantity: int):
     await session.commit()
 
 
-async def _populate_cheatsheet_to_tag(session: AsyncSession, quantity: int):
+async def _populate_cheatsheet_to_tag(session: AsyncSession):
     query = text(
         """INSERT INTO cheatsheet_to_tag(cheatsheet_id, tag_id) (
             SELECT cheatsheet_id, tag_id
             FROM cheatsheet
             CROSS JOIN md_tag
-            ORDER BY tag_id
-            LIMIT :limit)"""
+            ORDER BY tag_id)"""
     )
-    data = [{"limit": quantity}]
-    await session.execute(query, data)
+    await session.execute(query)
     await session.commit()
 
 
