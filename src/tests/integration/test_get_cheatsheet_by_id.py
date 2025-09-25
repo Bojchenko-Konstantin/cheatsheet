@@ -2,13 +2,14 @@ from datetime import datetime
 
 import pytest
 
+from src.application.exceptions import CheatsheetNotFoundError
 from src.application.use_cases import CheatsheetUseCase
 from src.domain.entities import Cheatsheet, Tag
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
 @pytest.mark.integration
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
     unit_of_work = SQLAlchemyUnitOfWork()
     cheatsheet_id, raw_tags = populate_db_for_single_cheatsheet
@@ -29,3 +30,14 @@ async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
     cheatsheet = await sut.get_by_id(cheatsheet_id)
 
     assert cheatsheet == expected_result
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_get_non_existent_cheathsheet_by_id_raises_error():
+    unit_of_work = SQLAlchemyUnitOfWork()
+    sut = CheatsheetUseCase(unit_of_work)
+    non_existent_cheatsheet_id = 1
+
+    with pytest.raises(CheatsheetNotFoundError):
+        await sut.get_by_id(non_existent_cheatsheet_id)
