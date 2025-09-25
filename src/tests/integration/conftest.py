@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from hashlib import md5
 
 import docker
 import pytest
@@ -15,7 +16,7 @@ from docker.models.images import Image
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import settings
+from src.core.config import BASE_DIR, settings
 from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
@@ -122,18 +123,26 @@ def _wait_for_container_healthcheck(container: Container) -> None:
 
 
 def _build_migrations_image(client: DockerClient) -> Image:
+    tag = _get_image_tag()
+
     try:
-        migrations_image = client.images.get("migrations:latest")
+        migrations_image = client.images.get(f"migrations:{tag}")
         return migrations_image
     except ImageNotFound:
         migrations_image, _ = client.images.build(
             path=".",
             dockerfile="tests.Dockerfile",
-            tag="migrations:latest",
+            tag=f"migrations:{tag}",
             forcerm=True,
             nocache=True,
         )
         return migrations_image
+
+
+def _get_image_tag() -> str:
+    data = (BASE_DIR / "tests.Dockerfile").open("rb").read()
+    tag = md5(data, usedforsecurity=False).hexdigest()
+    return tag
 
 
 def _run_database_migrations(client: DockerClient, migrations_image: Image) -> None:
