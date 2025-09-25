@@ -1,5 +1,6 @@
 import contextlib
 import time
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -15,6 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
+from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 
@@ -24,7 +26,7 @@ class HealthcheckStatus(str, Enum):
     UNHEALTHY = "unhealthy"
 
 
-class UnhealthyContainerException(Exception):
+class UnhealthyContainerError(Exception):
     pass
 
 
@@ -51,7 +53,7 @@ DATABASE_ENV = DatabaseConfig(
 
 
 @pytest.fixture(scope="session", autouse=True)
-def test_environment_lifecycle(request):
+def test_environment_lifecycle(request) -> None:
     client = _create_docker_client()
 
     _create_docker_network(client)
@@ -114,7 +116,7 @@ def _wait_for_container_healthcheck(container: Container) -> None:
         status := container.attrs["State"]["Health"]["Status"]
     ) != HealthcheckStatus.HEALTHY:
         if status == HealthcheckStatus.UNHEALTHY:
-            raise UnhealthyContainerException("Container healthcheck failed")
+            raise UnhealthyContainerError("Container healthcheck failed")
         container.reload()
         time.sleep(1)
 
@@ -152,11 +154,15 @@ def _run_database_migrations(client: DockerClient, migrations_image: Image) -> N
     migrations_container.wait()
 
 
+START_INDEX = 1
+
+
 @pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet():
+async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[int, set[Tag]]]:
     session = DEFAULT_SESSION_FACTORY()
-    cheatsheet_quantity = 2
+    cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3
+
     cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
     await _populate_md_tag(session, quantity=tag_quantity)
     await _populate_cheatsheet_stats(session, quantity=cheatsheet_quantity)
@@ -174,42 +180,54 @@ async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> int:
            VALUES (:title, :content, :is_public, :created_at, :updated_at)
            RETURNING cheatsheet_id"""
     )
+
+    test_date = datetime(2025, 1, 1)
     data = [
         {
             "title": f"title_{value}",
             "content": f"content_{value}",
-            "is_public": value % 2 == 0,
-            "created_at": datetime(2025, 1, 1),
-            "updated_at": datetime(2025, 1, 1),
+            "is_public": _is_even(value),
+            "created_at": test_date,
+            "updated_at": test_date,
         }
-        for value in range(1, quantity)
+        for value in range(START_INDEX, quantity)
     ]
+
     result = await session.execute(query, data)
     [cheatsheet_id] = result.first()  # type: ignore
+
     return cheatsheet_id
 
 
-async def _populate_md_tag(session: AsyncSession, quantity: int):
+def _is_even(value: int) -> bool:
+    return value % 2 == 0
+
+
+async def _populate_md_tag(session: AsyncSession, quantity: int) -> None:
     query = text("""INSERT INTO md_tag(tag_name) VALUES (:tag_name)""")
-    data = [{"tag_name": f"tag_name_{value}"} for value in range(1, quantity)]
+
+    data = [{"tag_name": f"tag_name_{value}"} for value in range(START_INDEX, quantity)]
+
     await session.execute(query, data)
     await session.commit()
 
 
-async def _populate_cheatsheet_stats(session: AsyncSession, quantity: int):
+async def _populate_cheatsheet_stats(session: AsyncSession, quantity: int) -> None:
     query = text(
         """INSERT INTO cheatsheet_stats(cheatsheet_id, count_like, count_view)
         VALUES (:cheatsheet_id, :count_like, :count_view)"""
     )
+
     data = [
         {"cheatsheet_id": value, "count_like": value, "count_view": value}
-        for value in range(1, quantity)
+        for value in range(START_INDEX, quantity)
     ]
+
     await session.execute(query, data)
     await session.commit()
 
 
-async def _populate_cheatsheet_to_tag(session: AsyncSession):
+async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     query = text(
         """INSERT INTO cheatsheet_to_tag(cheatsheet_id, tag_id) (
             SELECT cheatsheet_id, tag_id
@@ -217,11 +235,12 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession):
             CROSS JOIN md_tag
             ORDER BY tag_id)"""
     )
+
     await session.execute(query)
     await session.commit()
 
 
-async def _get_required_tags(session: AsyncSession, cheatsheet_id: int):
+async def _get_required_tags(session: AsyncSession, cheatsheet_id: int) -> set[Tag]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag
@@ -229,10 +248,14 @@ async def _get_required_tags(session: AsyncSession, cheatsheet_id: int):
            JOIN cheatsheet USING(cheatsheet_id)
            WHERE cheatsheet_id = :cheatsheet_id"""
     )
+
     data = {"cheatsheet_id": cheatsheet_id}
+
     result = await session.execute(query, data)
     await session.commit()
-    tags = result.all()
+    raw_tags = result.all()
+    tags = {Tag(tag_id, tag_name) for tag_id, tag_name in raw_tags}
+
     return tags
 
 
@@ -246,5 +269,6 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
            CASCADE
             """
     )
+
     await session.execute(query)
     await session.commit()

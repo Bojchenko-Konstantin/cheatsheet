@@ -4,7 +4,7 @@ import pytest
 
 from src.application.exceptions import CheatsheetNotFoundError
 from src.application.use_cases import CheatsheetUseCase
-from src.domain.entities import Cheatsheet, Tag
+from src.domain.entities import Cheatsheet
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
@@ -12,8 +12,7 @@ from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
     unit_of_work = SQLAlchemyUnitOfWork()
-    cheatsheet_id, raw_tags = populate_db_for_single_cheatsheet
-    tags = {Tag(tag_id, tag_name) for tag_id, tag_name in raw_tags}
+    cheatsheet_id, tags = populate_db_for_single_cheatsheet
     sut = CheatsheetUseCase(unit_of_work)
     expected_result = Cheatsheet(
         cheatsheet_id=cheatsheet_id,
