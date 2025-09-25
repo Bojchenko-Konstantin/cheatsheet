@@ -20,6 +20,9 @@ from src.core.config import BASE_DIR, settings
 from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
+START_INDEX: int = 1
+DOCKERFILE: str = "tests.Dockerfile"
+
 
 class HealthcheckStatus(str, Enum):
     STARTING = "starting"
@@ -118,8 +121,8 @@ def _wait_for_container_healthcheck(container: Container) -> None:
     ) != HealthcheckStatus.HEALTHY:
         if status == HealthcheckStatus.UNHEALTHY:
             raise UnhealthyContainerError("Container healthcheck failed")
-        container.reload()
         time.sleep(1)
+        container.reload()
 
 
 def _build_migrations_image(client: DockerClient) -> Image:
@@ -131,7 +134,7 @@ def _build_migrations_image(client: DockerClient) -> Image:
     except ImageNotFound:
         migrations_image, _ = client.images.build(
             path=".",
-            dockerfile="tests.Dockerfile",
+            dockerfile=DOCKERFILE,
             tag=f"migrations:{tag}",
             forcerm=True,
             nocache=True,
@@ -140,7 +143,7 @@ def _build_migrations_image(client: DockerClient) -> Image:
 
 
 def _get_image_tag() -> str:
-    data = (BASE_DIR / "tests.Dockerfile").open("rb").read()
+    data = (BASE_DIR / DOCKERFILE).open("rb").read()
     tag = md5(data, usedforsecurity=False).hexdigest()
     return tag
 
@@ -163,14 +166,11 @@ def _run_database_migrations(client: DockerClient, migrations_image: Image) -> N
     migrations_container.wait()
 
 
-START_INDEX = 1
-
-
 @pytest_asyncio.fixture()
 async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[int, set[Tag]]]:
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
-    tag_quantity = 3
+    tag_quantity = 3 + START_INDEX
 
     cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
     await _populate_md_tag(session, quantity=tag_quantity)
