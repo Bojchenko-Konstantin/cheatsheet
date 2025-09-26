@@ -1,7 +1,14 @@
 [project]
 name = "cheatsheet"
+authors = [
+    {name = "Denis Matsuga", email = "HitokiriDeepWeb@yandex.ru"},
+    {name = "Konstantin Bojchenko", email = "Bojchenko_k@mail.ru"},
+]
 version = "0.1.0"
-description = "Add your description here"
+description = """
+              Web app for development learning.
+              Create, share, store, manage and subscribe to your favourite authors.
+              """
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -20,8 +27,19 @@ dependencies = [
 dev = [
     "alembic>=1.16.1",
     "black>=25.1.0",
+    "docker>=7.1.0",
     "pre-commit>=4.2.0",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
     "ruff>=0.11.11",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ". src"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode = "auto"
+markers = [
+    "integration: integration tests"
 ]
 
 [tool.ruff.lint]

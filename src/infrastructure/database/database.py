@@ -8,11 +8,17 @@ from sqlalchemy.ext.asyncio import (
 from src.core.config import settings
 
 ENGINE: AsyncEngine = create_async_engine(
-    url=str(settings.db.url),
-    echo=settings.db.echo,
-    echo_pool=settings.db.echo_pool,
-    pool_size=settings.db.pool_size,
-    max_overflow=settings.db.max_overflow,
+    url=(
+        f"postgresql+asyncpg://{settings.database.db_user}:"
+        f"{settings.database.db_password}@"
+        f"{settings.database.db_host}:"
+        f"{settings.database.db_port}/"
+        f"{settings.database.db_name}"
+    ),
+    echo=settings.database.echo,
+    echo_pool=settings.database.echo_pool,
+    pool_size=settings.database.pool_size,
+    max_overflow=settings.database.max_overflow,
 )
 
 

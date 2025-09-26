@@ -1,13 +1,19 @@
+import os
 from pathlib import Path
 
-from pydantic import BaseModel, PostgresDsn
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_FILE = os.getenv("ENV_FILE")
 
 
 class DatabaseConfig(BaseModel):
-    url: PostgresDsn
+    db_name: str
+    db_user: str
+    db_host: str
+    db_port: int
+    db_password: str
     echo: bool = False
     echo_pool: bool = False
     pool_size: int = 50
@@ -23,18 +29,17 @@ class DatabaseConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
-    log_level: str
+    log_level: str = "ERROR"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(f"{BASE_DIR}/.env.template", f"{BASE_DIR}/.env"),
+        env_file=(f"{BASE_DIR}/{ENV_FILE}"),
         case_sensitive=False,
         env_nested_delimiter="__",
-        env_prefix="APP_CONFIG__",
     )
-    db: DatabaseConfig
-    logging: LoggingConfig
+    database: DatabaseConfig
+    logging: LoggingConfig = LoggingConfig()
 
 
 settings = Settings()  # type: ignore
