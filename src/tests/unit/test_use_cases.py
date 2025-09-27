@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Self
+from uuid import UUID
 
 import pytest
 
@@ -10,7 +11,7 @@ from domain.entities import Cheatsheet, Tag
 
 
 class FakeCheatsheetRepo(ICheatsheetRepo):
-    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet:
+    async def get_by_id(self, cheatsheet_id: UUID) -> Cheatsheet:
         return Cheatsheet(
             cheatsheet_id=cheatsheet_id,
             title="title",
