@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 import pytest
@@ -36,7 +37,7 @@ async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
 async def test_get_non_existent_cheathsheet_by_id_raises_error():
     unit_of_work = SQLAlchemyUnitOfWork()
     sut = CheatsheetUseCase(unit_of_work)
-    non_existent_cheatsheet_id = 1
+    non_existent_cheatsheet_id = uuid.UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
     with pytest.raises(CheatsheetNotFoundError):
         await sut.get_by_id(non_existent_cheatsheet_id)
