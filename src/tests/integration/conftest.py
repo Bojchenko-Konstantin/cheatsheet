@@ -1,11 +1,11 @@
 import contextlib
 import time
-import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
+from uuid import UUID
 
 import docker
 import pytest
@@ -168,9 +168,7 @@ def _run_database_migrations(client: DockerClient, migrations_image: Image) -> N
 
 
 @pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet() -> (
-    AsyncGenerator[tuple[uuid.UUID, set[Tag]]]
-):
+async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[UUID, set[Tag]]]:
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
@@ -188,7 +186,7 @@ async def populate_db_for_single_cheatsheet() -> (
     await _truncate_all_tables(session)
 
 
-async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> uuid.UUID:
+async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> UUID:
     query = text(
         """INSERT INTO cheatsheet(title, content, is_public, created_at, updated_at)
            VALUES (:title, :content, :is_public, :created_at, :updated_at)
@@ -227,7 +225,7 @@ async def _populate_md_tag(session: AsyncSession, quantity: int) -> None:
 
 
 async def _populate_cheatsheet_stats(
-    session: AsyncSession, quantity: int, cheatsheet_id: uuid.UUID
+    session: AsyncSession, quantity: int, cheatsheet_id: UUID
 ) -> None:
     query = text(
         """INSERT INTO cheatsheet_stats(cheatsheet_id, count_like, count_view)
@@ -256,9 +254,7 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def _get_required_tags(
-    session: AsyncSession, cheatsheet_id: uuid.UUID
-) -> set[Tag]:
+async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[Tag]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag
