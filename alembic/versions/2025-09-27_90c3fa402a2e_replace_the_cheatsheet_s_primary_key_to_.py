@@ -12,7 +12,6 @@ import sqlalchemy as sa
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "90c3fa402a2e"
 down_revision: Union[str, None] = "77b6e2e41c37"
 branch_labels: Union[str, Sequence[str], None] = None
@@ -21,7 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # 1. Добавляем новую колонку UUID в основную таблицу
     op.add_column(
         "cheatsheet",
         sa.Column(
@@ -32,7 +30,6 @@ def upgrade() -> None:
         ),
     )
 
-    # 2. Добавляем временные колонки UUID во все таблицы с внешними ключами
     op.add_column(
         "cheatsheet_to_tag",
         sa.Column("cheatsheet_uuid_temp", sa.UUID(as_uuid=True), nullable=True),
@@ -42,7 +39,6 @@ def upgrade() -> None:
         sa.Column("cheatsheet_uuid_temp", sa.UUID(as_uuid=True), nullable=True),
     )
 
-    # 3. Заполняем новую колонку UUID значениями из основной таблицы
     update_cheatsheet_to_tag_query = """
         UPDATE cheatsheet_to_tag
         SET cheatsheet_uuid_temp = cheatsheet.new_uuid
@@ -59,7 +55,6 @@ def upgrade() -> None:
     """
     op.execute(update_cheatsheet_stats_query)
 
-    # 4. Удаляем старые внешние ключи
     op.drop_constraint(
         "fk_cheatsheet_to_tag_cheatsheet_id_cheatsheet",
         "cheatsheet_to_tag",
@@ -71,32 +66,25 @@ def upgrade() -> None:
         type_="foreignkey",
     )
 
-    # 5. Удаляем старые колонки и переименовываем временные во всех таблицах
-    # Для cheatsheet_to_tag
     op.drop_column("cheatsheet_to_tag", "cheatsheet_id")
     op.alter_column(
         "cheatsheet_to_tag", "cheatsheet_uuid_temp", new_column_name="cheatsheet_id"
     )
 
-    # Для cheatsheet_stats
     op.drop_column("cheatsheet_stats", "cheatsheet_id")
     op.alter_column(
         "cheatsheet_stats", "cheatsheet_uuid_temp", new_column_name="cheatsheet_id"
     )
 
-    # 6. Удаляем старый первичный ключ и уникальный индекс в основной таблице
     op.drop_constraint("pk_cheatsheet", "cheatsheet", type_="primary")
     op.drop_constraint("uq_cheatsheet_title", "cheatsheet", type_="unique")
 
-    # 7. Удаляем старую колонку и переименовываем новую в основной таблице
     op.drop_column("cheatsheet", "cheatsheet_id")
     op.alter_column("cheatsheet", "new_uuid", new_column_name="cheatsheet_id")
 
-    # 8. Восстанавливаем первичный ключ и уникальный индекс
     op.create_primary_key("pk_cheatsheet", "cheatsheet", ["cheatsheet_id"])
     op.create_unique_constraint("uq_cheatsheet_title", "cheatsheet", ["title"])
 
-    # 9. Восстанавливаем внешние ключи
     op.create_foreign_key(
         "fk_cheatsheet_to_tag_cheatsheet_id_cheatsheet",
         "cheatsheet_to_tag",
@@ -117,7 +105,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # 1. Добавляем временную BIGINT колонку в основную таблицу
     op.add_column(
         "cheatsheet",
         sa.Column(
@@ -125,7 +112,6 @@ def downgrade() -> None:
         ),
     )
 
-    # 2. Заполняем временную колонку последовательными значениями
     op.execute(
         """
         UPDATE cheatsheet
@@ -133,7 +119,6 @@ def downgrade() -> None:
     """
     )
 
-    # 3. Добавляем временные BIGINT колонки во все таблицы с внешними ключами
     op.add_column(
         "cheatsheet_to_tag", sa.Column("cheatsheet_id_temp", sa.BIGINT(), nullable=True)
     )
@@ -141,7 +126,6 @@ def downgrade() -> None:
         "cheatsheet_stats", sa.Column("cheatsheet_id_temp", sa.BIGINT(), nullable=True)
     )
 
-    # 4. Заполняем временные колонки значениями из основной таблицы
     update_cheatsheet_to_tag_query = """
         UPDATE cheatsheet_to_tag
         SET cheatsheet_id_temp = cheatsheet.old_id_temp
@@ -158,7 +142,6 @@ def downgrade() -> None:
     """
     op.execute(update_cheatsheet_stats_query)
 
-    # 5. Удаляем внешние ключи
     op.drop_constraint(
         "fk_cheatsheet_to_tag_cheatsheet_id_cheatsheet",
         "cheatsheet_to_tag",
@@ -170,32 +153,25 @@ def downgrade() -> None:
         type_="foreignkey",
     )
 
-    # 6. Удаляем UUID колонки и переименовываем временные BIGINT
-    # Для cheatsheet_to_tag
     op.drop_column("cheatsheet_to_tag", "cheatsheet_id")
     op.alter_column(
         "cheatsheet_to_tag", "cheatsheet_id_temp", new_column_name="cheatsheet_id"
     )
 
-    # Для cheatsheet_stats
     op.drop_column("cheatsheet_stats", "cheatsheet_id")
     op.alter_column(
         "cheatsheet_stats", "cheatsheet_id_temp", new_column_name="cheatsheet_id"
     )
 
-    # 7. Удаляем первичный ключ и уникальный индекс
     op.drop_constraint("pk_cheatsheet", "cheatsheet", type_="primary")
     op.drop_constraint("uq_cheatsheet_title", "cheatsheet", type_="unique")
 
-    # 8. Удаляем UUID колонку и переименовываем временную BIGINT
     op.drop_column("cheatsheet", "cheatsheet_id")
     op.alter_column("cheatsheet", "old_id_temp", new_column_name="cheatsheet_id")
 
-    # 9. Восстанавливаем первичный ключ и уникальный индекс
     op.create_primary_key("pk_cheatsheet", "cheatsheet", ["cheatsheet_id"])
     op.create_unique_constraint("uq_cheatsheet_title", "cheatsheet", ["title"])
 
-    # 10. Восстанавливаем внешние ключи
     op.create_foreign_key(
         "fk_cheatsheet_to_tag_cheatsheet_id_cheatsheet",
         "cheatsheet_to_tag",
@@ -213,7 +189,6 @@ def downgrade() -> None:
         ondelete="CASCADE",
     )
 
-    # 11. Восстанавливаем identity sequence
     op.execute(
         """
         SELECT setval(pg_get_serial_sequence('cheatsheet', 'cheatsheet_id'),
