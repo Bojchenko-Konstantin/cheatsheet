@@ -1,10 +1,11 @@
 import contextlib
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
+from pathlib import Path
 from uuid import UUID
 
 import docker
@@ -127,7 +128,12 @@ def _wait_for_container_healthcheck(container: Container) -> None:
 
 
 def _build_migrations_image(client: DockerClient) -> Image:
-    tag = _get_image_tag()
+    migration_folder = BASE_DIR / "alembic/versions"
+    migration_files_mask = "*.py"
+    migration_files = migration_folder.glob(migration_files_mask)
+    files: list[Path] = [*migration_files, BASE_DIR / DOCKERFILE]
+
+    tag = _get_image_tag(files)
 
     try:
         migrations_image = client.images.get(f"migrations:{tag}")
@@ -143,9 +149,14 @@ def _build_migrations_image(client: DockerClient) -> Image:
         return migrations_image
 
 
-def _get_image_tag() -> str:
-    data = (BASE_DIR / DOCKERFILE).open("rb").read()
-    tag = md5(data, usedforsecurity=False).hexdigest()
+def _get_image_tag(files: Iterable[Path]) -> str:
+    """Create tag by hashing data from provided files."""
+    result = b""
+
+    for file in files:
+        result += file.open("rb").read()
+
+    tag = md5(result, usedforsecurity=False).hexdigest()
     return tag
 
 
