@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    BigInteger,
+    UUID,
     Boolean,
     DateTime,
-    Identity,
     String,
     Text,
 )
@@ -22,10 +22,10 @@ if TYPE_CHECKING:
 
 
 class CheatsheetModel(Base):
-    cheatsheet_id: Mapped[int] = mapped_column(
-        BigInteger,
+    cheatsheet_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        server_default=func.uuid_generate_v7(),
         primary_key=True,
-        server_default=Identity(always=True),
     )
     title: Mapped[str] = mapped_column(
         String(50),

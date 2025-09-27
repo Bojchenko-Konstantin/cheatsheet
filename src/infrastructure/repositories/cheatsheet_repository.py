@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import asdict
 
 from sqlalchemy import select
@@ -54,7 +55,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         ]
         return model
 
-    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet:
+    async def get_by_id(self, cheatsheet_id: uuid.UUID) -> Cheatsheet:
         statement = (
             select(CheatsheetModel)
             .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)

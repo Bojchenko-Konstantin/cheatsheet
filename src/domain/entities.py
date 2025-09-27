@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -10,7 +11,7 @@ class Tag:
 
 @dataclass(slots=True)
 class Cheatsheet:
-    cheatsheet_id: int
+    cheatsheet_id: uuid.UUID
     title: str
     content: str
     created_at: datetime
