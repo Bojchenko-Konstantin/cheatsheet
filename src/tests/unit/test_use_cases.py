@@ -45,7 +45,7 @@ class TestCheatsheetUseCase:
     async def test_get_cheatsheet_when_id_exist(self):
         unit_of_work = FakeUnitOfWork()
         sut = CheatsheetUseCase(unit_of_work)
-        existing_id = 1
+        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
         expected_result = Cheatsheet(
             cheatsheet_id=existing_id,
             title="title",
@@ -58,6 +58,6 @@ class TestCheatsheetUseCase:
             count_view=10,
         )
 
-        cheatsheet = await sut.get_by_id(1)
+        cheatsheet = await sut.get_by_id(existing_id)
 
         assert cheatsheet == expected_result
