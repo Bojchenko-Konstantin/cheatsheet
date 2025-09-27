@@ -31,6 +31,7 @@ dev = [
     "pre-commit>=4.2.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
+    "pytest-watcher>=0.4.3",
     "ruff>=0.11.11",
 ]
 
@@ -41,6 +42,10 @@ asyncio_mode = "auto"
 markers = [
     "integration: integration tests"
 ]
+
+[tool.pytest-watcher]
+clear = true
+now = true
 
 [tool.ruff.lint]
 select = [
