@@ -1,6 +1,6 @@
-import uuid
 from datetime import datetime
 from typing import Annotated, Self
+from uuid import UUID
 
 from fastapi_users import schemas
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
@@ -39,7 +39,7 @@ class CheatsheetBase(Schema):
 
 
 class CheatsheetRead(Schema):
-    cheatsheet_id: uuid.UUID
+    cheatsheet_id: UUID
     title: Title
     content: str
     created_at: datetime
@@ -70,8 +70,8 @@ class CheatsheetUpdatePartial(Schema):
     content: str | None = None
 
 
-class UserRead(schemas.BaseUser[uuid.UUID]):
-    user_id: uuid.UUID
+class UserRead(schemas.BaseUser[UUID]):
+    user_id: UUID
     first_name: str
     last_name: str
     login: str
