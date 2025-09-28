@@ -1,5 +1,6 @@
 import logging
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/{cheatsheet_id}", response_model=CheatsheetRead)
 async def get_cheatsheet_by_id(
-    cheatsheet_id: int,
+    cheatsheet_id: UUID,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     try:

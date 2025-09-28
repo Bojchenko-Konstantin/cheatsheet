@@ -39,7 +39,7 @@ class CheatsheetBase(Schema):
 
 
 class CheatsheetRead(Schema):
-    cheatsheet_id: PositiveInt
+    cheatsheet_id: UUID
     title: Title
     content: str
     created_at: datetime

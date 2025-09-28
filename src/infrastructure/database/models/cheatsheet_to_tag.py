@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class CheatsheetToTagModel(Base):
-    cheatsheet_id: Mapped[int] = mapped_column(
+    cheatsheet_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("cheatsheet.cheatsheet_id"),
         primary_key=True,
     )

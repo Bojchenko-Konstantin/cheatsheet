@@ -1,10 +1,12 @@
 import contextlib
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from hashlib import md5
+from pathlib import Path
+from uuid import UUID
 
 import docker
 import pytest
@@ -126,7 +128,12 @@ def _wait_for_container_healthcheck(container: Container) -> None:
 
 
 def _build_migrations_image(client: DockerClient) -> Image:
-    tag = _get_image_tag()
+    migration_folder = BASE_DIR / "alembic/versions"
+    migration_files_mask = "*.py"
+    migration_files = migration_folder.glob(migration_files_mask)
+    files: list[Path] = [*migration_files, BASE_DIR / DOCKERFILE]
+
+    tag = _get_image_tag(files)
 
     try:
         migrations_image = client.images.get(f"migrations:{tag}")
@@ -142,9 +149,14 @@ def _build_migrations_image(client: DockerClient) -> Image:
         return migrations_image
 
 
-def _get_image_tag() -> str:
-    data = (BASE_DIR / DOCKERFILE).open("rb").read()
-    tag = md5(data, usedforsecurity=False).hexdigest()
+def _get_image_tag(files: Iterable[Path]) -> str:
+    """Create tag by hashing data from provided files."""
+    result = b""
+
+    for file in files:
+        result += file.open("rb").read()
+
+    tag = md5(result, usedforsecurity=False).hexdigest()
     return tag
 
 
@@ -167,14 +179,16 @@ def _run_database_migrations(client: DockerClient, migrations_image: Image) -> N
 
 
 @pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[int, set[Tag]]]:
+async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[UUID, set[Tag]]]:
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
 
     cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
     await _populate_md_tag(session, quantity=tag_quantity)
-    await _populate_cheatsheet_stats(session, quantity=cheatsheet_quantity)
+    await _populate_cheatsheet_stats(
+        session, quantity=cheatsheet_quantity, cheatsheet_id=cheatsheet_id
+    )
     await _populate_cheatsheet_to_tag(session)
     tags = await _get_required_tags(session, cheatsheet_id)
 
@@ -183,7 +197,7 @@ async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[int, set[T
     await _truncate_all_tables(session)
 
 
-async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> int:
+async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> UUID:
     query = text(
         """INSERT INTO cheatsheet(title, content, is_public, created_at, updated_at)
            VALUES (:title, :content, :is_public, :created_at, :updated_at)
@@ -221,14 +235,16 @@ async def _populate_md_tag(session: AsyncSession, quantity: int) -> None:
     await session.commit()
 
 
-async def _populate_cheatsheet_stats(session: AsyncSession, quantity: int) -> None:
+async def _populate_cheatsheet_stats(
+    session: AsyncSession, quantity: int, cheatsheet_id: UUID
+) -> None:
     query = text(
         """INSERT INTO cheatsheet_stats(cheatsheet_id, count_like, count_view)
         VALUES (:cheatsheet_id, :count_like, :count_view)"""
     )
 
     data = [
-        {"cheatsheet_id": value, "count_like": value, "count_view": value}
+        {"cheatsheet_id": cheatsheet_id, "count_like": value, "count_view": value}
         for value in range(START_INDEX, quantity)
     ]
 
@@ -249,7 +265,7 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def _get_required_tags(session: AsyncSession, cheatsheet_id: int) -> set[Tag]:
+async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[Tag]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag

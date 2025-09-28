@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, CheckConstraint, ForeignKey
+from sqlalchemy import UUID, BigInteger, CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -12,8 +13,8 @@ if TYPE_CHECKING:
 
 
 class CheatsheetStatsModel(Base):
-    cheatsheet_id: Mapped[int] = mapped_column(
-        BigInteger,
+    cheatsheet_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
         ForeignKey("cheatsheet.cheatsheet_id", ondelete="CASCADE"),
         primary_key=True,
     )

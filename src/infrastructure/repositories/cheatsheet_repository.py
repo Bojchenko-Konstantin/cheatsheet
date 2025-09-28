@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,7 +55,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         ]
         return model
 
-    async def get_by_id(self, cheatsheet_id: int) -> Cheatsheet:
+    async def get_by_id(self, cheatsheet_id: UUID) -> Cheatsheet:
         statement = (
             select(CheatsheetModel)
             .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)

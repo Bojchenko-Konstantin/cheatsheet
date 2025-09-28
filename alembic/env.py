@@ -1,5 +1,6 @@
 import asyncio
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -8,6 +9,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from src.core.config import settings
 from src.infrastructure.database.models import Base
+
+ALEMBIC_DIR = Path(__file__).resolve().parent
+FUNCTIONS_DIR = ALEMBIC_DIR / "functions"
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -35,6 +40,12 @@ config.set_main_option(
     f"{settings.database.db_host}:"
     f"{settings.database.db_port}/"
     f"{settings.database.db_name}",
+)
+
+config.set_section_option(
+    "extra",
+    "functions.dir",
+    str(FUNCTIONS_DIR),
 )
 
 
