@@ -1,29 +1,24 @@
-import contextlib
+import subprocess
 import time
-from collections.abc import AsyncGenerator, Iterable
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from hashlib import md5
-from pathlib import Path
 from uuid import UUID
 
 import docker
 import pytest
 import pytest_asyncio
 from docker import DockerClient
-from docker.errors import APIError, ImageNotFound
 from docker.models.containers import Container
-from docker.models.images import Image
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.config import BASE_DIR, settings
+from src.core.config import settings
 from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 START_INDEX: int = 1
-DOCKERFILE: str = "tests.Dockerfile"
 
 
 class HealthcheckStatus(str, Enum):
@@ -44,7 +39,6 @@ class DatabaseConfig:
     user: str
     password: str
     internal_container_port: str
-    internal_container_host: str
 
 
 DATABASE_ENV = DatabaseConfig(
@@ -54,7 +48,6 @@ DATABASE_ENV = DatabaseConfig(
     user=settings.database.db_user,
     password=settings.database.db_password,
     internal_container_port="5432",
-    internal_container_host="postgres-host",
 )
 
 
@@ -62,15 +55,11 @@ DATABASE_ENV = DatabaseConfig(
 def test_environment_lifecycle(request) -> None:
     client = _create_docker_client()
 
-    _create_docker_network(client)
-
     postgres_container = _setup_postgres_container(client)
 
     _wait_for_container_healthcheck(postgres_container)
 
-    migration_image = _build_migrations_image(client)
-
-    _run_database_migrations(client, migration_image)
+    _run_database_migrations()
 
     def remove_container():
         postgres_container.stop()
@@ -81,13 +70,6 @@ def test_environment_lifecycle(request) -> None:
 
 def _create_docker_client() -> DockerClient:
     return docker.from_env()
-
-
-def _create_docker_network(client: DockerClient) -> None:
-    with contextlib.suppress(APIError):
-        client.networks.create(
-            name="cheatsheet_test", driver="bridge", check_duplicate=True
-        )
 
 
 def _setup_postgres_container(client: DockerClient) -> Container:
@@ -108,8 +90,6 @@ def _setup_postgres_container(client: DockerClient) -> Container:
             "timeout": 5 * 10**9,
             "start_period": 10**10,
         },
-        network="cheatsheet_test",
-        hostname=DATABASE_ENV.internal_container_host,
         ports={f"{DATABASE_ENV.internal_container_port}/tcp": DATABASE_ENV.port},
         detach=True,
     )
@@ -127,55 +107,8 @@ def _wait_for_container_healthcheck(container: Container) -> None:
         container.reload()
 
 
-def _build_migrations_image(client: DockerClient) -> Image:
-    migration_folder = BASE_DIR / "alembic/versions"
-    migration_files_mask = "*.py"
-    migration_files = migration_folder.glob(migration_files_mask)
-    files: list[Path] = [*migration_files, BASE_DIR / DOCKERFILE]
-
-    tag = _get_image_tag(files)
-
-    try:
-        migrations_image = client.images.get(f"migrations:{tag}")
-        return migrations_image
-    except ImageNotFound:
-        migrations_image, _ = client.images.build(
-            path=".",
-            dockerfile=DOCKERFILE,
-            tag=f"migrations:{tag}",
-            forcerm=True,
-            nocache=True,
-        )
-        return migrations_image
-
-
-def _get_image_tag(files: Iterable[Path]) -> str:
-    """Create tag by hashing data from provided files."""
-    result = b""
-
-    for file in files:
-        result += file.open("rb").read()
-
-    tag = md5(result, usedforsecurity=False).hexdigest()
-    return tag
-
-
-def _run_database_migrations(client: DockerClient, migrations_image: Image) -> None:
-    migrations_container = client.containers.run(
-        image=migrations_image,
-        environment={
-            "DATABASE__DB_NAME": DATABASE_ENV.dbname,
-            "DATABASE__DB_PASSWORD": DATABASE_ENV.password,
-            "DATABASE__DB_USER": DATABASE_ENV.user,
-            "DATABASE__DB_HOST": DATABASE_ENV.internal_container_host,
-            "DATABASE__DB_PORT": DATABASE_ENV.internal_container_port,
-        },
-        network="cheatsheet_test",
-        detach=True,
-        remove=True,
-        auto_remove=True,
-    )
-    migrations_container.wait()
+def _run_database_migrations() -> None:
+    subprocess.run(["uv", "run", "alembic", "upgrade", "head"], check=True)
 
 
 @pytest_asyncio.fixture()
