@@ -1,3 +1,4 @@
+import logging
 from logging.config import dictConfig
 
 from src.core.config import settings
@@ -47,3 +48,4 @@ LOGGING = {
 
 def setup_logging():
     dictConfig(LOGGING)
+    logging.captureWarnings(True)
