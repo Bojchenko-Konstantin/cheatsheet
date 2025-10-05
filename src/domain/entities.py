@@ -15,12 +15,12 @@ class Cheatsheet:
     cheatsheet_id: UUID
     title: str
     content: str
-    created_at: datetime
-    updated_at: datetime
     is_public: bool
     tags: set[Tag]
-    count_like: int
-    count_view: int
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    count_like: int = 0
+    count_view: int = 0
 
     @classmethod
     def from_dict(cls, kwargs) -> Self:
