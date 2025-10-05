@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
 
@@ -20,6 +21,15 @@ class Cheatsheet:
     tags: set[Tag]
     count_like: int
     count_view: int
+
+    @classmethod
+    def from_dict(cls, kwargs) -> Self:
+        if not isinstance(kwargs["tags"], set):
+            kwargs["tags"] = {Tag(**tag) for tag in kwargs["tags"]}
+        return cls(**kwargs)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
 
     def add_tag(self, new_tag: Tag) -> None:
         self.tags.add(new_tag)

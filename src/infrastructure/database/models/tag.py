@@ -13,9 +13,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from .base import Base
+from .cheatsheet_to_tag import cheatsheet_to_tag_association
 
 if TYPE_CHECKING:
-    from .cheatsheet_to_tag import CheatsheetToTagModel
+    from .cheatsheet import CheatsheetModel
 
 
 class TagModel(Base):
@@ -31,9 +32,9 @@ class TagModel(Base):
         nullable=False,
         unique=True,
     )
-
-    cheatsheets_association: Mapped[list[CheatsheetToTagModel]] = relationship(
-        back_populates="tag"
+    cheatsheets: Mapped[list["CheatsheetModel"]] = relationship(
+        secondary=cheatsheet_to_tag_association,
+        back_populates="tags",
     )
 
     __table_args__ = (

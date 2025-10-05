@@ -1,29 +1,20 @@
 from __future__ import annotations
 
-import uuid
-from typing import TYPE_CHECKING
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Column, ForeignKey, Table
 
 from .base import Base
 
-if TYPE_CHECKING:
-    from .cheatsheet import CheatsheetModel
-    from .tag import TagModel
-
-
-class CheatsheetToTagModel(Base):
-    cheatsheet_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("cheatsheet.cheatsheet_id"),
+cheatsheet_to_tag_association = Table(
+    "cheatsheet_to_tag",
+    Base.metadata,
+    Column(
+        "cheatsheet_id",
+        ForeignKey("cheatsheet.cheatsheet_id", ondelete="CASCADE"),
         primary_key=True,
-    )
-    tag_id: Mapped[int] = mapped_column(
-        ForeignKey("md_tag.tag_id"),
+    ),
+    Column(
+        "tag_id",
+        ForeignKey("md_tag.tag_id", ondelete="CASCADE"),
         primary_key=True,
-    )
-
-    cheatsheet: Mapped[CheatsheetModel] = relationship(
-        back_populates="tags_association"
-    )
-    tag: Mapped[TagModel] = relationship(back_populates="cheatsheets_association")
+    ),
+)
