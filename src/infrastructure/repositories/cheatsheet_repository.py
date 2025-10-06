@@ -4,14 +4,15 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Bundle
 
-from src.application.exceptions import CheatsheetNotFoundError
+from src.application.exceptions import CheatsheetCreationError, CheatsheetNotFoundError
 from src.application.interfaces import ICheatsheetRepo
 from src.domain.entities import Cheatsheet
 from src.infrastructure.database.models import (
     CheatsheetModel,
+    CheatsheetStatsModel,
+    CheatsheetToTagModel,
     TagModel,
 )
-from src.infrastructure.database.models.cheatsheet_stats import CheatsheetStatsModel
 
 
 class DictBundle(Bundle):
@@ -35,11 +36,17 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     def _to_model(self, entity: Cheatsheet) -> CheatsheetModel:
         kwargs = entity.to_dict()
         tags = kwargs.pop("tags")
+        cheatsheet_id = kwargs["cheatsheet_id"]
         count_like = kwargs.pop("count_like")
         count_view = kwargs.pop("count_view")
 
         model = CheatsheetModel(**kwargs)
-        [model.tags.append(TagModel(tag_id=tag.tag_id)) for tag in tags]
+
+        for tag in tags:
+            model.tag_associations.append(
+                CheatsheetToTagModel(cheatsheet_id=cheatsheet_id, tag_id=tag.tag_id)
+            )
+
         model.stats = CheatsheetStatsModel(count_like=count_like, count_view=count_view)
 
         return model
@@ -79,4 +86,20 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         return cheatsheet
 
     async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
-        pass
+        model = self._to_model(cheatsheet)
+
+        try:
+            self._session.add(model)
+            await self._session.flush()
+        except Exception as e:
+            raise CheatsheetCreationError from e
+
+        updated_model = await self._session.get(CheatsheetModel, model.cheatsheet_id)
+        updated_data = dict(
+            cheatsheet_id=updated_model.cheatsheet_id,
+            created_at=updated_model.created_at,
+            updated_at=updated_model.updated_at,
+        )
+
+        updated_cheatsheet = cheatsheet.update(updated_data)
+        return updated_cheatsheet
