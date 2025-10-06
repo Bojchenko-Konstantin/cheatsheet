@@ -94,11 +94,10 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         except Exception as e:
             raise CheatsheetCreationError from e
 
-        updated_model = await self._session.get(CheatsheetModel, model.cheatsheet_id)
         updated_data = dict(
-            cheatsheet_id=updated_model.cheatsheet_id,
-            created_at=updated_model.created_at,
-            updated_at=updated_model.updated_at,
+            cheatsheet_id=model.cheatsheet_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
 
         updated_cheatsheet = cheatsheet.update(updated_data)
