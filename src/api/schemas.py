@@ -20,19 +20,15 @@ class Schema(BaseModel):
 
 
 class TagBase(Schema):
-    tag_name: Annotated[str, Field(max_length=35)]
-
-
-class TagCreate(TagBase):
-    pass
-
-
-class TagRead(TagBase):
     tag_id: PositiveInt
 
 
+class Tag(TagBase):
+    tag_name: Annotated[str, Field(max_length=35)]
+
+
 class CheatsheetBase(Schema):
-    tags: list[TagRead]
+    tags: list[TagBase]
     title: Title
     is_public: StrictBool
     content: str
@@ -45,7 +41,7 @@ class CheatsheetRead(Schema):
     created_at: datetime
     updated_at: datetime
     is_public: StrictBool
-    tags: list[TagRead]
+    tags: list[Tag]
     count_like: PositiveInt
     count_view: PositiveInt
 
