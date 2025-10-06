@@ -12,3 +12,8 @@ class CheatsheetUseCase:
         async with self._unit_of_work as uow:
             cheatsheet = await uow.cheatsheet_repo.get_by_id(cheatsheet_id)
             return cheatsheet
+
+    async def create(self, cheatsheet_to_create: Cheatsheet) -> Cheatsheet:
+        async with self._unit_of_work as uow:
+            cheatsheet = await uow.cheatsheet_repo.create(cheatsheet_to_create)
+            return cheatsheet
