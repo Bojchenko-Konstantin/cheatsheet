@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import Self
 from uuid import UUID
@@ -30,6 +30,9 @@ class Cheatsheet:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+    def update(self, kwargs) -> Self:
+        return replace(self, **kwargs)
 
     def add_tag(self, new_tag: Tag) -> None:
         self.tags.add(new_tag)
