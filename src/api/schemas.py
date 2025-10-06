@@ -28,7 +28,7 @@ class Tag(TagBase):
 
 
 class CheatsheetBase(Schema):
-    tags: list[TagBase]
+    tags: list[Tag]
     title: Title
     is_public: StrictBool
     content: str
