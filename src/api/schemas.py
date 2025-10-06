@@ -32,7 +32,7 @@ class TagRead(TagBase):
 
 
 class CheatsheetBase(Schema):
-    tag_ids: TagList
+    tags: list[TagRead]
     title: Title
     is_public: StrictBool
     content: str
