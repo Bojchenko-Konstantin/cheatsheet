@@ -7,16 +7,16 @@ from uuid import UUID
 @dataclass(slots=True, frozen=True)
 class Tag:
     tag_id: int
-    tag_name: str
+    tag_name: str | None = None
 
 
 @dataclass(slots=True)
 class Cheatsheet:
-    cheatsheet_id: UUID
     title: str
     content: str
     is_public: bool
     tags: set[Tag]
+    cheatsheet_id: UUID | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     count_like: int = 0

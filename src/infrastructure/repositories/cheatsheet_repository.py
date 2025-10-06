@@ -39,11 +39,9 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         count_view = kwargs.pop("count_view")
 
         model = CheatsheetModel(**kwargs)
-        [
-            model.tags.append(TagModel(tag_id=tag.tag_id, tag_name=tag.tag_name))
-            for tag in tags
-        ]
+        [model.tags.append(TagModel(tag_id=tag.tag_id)) for tag in tags]
         model.stats = CheatsheetStatsModel(count_like=count_like, count_view=count_view)
+
         return model
 
     async def get_by_id(self, cheatsheet_id: UUID) -> Cheatsheet:
@@ -73,6 +71,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         )
         result = await self._session.execute(statement)
         model = result.one_or_none()
+
         if not model:
             raise CheatsheetNotFoundError
 
