@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -782,7 +782,7 @@ wheels = [
 [[package]]
 name = "pytest-watcher"
 version = "0.4.3"
-source = { git = "https://github.com/HitokiriDeepWeb/pytest-watcher.git#5c236cb9ba7e527e919ce5f6fa65daaa6a86a140" }
+source = { git = "https://github.com/HitokiriDeepWeb/pytest-watcher.git#1f2529b4e0198ec26d28f317188a6135a0a3fa4e" }
 dependencies = [
     { name = "watchdog" },
 ]
