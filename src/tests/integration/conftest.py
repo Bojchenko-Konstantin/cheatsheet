@@ -3,7 +3,7 @@ import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from uuid import UUID
 
 import docker
@@ -21,7 +21,7 @@ from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 START_INDEX: int = 1
 
 
-class HealthcheckStatus(str, Enum):
+class HealthcheckStatus(StrEnum):
     STARTING = "starting"
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
