@@ -2,8 +2,8 @@ __all__ = (
     "Base",
     "CheatsheetModel",
     "TagModel",
-    "CheatsheetToTagModel",
     "CheatsheetStatsModel",
+    "CheatsheetToTagModel",
 )
 
 from .base import Base

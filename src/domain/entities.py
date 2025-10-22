@@ -1,25 +1,38 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
 
 @dataclass(slots=True, frozen=True)
 class Tag:
     tag_id: int
-    tag_name: str
+    tag_name: str | None = None
 
 
 @dataclass(slots=True)
 class Cheatsheet:
-    cheatsheet_id: UUID
     title: str
     content: str
-    created_at: datetime
-    updated_at: datetime
     is_public: bool
     tags: set[Tag]
-    count_like: int
-    count_view: int
+    cheatsheet_id: UUID | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    count_like: int = 0
+    count_view: int = 0
+
+    @classmethod
+    def from_dict(cls, kwargs) -> Self:
+        if not isinstance(kwargs["tags"], set):
+            kwargs["tags"] = {Tag(**tag) for tag in kwargs["tags"]}
+        return cls(**kwargs)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def update(self, kwargs) -> Self:
+        return replace(self, **kwargs)
 
     def add_tag(self, new_tag: Tag) -> None:
         self.tags.add(new_tag)

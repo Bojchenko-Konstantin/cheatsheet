@@ -15,15 +15,14 @@ if TYPE_CHECKING:
 
 class CheatsheetToTagModel(Base):
     cheatsheet_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("cheatsheet.cheatsheet_id"),
+        ForeignKey("cheatsheet.cheatsheet_id", ondelete="CASCADE"),
         primary_key=True,
     )
     tag_id: Mapped[int] = mapped_column(
-        ForeignKey("md_tag.tag_id"),
+        ForeignKey("md_tag.tag_id", ondelete="CASCADE"),
         primary_key=True,
     )
-
     cheatsheet: Mapped[CheatsheetModel] = relationship(
-        back_populates="tags_association"
+        back_populates="tag_associations"
     )
-    tag: Mapped[TagModel] = relationship(back_populates="cheatsheets_association")
+    tag: Mapped[TagModel] = relationship(back_populates="cheatsheet_associations")

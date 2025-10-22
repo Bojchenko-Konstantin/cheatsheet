@@ -19,6 +19,7 @@ from .base import Base
 if TYPE_CHECKING:
     from .cheatsheet_stats import CheatsheetStatsModel
     from .cheatsheet_to_tag import CheatsheetToTagModel
+    from .tag import TagModel
 
 
 class CheatsheetModel(Base):
@@ -50,14 +51,17 @@ class CheatsheetModel(Base):
         nullable=False,
         server_default="true",
     )
-
     stats: Mapped[CheatsheetStatsModel] = relationship(
         back_populates="cheatsheet",
         cascade="all, delete-orphan",
         single_parent=True,
         uselist=False,
     )
-
-    tags_association: Mapped[list[CheatsheetToTagModel]] = relationship(
-        back_populates="cheatsheet", cascade="all, delete-orphan"
+    tags: Mapped[list["TagModel"]] = relationship(
+        secondary="cheatsheet_to_tag",
+        back_populates="cheatsheets",
+        viewonly=True,
+    )
+    tag_associations: Mapped[list["CheatsheetToTagModel"]] = relationship(
+        back_populates="cheatsheet"
     )
