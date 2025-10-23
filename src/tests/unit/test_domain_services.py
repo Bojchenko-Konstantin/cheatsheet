@@ -23,15 +23,16 @@ class TestCheatsheetDomainServices:
                 "title": "Updated Title",
                 "content": "Updated Content",
                 "is_public": False,
+                "tags": {Tag(3, "Algorithms")},
             }
         )
 
         expected_result = Cheatsheet(
             cheatsheet_id=original_cheatsheet.cheatsheet_id,
-            title="Updated Title",
-            content="Updated Content",
-            is_public=False,
-            tags=original_cheatsheet.tags,
+            title=updated_cheatsheet.title,
+            content=updated_cheatsheet.content,
+            is_public=updated_cheatsheet.is_public,
+            tags=updated_cheatsheet.tags,
             created_at=original_cheatsheet.created_at,
             updated_at=original_cheatsheet.updated_at,
             count_like=original_cheatsheet.count_like,
