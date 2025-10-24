@@ -36,3 +36,30 @@ def test_update_partial_fields():
     updated_cheatsheet = original_cheatsheet.update(update_fields)
 
     assert updated_cheatsheet == expected_result
+
+
+def test_from_dict():
+    raw_tags_data = [
+        {"tag_id": 1, "tag_name": "Python"},
+        {"tag_id": 2, "tag_name": "Testing"},
+    ]
+
+    test_data = {
+        "cheatsheet_id": UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
+        "title": "Test Cheatsheet",
+        "content": "Test content",
+        "is_public": True,
+        "tags": raw_tags_data,
+        "created_at": datetime.now(),
+        "updated_at": datetime.now(),
+        "count_like": 5,
+        "count_view": 10,
+    }
+
+    expected_result = Cheatsheet(
+        **{**test_data, "tags": {Tag(**tag) for tag in raw_tags_data}}
+    )
+
+    created_cheatsheet = Cheatsheet.from_dict(test_data)
+
+    assert created_cheatsheet == expected_result
