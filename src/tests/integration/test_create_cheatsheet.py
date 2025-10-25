@@ -54,7 +54,9 @@ def _create_cheatsheet_from_db_row(db_row: Row) -> Cheatsheet:
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_create_cheatsheet_success(populate_db_for_single_cheatsheet):
+async def test_created_cheatsheet_persists_to_database(
+    populate_db_for_single_cheatsheet,
+):
     _, tags = populate_db_for_single_cheatsheet
     sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
 
