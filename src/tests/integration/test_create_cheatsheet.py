@@ -1,7 +1,5 @@
-from typing import Any
-
 import pytest
-from sqlalchemy import text
+from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
 from infrastructure.database.database import DEFAULT_SESSION_FACTORY
@@ -38,7 +36,7 @@ def _build_cheatsheet_query() -> TextClause:
     )
 
 
-def _create_cheatsheet_from_db_row(db_row: Any) -> Cheatsheet:
+def _create_cheatsheet_from_db_row(db_row: Row) -> Cheatsheet:
     return Cheatsheet(
         cheatsheet_id=db_row.cheatsheet_id,
         title=db_row.title,
@@ -72,7 +70,7 @@ async def test_create_cheatsheet_success(populate_db_for_single_cheatsheet):
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_cheatsheet_query()
         result = await session.execute(query, {"title": "Test Cheatsheet"})
-        db_row = result.first()
+        db_row = result.one()
 
         expected_result = _create_cheatsheet_from_db_row(db_row)
 
