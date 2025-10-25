@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.sql.elements import TextClause
@@ -36,7 +38,7 @@ def _build_cheatsheet_query() -> TextClause:
     )
 
 
-def _create_cheatsheet_from_db_row(db_row) -> Cheatsheet:
+def _create_cheatsheet_from_db_row(db_row: Any) -> Cheatsheet:
     return Cheatsheet(
         cheatsheet_id=db_row.cheatsheet_id,
         title=db_row.title,
