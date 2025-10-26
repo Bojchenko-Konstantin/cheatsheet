@@ -2,9 +2,9 @@ import pytest
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
-from infrastructure.database.database import DEFAULT_SESSION_FACTORY
 from src.application.use_cases import CheatsheetUseCase
 from src.domain.entities import Cheatsheet, Tag
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
