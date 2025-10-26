@@ -12,11 +12,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from src.infrastructure.database.models import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet import CheatsheetModel
-    from .cheatsheet_to_tag import CheatsheetToTagModel
+    from src.infrastructure.database.models import CheatsheetModel, CheatsheetToTagModel
 
 
 class TagModel(Base):

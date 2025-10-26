@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import UUID, BigInteger, CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from src.infrastructure.database.models import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet import CheatsheetModel
+    from src.infrastructure.database.models import CheatsheetModel
 
 
 class CheatsheetStatsModel(Base):

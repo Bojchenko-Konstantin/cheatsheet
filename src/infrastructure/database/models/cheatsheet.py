@@ -14,12 +14,14 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from .base import Base
+from src.infrastructure.database.models import Base
 
 if TYPE_CHECKING:
-    from .cheatsheet_stats import CheatsheetStatsModel
-    from .cheatsheet_to_tag import CheatsheetToTagModel
-    from .tag import TagModel
+    from src.infrastructure.database.models import (
+        CheatsheetStatsModel,
+        CheatsheetToTagModel,
+        TagModel,
+    )
 
 
 class CheatsheetModel(Base):
