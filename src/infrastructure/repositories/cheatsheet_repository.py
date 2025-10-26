@@ -2,7 +2,6 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Bundle
 
 from src.application.exceptions import CheatsheetCreationError, CheatsheetNotFoundError
 from src.application.interfaces import ICheatsheetRepo
@@ -13,16 +12,7 @@ from src.infrastructure.database.models import (
     CheatsheetToTagModel,
     TagModel,
 )
-
-
-class DictBundle(Bundle):
-    def create_row_processor(self, query, procs, labels):
-        "Override create_row_processor to return values as dictionaries"
-
-        def proc(row):
-            return dict(zip(labels, (proc(row) for proc in procs), strict=True))
-
-        return proc
+from src.infrastructure.repositories.utils import DictBundle
 
 
 class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
@@ -82,7 +72,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         if not model:
             raise CheatsheetNotFoundError
 
-        cheatsheet = Cheatsheet.from_dict({**model.cheatsheet, "tags": model.tags})
+        cheatsheet = Cheatsheet.from_dict(dict(**model.cheatsheet, tags=model.tags))
         return cheatsheet
 
     async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
