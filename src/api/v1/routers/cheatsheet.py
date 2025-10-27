@@ -32,7 +32,7 @@ async def get_cheatsheet_by_id(
     return cheatsheet
 
 
-@router.post("/", response_model=CheatsheetRead)
+@router.post("/", response_model=CheatsheetRead, status_code=status.HTTP_201_CREATED)
 async def create_cheatsheet(
     cheatsheet_data: CheatsheetCreate,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
