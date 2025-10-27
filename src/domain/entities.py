@@ -1,4 +1,5 @@
-from dataclasses import asdict, dataclass, replace
+from collections.abc import Mapping, MutableMapping
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Self
 from uuid import UUID
@@ -23,7 +24,7 @@ class Cheatsheet:
     count_view: int = 0
 
     @classmethod
-    def from_dict(cls, kwargs) -> Self:
+    def from_dict(cls, kwargs: MutableMapping) -> Self:
         if not isinstance(kwargs["tags"], set):
             kwargs["tags"] = {Tag(**tag) for tag in kwargs["tags"]}
         return cls(**kwargs)
@@ -31,8 +32,10 @@ class Cheatsheet:
     def to_dict(self) -> dict:
         return asdict(self)
 
-    def update(self, kwargs) -> Self:
-        return replace(self, **kwargs)
+    def update(self, kwargs: Mapping) -> Self:
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        return self
 
     def add_tag(self, new_tag: Tag) -> None:
         self.tags.add(new_tag)
