@@ -5,8 +5,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.dependencies import get_cheatsheet_use_case
-from src.api.schemas import CheatsheetCreate, CheatsheetRead
-from src.application.exceptions import CheatsheetCreationError, CheatsheetNotFoundError
+from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
+from src.application.exceptions import (
+    CheatsheetCreationError,
+    CheatsheetNotFoundError,
+    CheatsheetUpdateError,
+)
 from src.application.use_cases import CheatsheetUseCase
 from src.domain.entities import Cheatsheet
 
@@ -45,6 +49,27 @@ async def create_cheatsheet(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Cheatsheet was not created",
+        ) from e
+    logger.debug("Cheatsheet with id %s: %s", cheatsheet.cheatsheet_id, cheatsheet)
+    return cheatsheet
+
+
+@router.put("/{cheatsheet_id}", response_model=CheatsheetRead)
+async def update_cheatsheet(
+    cheatsheet_id: UUID,
+    cheatsheet_data: CheatsheetUpdate,
+    cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
+):
+    cheatsheet_dict = cheatsheet_data.model_dump()
+    cheatsheet_dict["cheatsheet_id"] = cheatsheet_id
+    cheatsheet_to_update = Cheatsheet.from_dict(cheatsheet_dict)
+    try:
+        cheatsheet = await cheatsheet_use_case.update(cheatsheet_to_update)
+    except CheatsheetUpdateError as e:
+        logger.error("Cheatsheet with data %s failed to be updated", cheatsheet_data)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Cheatsheet was not updated",
         ) from e
     logger.debug("Cheatsheet with id %s: %s", cheatsheet.cheatsheet_id, cheatsheet)
     return cheatsheet

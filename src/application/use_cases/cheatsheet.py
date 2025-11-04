@@ -17,3 +17,8 @@ class CheatsheetUseCase:
         async with self._unit_of_work as uow:
             cheatsheet = await uow.cheatsheet_repo.create(cheatsheet_to_create)
             return cheatsheet
+
+    async def update(self, cheatsheet_to_update: Cheatsheet) -> Cheatsheet:
+        async with self._unit_of_work as uow:
+            cheatsheet = await uow.cheatsheet_repo.update(cheatsheet_to_update)
+            return cheatsheet

@@ -14,3 +14,7 @@ class ICheatsheetRepo(ABC):
     @abstractmethod
     async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
         pass
+
+    @abstractmethod
+    async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
+        pass
