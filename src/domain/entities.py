@@ -17,7 +17,7 @@ class Cheatsheet:
     content: str
     is_public: bool
     tags: set[Tag]
-    cheatsheet_id: UUID | None = None
+    cheatsheet_id: UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
     count_like: int = 0
