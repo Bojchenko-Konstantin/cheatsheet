@@ -33,6 +33,9 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
         created_cheatsheet = cheatsheet.update(updated_data)
         return created_cheatsheet
 
+    async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
+        pass
+
 
 class FakeUnitOfWork(IUnitOfWork):
     async def __aenter__(self) -> Self:
@@ -73,6 +76,7 @@ class TestCheatsheetUseCase:
         sut = CheatsheetUseCase(unit_of_work)
 
         creation_data = Cheatsheet(
+            cheatsheet_id=UUID("00000000-0000-0000-0000-000000000000"),
             title="title",
             content="content",
             is_public=True,
