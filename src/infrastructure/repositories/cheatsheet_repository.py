@@ -98,41 +98,40 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         return updated_cheatsheet
 
     async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
+        new_tag_ids = {tag.tag_id for tag in cheatsheet.tags}
+
+        update_statement = (
+            update(CheatsheetModel)
+            .where(
+                CheatsheetModel.cheatsheet_id == cheatsheet.cheatsheet_id,
+                select(func.count(TagModel.tag_id))
+                .where(TagModel.tag_id.in_(new_tag_ids))
+                .scalar_subquery()
+                == len(new_tag_ids),
+            )
+            .values(
+                title=cheatsheet.title,
+                content=cheatsheet.content,
+                is_public=cheatsheet.is_public,
+            )
+            .returning(CheatsheetModel.cheatsheet_id)
+        )
+
+        await self._session.execute(update_statement)
+
+        delete_statement = delete(CheatsheetToTagModel).where(
+            CheatsheetToTagModel.cheatsheet_id == cheatsheet.cheatsheet_id
+        )
+        await self._session.execute(delete_statement)
+
+        if new_tag_ids:
+            associations = [
+                {"cheatsheet_id": cheatsheet.cheatsheet_id, "tag_id": tag_id}
+                for tag_id in new_tag_ids
+            ]
+            insert_statement = insert(CheatsheetToTagModel).values(associations)
+            await self._session.execute(insert_statement)
         try:
-            new_tag_ids = {tag.tag_id for tag in cheatsheet.tags}
-
-            update_statement = (
-                update(CheatsheetModel)
-                .where(
-                    CheatsheetModel.cheatsheet_id == cheatsheet.cheatsheet_id,
-                    select(func.count(TagModel.tag_id))
-                    .where(TagModel.tag_id.in_(new_tag_ids))
-                    .scalar_subquery()
-                    == len(new_tag_ids),
-                )
-                .values(
-                    title=cheatsheet.title,
-                    content=cheatsheet.content,
-                    is_public=cheatsheet.is_public,
-                )
-                .returning(CheatsheetModel.cheatsheet_id)
-            )
-
-            await self._session.execute(update_statement)
-
-            delete_statement = delete(CheatsheetToTagModel).where(
-                CheatsheetToTagModel.cheatsheet_id == cheatsheet.cheatsheet_id
-            )
-            await self._session.execute(delete_statement)
-
-            if new_tag_ids:
-                associations = [
-                    {"cheatsheet_id": cheatsheet.cheatsheet_id, "tag_id": tag_id}
-                    for tag_id in new_tag_ids
-                ]
-                insert_statement = insert(CheatsheetToTagModel).values(associations)
-                await self._session.execute(insert_statement)
-
             await self._session.flush()
 
         except Exception as e:
