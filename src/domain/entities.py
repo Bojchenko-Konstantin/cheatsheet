@@ -34,10 +34,9 @@ class Cheatsheet:
 
     def update(self, kwargs: Mapping) -> Self:
         for key, value in kwargs.items():
-            if key == "tags" and not isinstance(kwargs[key], set):
-                setattr(self, key, {Tag(**tag) for tag in kwargs[key]})
-            else:
-                setattr(self, key, value)
+            if key == "tags" and not isinstance(value, set):
+                value = {Tag(**tag) for tag in value}
+            setattr(self, key, value)
         return self
 
     def add_tag(self, new_tag: Tag) -> None:
