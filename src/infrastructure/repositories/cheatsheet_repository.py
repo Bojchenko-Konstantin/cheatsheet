@@ -94,8 +94,8 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
             updated_at=model.updated_at,
         )
 
-        updated_cheatsheet = cheatsheet.update(updated_data)
-        return updated_cheatsheet
+        created_cheatsheet = cheatsheet.update(updated_data)
+        return created_cheatsheet
 
     async def update(self, cheatsheet_id: UUID, cheatsheet: Cheatsheet) -> Cheatsheet:
         update_statement = (
