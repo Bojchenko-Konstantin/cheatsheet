@@ -27,11 +27,12 @@ async def get_cheatsheet_by_id(
     try:
         cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
     except CheatsheetNotFoundError as e:
-        logger.debug("Cheatsheet with id %s was not found", cheatsheet_id)
+        logger.exception("Cheatsheet with id %s was not found", cheatsheet_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Cheatsheet with id {cheatsheet_id} was not found",
         ) from e
+
     logger.debug("Cheatsheet with id %s: %s", cheatsheet_id, cheatsheet)
     return cheatsheet
 
@@ -42,14 +43,18 @@ async def create_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     cheatsheet_to_create = Cheatsheet.from_dict(cheatsheet_data.model_dump())
+
     try:
         cheatsheet = await cheatsheet_use_case.create(cheatsheet_to_create)
     except CheatsheetCreationError as e:
-        logger.error("Cheatsheet with data %s failed to be created", cheatsheet_data)
+        logger.exception(
+            "Cheatsheet with data %s failed to be created", cheatsheet_data
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Cheatsheet was not created",
         ) from e
+
     logger.debug("Cheatsheet with id %s: %s", cheatsheet.cheatsheet_id, cheatsheet)
     return cheatsheet
 
@@ -60,16 +65,27 @@ async def update_cheatsheet(
     cheatsheet_data: CheatsheetUpdate,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
-    cheatsheet_dict = cheatsheet_data.model_dump()
-    cheatsheet_dict["cheatsheet_id"] = cheatsheet_id
-    cheatsheet_to_update = Cheatsheet.from_dict(cheatsheet_dict)
     try:
-        cheatsheet = await cheatsheet_use_case.update(cheatsheet_to_update)
+        current_cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
+
+        update_data = cheatsheet_data.model_dump(exclude_unset=True)
+        cheatsheet_to_update = current_cheatsheet.update(update_data)
+        updated_cheatsheet = await cheatsheet_use_case.update(
+            cheatsheet_id,
+            cheatsheet_to_update,
+        )
     except CheatsheetUpdateError as e:
-        logger.error("Cheatsheet with data %s failed to be updated", cheatsheet_data)
+        logger.exception(
+            "Cheatsheet with data %s failed to be updated", cheatsheet_data
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Cheatsheet was not updated",
         ) from e
-    logger.debug("Cheatsheet with id %s: %s", cheatsheet.cheatsheet_id, cheatsheet)
-    return cheatsheet
+
+    logger.debug(
+        "Cheatsheet with id %s: %s",
+        updated_cheatsheet.cheatsheet_id,
+        updated_cheatsheet,
+    )
+    return updated_cheatsheet

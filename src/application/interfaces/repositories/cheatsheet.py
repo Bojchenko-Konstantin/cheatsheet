@@ -16,5 +16,5 @@ class ICheatsheetRepo(ABC):
         pass
 
     @abstractmethod
-    async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
+    async def update(self, cheatsheet_id: UUID, cheatsheet: Cheatsheet) -> Cheatsheet:
         pass
