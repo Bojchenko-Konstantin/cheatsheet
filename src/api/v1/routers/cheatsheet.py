@@ -1,5 +1,5 @@
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -66,26 +66,25 @@ async def update_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     try:
-        current_cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
-
-        update_data = cheatsheet_data.model_dump(exclude_unset=True)
-        cheatsheet_to_update = current_cheatsheet.update(update_data)
-        updated_cheatsheet = await cheatsheet_use_case.update(
-            cheatsheet_id,
-            cheatsheet_to_update,
+        update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
+        cheatsheet_with_updated_data = Cheatsheet.from_dict(
+            dict(cheatsheet_id=cheatsheet_id, **update_data)
         )
+
+        updated_cheatsheet = await cheatsheet_use_case.update(
+            cheatsheet_with_updated_data=cheatsheet_with_updated_data,
+        )
+
     except CheatsheetUpdateError as e:
         logger.exception(
-            "Cheatsheet with data %s failed to be updated", cheatsheet_data
+            "Cheatsheet %s failed to be updated with data: %s",
+            cheatsheet_id,
+            cheatsheet_data,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Cheatsheet was not updated",
         ) from e
 
-    logger.debug(
-        "Cheatsheet with id %s: %s",
-        updated_cheatsheet.cheatsheet_id,
-        updated_cheatsheet,
-    )
+    logger.debug("Cheatsheet: %s", updated_cheatsheet)
     return updated_cheatsheet

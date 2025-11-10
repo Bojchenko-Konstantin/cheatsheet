@@ -97,10 +97,10 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         created_cheatsheet = cheatsheet.update(updated_data)
         return created_cheatsheet
 
-    async def update(self, cheatsheet_id: UUID, cheatsheet: Cheatsheet) -> Cheatsheet:
+    async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
         update_statement = (
             update(CheatsheetModel)
-            .where(CheatsheetModel.cheatsheet_id == cheatsheet_id)
+            .where(CheatsheetModel.cheatsheet_id == cheatsheet.cheatsheet_id)
             .values(
                 title=cheatsheet.title,
                 content=cheatsheet.content,
@@ -110,41 +110,46 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
 
         try:
             await self._session.execute(update_statement)
+
         except Exception as e:
             raise CheatsheetUpdateError(
-                f"Failed to update cheatsheet {cheatsheet_id}."
+                f"Failed to update cheatsheet {cheatsheet.cheatsheet_id}."
             ) from e
 
         delete_tags_statement = delete(CheatsheetToTagModel).where(
-            CheatsheetToTagModel.cheatsheet_id == cheatsheet_id
+            CheatsheetToTagModel.cheatsheet_id == cheatsheet.cheatsheet_id
         )
 
         try:
             await self._session.execute(delete_tags_statement)
+
         except Exception as e:
             raise CheatsheetUpdateError(
-                f"Failed to clear old tags for cheatsheet {cheatsheet_id}."
+                f"Failed to clear old tags for cheatsheet {cheatsheet.cheatsheet_id}."
             ) from e
 
         assert isinstance(cheatsheet.tags, set)
 
         tag_ids = [tag.tag_id for tag in cheatsheet.tags]
         insert_tags_data = [
-            {"cheatsheet_id": cheatsheet_id, "tag_id": tag_id} for tag_id in tag_ids
+            dict(cheatsheet_id=cheatsheet.cheatsheet_id, tag_id=tag_id)
+            for tag_id in tag_ids
         ]
         insert_tags_statement = insert(CheatsheetToTagModel).values(insert_tags_data)
 
         try:
             await self._session.execute(insert_tags_statement)
+
         except Exception as e:
             raise CheatsheetUpdateError(
-                f"Tags insertion failed for cheatsheet {cheatsheet_id}."
+                f"Tags insertion failed for cheatsheet {cheatsheet.cheatsheet_id}."
             ) from e
 
         try:
             await self._session.flush()
+
         except Exception as e:
             raise CheatsheetUpdateError from e
 
-        updated_cheatsheet = await self.get_by_id(cheatsheet_id)
+        updated_cheatsheet = await self.get_by_id(cheatsheet.cheatsheet_id)
         return updated_cheatsheet
