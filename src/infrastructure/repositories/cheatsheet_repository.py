@@ -1,7 +1,9 @@
+from copy import deepcopy
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import Row, delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.exceptions import (
@@ -28,12 +30,16 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    def _to_model(self, entity: Cheatsheet) -> CheatsheetModel:
-        kwargs = entity.to_dict()
+    def _to_model(self, cheatsheet: Cheatsheet | dict[str, Any]) -> CheatsheetModel:
+        kwargs = (
+            cheatsheet.to_dict()
+            if isinstance(cheatsheet, Cheatsheet)
+            else deepcopy(cheatsheet)
+        )
         tags = kwargs.pop("tags")
-        cheatsheet_id = kwargs["cheatsheet_id"]
-        count_like = kwargs.pop("count_like")
-        count_view = kwargs.pop("count_view")
+        cheatsheet_id = kwargs.get("cheatsheet_id")
+        count_like = kwargs.pop("count_like", None)
+        count_view = kwargs.pop("count_view", None)
 
         model = CheatsheetModel(**kwargs)
 
@@ -80,8 +86,8 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         cheatsheet = Cheatsheet.from_dict(dict(**model.cheatsheet, tags=model.tags))
         return cheatsheet
 
-    async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
-        model = self._to_model(cheatsheet)
+    async def create(self, create_data: dict[str, Any]) -> Cheatsheet:
+        model = self._to_model(create_data)
 
         try:
             self._session.add(model)
@@ -95,17 +101,17 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
             updated_at=model.updated_at,
         )
 
-        created_cheatsheet = cheatsheet.update(updated_data)
+        created_cheatsheet = Cheatsheet.from_dict(dict(**create_data, **updated_data))
         return created_cheatsheet
 
-    async def update(self, updated_data: dict[str, Any]) -> Cheatsheet:
+    async def update(self, update_data: dict[str, Any]) -> Cheatsheet:
         update_statement = (
             update(CheatsheetModel)
-            .where(CheatsheetModel.cheatsheet_id == updated_data["cheatsheet_id"])
+            .where(CheatsheetModel.cheatsheet_id == update_data["cheatsheet_id"])
             .values(
-                title=updated_data["title"],
-                content=updated_data["content"],
-                is_public=updated_data["is_public"],
+                title=update_data["title"],
+                content=update_data["content"],
+                is_public=update_data["is_public"],
             )
             .returning(CheatsheetModel.created_at, CheatsheetModel.updated_at)
         )
@@ -115,19 +121,37 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
 
         except Exception as e:
             raise CheatsheetUpdateError(
-                f"Failed to update cheatsheet {updated_data['cheatsheet_id']}."
+                f"Failed to update cheatsheet {update_data['cheatsheet_id']}."
             ) from e
 
-        updated_cheatsheet = Cheatsheet.from_dict(
+        updated_cheatsheet = self._get_new_cheatsheet(result_time, update_data)
+        await self._update_tags(updated_cheatsheet)
+
+        return updated_cheatsheet
+
+    @staticmethod
+    def _get_new_cheatsheet(
+        result_time: Row[tuple[datetime, ...]], update_data: dict[str, Any]
+    ) -> Cheatsheet:
+        cheatsheet = Cheatsheet.from_dict(
             dict(
                 created_at=result_time.created_at,
                 updated_at=result_time.updated_at,
-                **updated_data,
+                **update_data,
             )
         )
+        return cheatsheet
 
+    async def _update_tags(self, cheatsheet: Cheatsheet) -> None:
+        await self._delete_old_tags(cheatsheet)
+
+        assert isinstance(cheatsheet.tags, set)
+
+        await self._insert_new_tags(cheatsheet)
+
+    async def _delete_old_tags(self, cheatsheet: Cheatsheet) -> None:
         delete_tags_statement = delete(CheatsheetToTagModel).where(
-            CheatsheetToTagModel.cheatsheet_id == updated_cheatsheet.cheatsheet_id
+            CheatsheetToTagModel.cheatsheet_id == cheatsheet.cheatsheet_id
         )
 
         try:
@@ -135,15 +159,13 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
 
         except Exception as e:
             raise CheatsheetUpdateError(
-                "Failed to clear old tags for cheatsheet "
-                f"{updated_cheatsheet.cheatsheet_id}."
+                f"Failed to clear old tags for cheatsheet {cheatsheet.cheatsheet_id}."
             ) from e
 
-        assert isinstance(updated_cheatsheet.tags, set)
-
-        tag_ids = [tag.tag_id for tag in updated_cheatsheet.tags]
+    async def _insert_new_tags(self, cheatsheet: Cheatsheet) -> None:
+        tag_ids = [tag.tag_id for tag in cheatsheet.tags]
         insert_tags_data = [
-            dict(cheatsheet_id=updated_cheatsheet.cheatsheet_id, tag_id=tag_id)
+            dict(cheatsheet_id=cheatsheet.cheatsheet_id, tag_id=tag_id)
             for tag_id in tag_ids
         ]
         insert_tags_statement = insert(CheatsheetToTagModel).values(insert_tags_data)
@@ -153,8 +175,5 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
 
         except Exception as e:
             raise CheatsheetUpdateError(
-                "Tags insertion failed for cheatsheet "
-                f"{updated_cheatsheet.cheatsheet_id}."
+                f"Tags insertion failed for cheatsheet {cheatsheet.cheatsheet_id}."
             ) from e
-
-        return updated_cheatsheet

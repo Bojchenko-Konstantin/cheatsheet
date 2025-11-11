@@ -12,7 +12,6 @@ from src.application.exceptions import (
     CheatsheetUpdateError,
 )
 from src.application.use_cases import CheatsheetUseCase
-from src.domain.entities import Cheatsheet
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 
@@ -42,10 +41,10 @@ async def create_cheatsheet(
     cheatsheet_data: CheatsheetCreate,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
-    cheatsheet_to_create = Cheatsheet.from_dict(cheatsheet_data.model_dump())
+    create_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
 
     try:
-        cheatsheet = await cheatsheet_use_case.create(cheatsheet_to_create)
+        cheatsheet = await cheatsheet_use_case.create(create_data)
     except CheatsheetCreationError as e:
         logger.exception(
             "Cheatsheet with data %s failed to be created", cheatsheet_data
@@ -66,10 +65,10 @@ async def update_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     try:
-        updated_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
-        updated_data["cheatsheet_id"] = cheatsheet_id
+        update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
+        update_data["cheatsheet_id"] = cheatsheet_id
 
-        updated_cheatsheet = await cheatsheet_use_case.update(updated_data=updated_data)
+        updated_cheatsheet = await cheatsheet_use_case.update(update_data=update_data)
 
     except CheatsheetUpdateError as e:
         logger.exception(

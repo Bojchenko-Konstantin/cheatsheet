@@ -60,7 +60,7 @@ async def test_created_cheatsheet_persists_to_database(
     _, tags = populate_db_for_single_cheatsheet
     sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
 
-    data_for_new_cheatsheet = Cheatsheet(
+    data_for_new_cheatsheet = dict(
         title="Test Cheatsheet",
         content="Test content",
         is_public=True,
