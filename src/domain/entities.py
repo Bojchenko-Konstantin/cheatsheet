@@ -13,13 +13,13 @@ class Tag:
 
 @dataclass(slots=True)
 class Cheatsheet:
+    cheatsheet_id: UUID
     title: str
     content: str
     is_public: bool
     tags: set[Tag]
-    cheatsheet_id: UUID
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
     count_like: int = 0
     count_view: int = 0
 
