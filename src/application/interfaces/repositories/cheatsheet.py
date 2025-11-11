@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 from src.domain.entities import Cheatsheet
@@ -16,5 +17,5 @@ class ICheatsheetRepo(ABC):
         pass
 
     @abstractmethod
-    async def update(self, cheatsheet: Cheatsheet) -> Cheatsheet:
+    async def update(self, updated_data: dict[str, Any]) -> Cheatsheet:
         pass

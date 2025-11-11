@@ -66,14 +66,10 @@ async def update_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     try:
-        update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
-        cheatsheet_with_updated_data = Cheatsheet.from_dict(
-            dict(cheatsheet_id=cheatsheet_id, **update_data)
-        )
+        updated_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
+        updated_data["cheatsheet_id"] = cheatsheet_id
 
-        updated_cheatsheet = await cheatsheet_use_case.update(
-            cheatsheet_with_updated_data=cheatsheet_with_updated_data,
-        )
+        updated_cheatsheet = await cheatsheet_use_case.update(updated_data=updated_data)
 
     except CheatsheetUpdateError as e:
         logger.exception(
