@@ -1,3 +1,4 @@
+from collections.abc import MutableMapping
 from copy import deepcopy
 from datetime import datetime
 from typing import Any
@@ -30,7 +31,9 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    def _to_model(self, cheatsheet: Cheatsheet | dict[str, Any]) -> CheatsheetModel:
+    def _to_model(
+        self, cheatsheet: Cheatsheet | MutableMapping[str, Any]
+    ) -> CheatsheetModel:
         kwargs = (
             cheatsheet.to_dict()
             if isinstance(cheatsheet, Cheatsheet)
@@ -45,7 +48,12 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
 
         for tag in tags:
             model.tag_associations.append(
-                CheatsheetToTagModel(cheatsheet_id=cheatsheet_id, tag_id=tag.tag_id)
+                CheatsheetToTagModel(
+                    cheatsheet_id=cheatsheet_id,
+                    tag_id=(
+                        tag["tag_id"] if isinstance(tag, MutableMapping) else tag.tag_id
+                    ),
+                )
             )
 
         model.stats = CheatsheetStatsModel(count_like=count_like, count_view=count_view)
