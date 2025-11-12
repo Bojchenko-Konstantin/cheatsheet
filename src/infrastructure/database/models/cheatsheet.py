@@ -8,6 +8,7 @@ from sqlalchemy import (
     UUID,
     Boolean,
     DateTime,
+    ForeignKey,
     String,
     Text,
 )
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
         CheatsheetStatsModel,
         CheatsheetToTagModel,
         TagModel,
+        UserModel,
     )
 
 
@@ -29,6 +31,11 @@ class CheatsheetModel(Base):
         UUID(as_uuid=True),
         server_default=func.uuid_generate_v7(),
         primary_key=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
     title: Mapped[str] = mapped_column(
         String(50),
@@ -59,11 +66,12 @@ class CheatsheetModel(Base):
         single_parent=True,
         uselist=False,
     )
-    tags: Mapped[list["TagModel"]] = relationship(
+    tags: Mapped[list[TagModel]] = relationship(
         secondary="cheatsheet_to_tag",
         back_populates="cheatsheets",
         viewonly=True,
     )
-    tag_associations: Mapped[list["CheatsheetToTagModel"]] = relationship(
+    tag_associations: Mapped[list[CheatsheetToTagModel]] = relationship(
         back_populates="cheatsheet"
     )
+    user: Mapped[list[UserModel]] = relationship(back_populates="cheatsheets")
