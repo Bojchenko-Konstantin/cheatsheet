@@ -2,8 +2,7 @@ from datetime import datetime
 from typing import Annotated, Self
 from uuid import UUID
 
-from fastapi_users import schemas
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
 
 type PositiveInt = Annotated[int, Field(ge=0)]
 type PositiveListInt = list[PositiveInt]
@@ -66,28 +65,34 @@ class CheatsheetUpdatePartial(Schema):
     content: str | None = None
 
 
-class UserRead(schemas.BaseUser[UUID]):
+class UserBase(Schema):
+    username: str
+    email: EmailStr
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
+    first_name: str
+    last_name: str
+    profile_description: str | None = None
+    image_url: str | None = None
+    social_network_id: PositiveListInt
+    profile_url: list[str]
+
+
+class UserRead(UserBase):
     user_id: UUID
-    first_name: str
-    last_name: str
-    login: str
-    profile_description: str | None = None
-    image_url: str | None = None
-    social_network_id: PositiveListInt
-    profile_url: list[str]
 
 
-class UserCreate(schemas.BaseUserCreate):
-    first_name: str
-    last_name: str
-    login: str
-    profile_description: str | None = None
-    image_url: str | None = None
-    social_network_id: PositiveListInt
-    profile_url: list[str]
+class UserCreate(UserBase):
+    password: str
 
 
-class UserUpdate(schemas.BaseUserUpdate):
+class UserUpdate(Schema):
+    password: str | None = None
+    email: EmailStr | None = None
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+    is_verified: bool | None = None
     first_name: str | None = None
     last_name: str | None = None
     login: str | None = None
