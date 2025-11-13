@@ -39,6 +39,11 @@ async def login(
         )
 
 
+@router.post("/register")
+async def register():
+    pass
+
+
 @router.post("/token")
 def verify_access_token(access_token: str):
     pass
