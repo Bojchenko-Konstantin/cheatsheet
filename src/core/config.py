@@ -32,6 +32,14 @@ class LoggingConfig(BaseModel):
     log_level: str = "ERROR"
 
 
+class JWTConfig(BaseModel):
+    access_token_expires_in: int
+    refresh_token_expires_in: int
+    algorithm: str
+    private_key: str
+    public_key: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -40,6 +48,7 @@ class Settings(BaseSettings):
     )
     database: DatabaseConfig
     logging: LoggingConfig = LoggingConfig()
+    jwt: JWTConfig
 
 
 settings = Settings()  # type: ignore
