@@ -1,8 +1,8 @@
 from fastapi import Depends
 
-from application.use_cases.jwt import JWTUseCase
 from src.application.interfaces import IUnitOfWork
 from src.application.use_cases import CheatsheetUseCase
+from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
