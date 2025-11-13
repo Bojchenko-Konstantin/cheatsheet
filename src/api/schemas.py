@@ -68,9 +68,6 @@ class CheatsheetUpdatePartial(Schema):
 class UserBase(Schema):
     username: str
     email: EmailStr
-    is_active: bool = True
-    is_superuser: bool = False
-    is_verified: bool = False
     first_name: str
     last_name: str
     profile_description: str | None = None
@@ -80,11 +77,15 @@ class UserBase(Schema):
 
 
 class UserRead(UserBase):
+    is_active: bool = True
+    is_superuser: bool = False
+    is_verified: bool = False
     user_id: UUID
 
 
 class UserCreate(UserBase):
     password: str
+    password_confirmation: str
 
 
 class UserUpdate(Schema):
