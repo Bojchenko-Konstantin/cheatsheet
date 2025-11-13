@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dto import User
 from src.application.interfaces.repositories.user import IUserRepo
 from src.infrastructure.database.models import (
     UserModel,
@@ -22,30 +23,25 @@ class SQLAlchemyUserRepo(IUserRepo):
     def _to_model(self, user: MutableMapping[str, Any]) -> UserModel:
         pass
 
-    async def get_by_user_name(self, user_name: str):
-        statement = (
-            select(
-                DictBundle(
-                    "user",
-                    UserModel.user_id,
-                    UserModel.user_name,
-                    UserModel.hashed_password,
-                    UserModel.is_active,
-                    UserModel.is_superuser,
-                    UserModel.is_verified,
-                ),
-            )
-            # .join(UserModel.detail)
-            .where(UserModel.user_name == user_name)
-        )
+    async def get_by_user_name(self, user_name: str) -> User:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.hashed_password,
+                UserModel.is_active,
+                UserModel.is_superuser,
+                UserModel.is_verified,
+            ),
+        ).where(UserModel.user_name == user_name)
         result = await self._session.execute(statement)
         model = result.one_or_none()
-        print(model)
 
         if not model:
             raise
 
-        user = model.user
+        user = User.from_dict(model.user)
         return user
 
     async def create(self, create_data: dict[str, Any]):
