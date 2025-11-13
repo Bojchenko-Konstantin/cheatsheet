@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Self
 
-from src.application.interfaces import ICheatsheetRepo
+from src.application.interfaces import ICheatsheetRepo, IUserRepo
 
 
 class IUnitOfWork(ABC):
@@ -12,6 +12,7 @@ class IUnitOfWork(ABC):
     """
 
     cheatsheet_repo: ICheatsheetRepo
+    user_repo: IUserRepo
 
     async def __aenter__(self) -> Self:
         return self
