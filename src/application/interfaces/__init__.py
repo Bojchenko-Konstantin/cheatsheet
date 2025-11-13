@@ -1,4 +1,4 @@
-__all__ = ("IUnitOfWork", "ICheatsheetRepo")
+__all__ = ("IUnitOfWork", "ICheatsheetRepo", "IUserRepo")
 
-from .repositories import ICheatsheetRepo
+from .repositories import ICheatsheetRepo, IUserRepo
 from .unit_of_work import IUnitOfWork
