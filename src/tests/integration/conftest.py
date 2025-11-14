@@ -15,7 +15,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 START_INDEX: int = 1
@@ -112,7 +111,9 @@ def _run_database_migrations() -> None:
 
 
 @pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[UUID, set[Tag]]]:
+async def populate_db_for_single_cheatsheet() -> (
+    AsyncGenerator[tuple[UUID, list[dict]], None]
+):
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
@@ -198,7 +199,7 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[Tag]:
+async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> list[dict]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag
@@ -212,7 +213,7 @@ async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[
     result = await session.execute(query, data)
     await session.commit()
     raw_tags = result.all()
-    tags = {Tag(tag_id, tag_name) for tag_id, tag_name in raw_tags}
+    tags = [{"tag_id": tag_id, "tag_name": tag_name} for tag_id, tag_name in raw_tags]
 
     return tags
 
