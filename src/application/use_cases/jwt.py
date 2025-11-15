@@ -3,7 +3,10 @@ from datetime import datetime, timedelta
 
 import jwt
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
+from cryptography.hazmat.primitives.asymmetric.types import (
+    PrivateKeyTypes,
+    PublicKeyTypes,
+)
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
@@ -58,8 +61,8 @@ class JWTUseCase:
 
         private_key = self._get_appropriate_private_key_form()
         access_token = jwt.encode(
-            user_payload,
-            private_key,  # type: ignore
+            payload=user_payload,
+            key=private_key,  # type: ignore
             algorithm=self._algorithm,
         )
         return access_token
@@ -69,7 +72,7 @@ class JWTUseCase:
         private_key = serialization.load_der_private_key(private_key_der, password=None)
         return private_key
 
-    def _get_appropriate_public_key_form(self) -> PrivateKeyTypes:
-        private_key_der = base64.b64decode(self._private_key)
-        private_key = serialization.load_der_private_key(private_key_der, password=None)
-        return private_key
+    def _get_appropriate_public_key_form(self) -> PublicKeyTypes:
+        private_key_der = base64.b64decode(self._public_key)
+        public_key = serialization.load_der_public_key(private_key_der)
+        return public_key
