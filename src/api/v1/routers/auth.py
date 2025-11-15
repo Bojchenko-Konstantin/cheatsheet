@@ -55,7 +55,10 @@ async def register(
 
 
 @router.post("/token")
-def verify_access_token(access_token: str):
+async def verify_access_token(
+    access_token: str, jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)]
+):
+    await jwt_use_case.verify_access_token(access_token)
     pass
 
 
