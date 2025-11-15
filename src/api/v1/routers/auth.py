@@ -37,6 +37,7 @@ async def login(
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         )
 
@@ -59,10 +60,18 @@ async def register(
 async def verify_access_token(
     access_token: str, jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)]
 ):
-    await jwt_use_case.verify_access_token(access_token)
-    pass
+    try:
+        await jwt_use_case.verify_access_token(access_token)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
 
 
 @router.post("/refresh")
-async def refresh():
+async def refresh(
+    refresh_token: str, jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)]
+):
     pass
