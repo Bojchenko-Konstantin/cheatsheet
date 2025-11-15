@@ -4,11 +4,12 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import User
+from src.application.dto import User, UserPayload
 from src.application.interfaces.repositories.user import IUserRepo
 from src.infrastructure.database.models import (
     UserModel,
 )
+from src.infrastructure.database.models.user_detail import UserDetailModel
 from src.infrastructure.repositories.utils import DictBundle
 
 
@@ -21,7 +22,18 @@ class SQLAlchemyUserRepo(IUserRepo):
         self._session = session
 
     def _to_model(self, user: MutableMapping[str, Any]) -> UserModel:
-        pass
+        user_name = user.pop("username")
+        user_detail = dict(
+            user_id=user.pop("user_id", None),
+            first_name=user.pop("first_name"),
+            last_name=user.pop("last_name"),
+            profile_description=user.pop("profile_description"),
+            image_url=user.pop("image_url"),
+        )
+
+        model = UserModel(**user, user_name=user_name)
+        model.detail = UserDetailModel(**user_detail)
+        return model
 
     async def get_by_user_name(self, user_name: str) -> User:
         statement = select(
@@ -44,8 +56,19 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User.from_dict(model.user)
         return user
 
-    async def create(self, create_data: dict[str, Any]):
-        pass
+    async def create(self, create_data: dict[str, Any]) -> UserPayload:
+        # TODO: add them to the user detail table
+        social_network_id = create_data.pop("social_network_id")  # noqa: F841
+        profile_url = create_data.pop("profile_url")  # noqa: F841
+
+        model = self._to_model(create_data)
+        try:
+            self._session.add(model)
+            await self._session.flush()
+        except Exception:
+            raise
+
+        return UserPayload(model.user_id, model.is_superuser)
 
     async def update(self, update_data: dict[str, Any]):
         pass
