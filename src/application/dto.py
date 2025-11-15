@@ -16,3 +16,9 @@ class User:
     @classmethod
     def from_dict(cls, kwargs: MutableMapping) -> Self:
         return cls(**kwargs)
+
+
+@dataclass(frozen=True, slots=True)
+class UserPayload:
+    user_id: UUID
+    is_superuser: bool
