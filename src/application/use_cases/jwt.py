@@ -1,12 +1,13 @@
 import base64
 from datetime import datetime, timedelta
-from typing import Any
 
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
+
+from src.application.dto import UserPayload
 
 
 class JWTUseCase:
@@ -28,7 +29,7 @@ class JWTUseCase:
         self._access_token_expires_in = access_token_expires_in
         self._refresh_token_expires_in = refresh_token_expires_in
 
-    async def get_jwt_tokens(self, payload: dict[str, Any]) -> dict[str, str]:
+    async def get_jwt_tokens(self, payload: UserPayload) -> dict[str, str]:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
         password_hash = PasswordHash.recommended()
@@ -39,7 +40,7 @@ class JWTUseCase:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def verify_access_token(self, access_token: str) -> dict[str, str]:
+    async def verify_access_token(self, access_token: str) -> UserPayload:
         public_key = self._get_appropriate_public_key_form()
         payload = jwt.decode(
             jwt=access_token,
@@ -48,12 +49,12 @@ class JWTUseCase:
         )
         return payload
 
-    def _get_access_token(self, payload: dict[str, Any]) -> str:
+    def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now() + timedelta(
             minutes=self._access_token_expires_in
         )
-        user_payload = payload.copy()
-        user_payload["exp"] = expiration_time
+        payload.exp = expiration_time
+        user_payload = payload.to_dict()
 
         private_key = self._get_appropriate_private_key_form()
         access_token = jwt.encode(

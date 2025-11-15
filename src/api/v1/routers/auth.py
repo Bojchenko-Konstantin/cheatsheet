@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from src.api.dependencies import get_jwt_use_case, get_user_use_case
 from src.api.schemas import UserCreate
+from src.application.dto import UserPayload
 from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
 
@@ -29,7 +30,7 @@ async def login(
         user_use_case.verify_password(plain_password, hashed_password)
         and user.is_active
     ):
-        payload = dict(user_id=str(user.user_id), is_superuser=user.is_superuser)
+        payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
         token_pair = await jwt_use_case.get_jwt_tokens(payload)
         return token_pair
 
@@ -49,7 +50,7 @@ async def register(
     create_data = user_form.model_dump(exclude_unset=True)
     user = await user_use_case.create(create_data)
 
-    payload = dict(user_id=str(user.user_id), is_superuser=user.is_superuser)
+    payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
     return token_pair
 
