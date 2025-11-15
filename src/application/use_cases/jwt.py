@@ -39,6 +39,15 @@ class JWTUseCase:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
+    async def verify_access_token(self, access_token: str) -> dict[str, str]:
+        public_key = self._get_appropriate_public_key_form()
+        payload = jwt.decode(
+            jwt=access_token,
+            key=public_key,  # type: ignore
+            algorithms=[self._algorithm],
+        )
+        return payload
+
     def _get_access_token(self, payload: dict[str, Any]) -> str:
         expiration_time = datetime.now() + timedelta(
             minutes=self._access_token_expires_in
@@ -55,6 +64,11 @@ class JWTUseCase:
         return access_token
 
     def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:
+        private_key_der = base64.b64decode(self._private_key)
+        private_key = serialization.load_der_private_key(private_key_der, password=None)
+        return private_key
+
+    def _get_appropriate_public_key_form(self) -> PrivateKeyTypes:
         private_key_der = base64.b64decode(self._private_key)
         private_key = serialization.load_der_private_key(private_key_der, password=None)
         return private_key
