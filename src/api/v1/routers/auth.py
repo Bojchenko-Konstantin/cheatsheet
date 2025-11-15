@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from src.api.dependencies import get_jwt_use_case, get_user_use_case
-from src.api.schemas import UserCreate
+from src.api.schemas import TokenPair, UserCreate
 from src.application.dto import UserPayload
 from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
@@ -15,7 +15,7 @@ router = APIRouter(tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
 
-@router.post("/login")
+@router.post("/login", response_model=TokenPair)
 async def login(
     user_form: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
@@ -41,7 +41,7 @@ async def login(
         )
 
 
-@router.post("/register")
+@router.post("/register", response_model=TokenPair)
 async def register(
     user_form: UserCreate,
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],

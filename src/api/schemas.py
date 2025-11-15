@@ -108,3 +108,9 @@ class UserUpdate(Schema):
     image_url: str | None = None
     social_network_id: PositiveListInt | None = None
     profile_url: list[str] | None = None
+
+
+class TokenPair(Schema):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
