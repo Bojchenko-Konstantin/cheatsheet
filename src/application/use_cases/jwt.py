@@ -52,6 +52,9 @@ class JWTUseCase:
         )
         return payload
 
+    async def verify_refresh_token(self, refresh_token: str) -> dict[str, str]:
+        pass
+
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now() + timedelta(
             minutes=self._access_token_expires_in
