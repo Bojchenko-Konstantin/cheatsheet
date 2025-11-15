@@ -39,6 +39,7 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
             created_at=datetime(2025, 1, 1),
             updated_at=datetime(2025, 1, 2),
         )
+
         return Cheatsheet.from_dict(dict(**update_data, **timestamp_fields))
 
 
