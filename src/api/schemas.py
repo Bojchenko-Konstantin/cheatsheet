@@ -87,16 +87,23 @@ class UserCreate(UserBase):
     password: str
     password_confirmation: str
 
+    @model_validator(mode="after")
+    def check_passwords_match(self) -> Self:
+        if self.password != self.password_confirmation:
+            raise ValueError("Passwords do not match")
+
+        return self
+
 
 class UserUpdate(Schema):
-    password: str | None = None
+    username: str | None = None
     email: EmailStr | None = None
+    password: str | None = None
     is_active: bool | None = None
     is_superuser: bool | None = None
     is_verified: bool | None = None
     first_name: str | None = None
     last_name: str | None = None
-    login: str | None = None
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt | None = None
