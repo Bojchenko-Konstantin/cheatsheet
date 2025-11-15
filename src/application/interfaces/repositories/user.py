@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from src.application.dto import User
+from src.application.dto import User, UserPayload
 
 
 class IUserRepo(ABC):
@@ -12,7 +12,7 @@ class IUserRepo(ABC):
         pass
 
     @abstractmethod
-    async def create(self, create_data: dict[str, Any]):
+    async def create(self, create_data: dict[str, Any]) -> UserPayload:
         pass
 
     @abstractmethod
