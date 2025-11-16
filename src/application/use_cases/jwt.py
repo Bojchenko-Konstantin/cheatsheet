@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from cryptography.hazmat.primitives import serialization
@@ -56,7 +56,7 @@ class JWTUseCase:
         pass
 
     def _get_access_token(self, payload: UserPayload) -> str:
-        expiration_time = datetime.now() + timedelta(
+        expiration_time = datetime.now(tz=timezone.utc) + timedelta(
             minutes=self._access_token_expires_in
         )
         payload.exp = expiration_time
