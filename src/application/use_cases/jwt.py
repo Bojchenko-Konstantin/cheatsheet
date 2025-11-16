@@ -49,6 +49,7 @@ class JWTUseCase:
             jwt=access_token,
             key=public_key,  # type: ignore
             algorithms=[self._algorithm],
+            options={"require": "exp"},
         )
         return payload
 
