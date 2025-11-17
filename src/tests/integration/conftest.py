@@ -199,7 +199,9 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> list[dict]:
+async def _get_required_tags(
+    session: AsyncSession, cheatsheet_id: UUID
+) -> list[dict[str, str | int]]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag

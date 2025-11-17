@@ -91,14 +91,14 @@ async def test_update_cheatsheet_change_tag_combination(
         result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
         current_db_row = result.one()
 
-    new_tag_combination = original_tags[1:3]
+    new_tag = original_tags[1:3]
 
     update_data = {
         "cheatsheet_id": cheatsheet_id,
         "title": "Cheatsheet with changed tag combination",
         "content": "Content with different tag combination",
         "is_public": True,
-        "tags": new_tag_combination,
+        "tags": new_tag,
         "count_like": current_db_row.count_like,
         "count_view": current_db_row.count_view,
     }
