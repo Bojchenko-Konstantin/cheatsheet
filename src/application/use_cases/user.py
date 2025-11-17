@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from pwdlib import PasswordHash
 
@@ -14,6 +15,9 @@ class UserUseCase:
         async with self._unit_of_work as uow:
             user = await uow.user_repo.get_by_user_name(user_name)
             return user
+
+    async def get_by_id(self, user_id: UUID) -> User:
+        pass
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         async with self._unit_of_work as uow:
