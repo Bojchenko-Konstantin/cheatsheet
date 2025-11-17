@@ -51,7 +51,8 @@ class JWTUseCase:
             algorithms=[self._algorithm],
             options={"require": ["exp"]},
         )
-        return payload
+        user_payload = UserPayload.from_dict(payload)
+        return user_payload
 
     async def verify_refresh_token(self, refresh_token: str) -> dict[str, str]:
         pass
