@@ -1,4 +1,5 @@
 from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
 from src.application.interfaces import IUnitOfWork
 from src.application.use_cases import CheatsheetUseCase
@@ -33,3 +34,6 @@ def get_jwt_use_case() -> JWTUseCase:
         access_token_expires_in=settings.jwt.access_token_expires_in,
         refresh_token_expires_in=settings.jwt.refresh_token_expires_in,
     )
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
