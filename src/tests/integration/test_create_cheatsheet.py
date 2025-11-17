@@ -8,6 +8,33 @@ from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_created_cheatsheet_persists_to_database(
+    populate_db_for_single_cheatsheet,
+):
+    _, tags = populate_db_for_single_cheatsheet
+    sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
+
+    data_for_new_cheatsheet = dict(
+        title="Test Cheatsheet",
+        content="Test content",
+        is_public=True,
+        tags=tags,
+    )
+
+    created_cheatsheet = await sut.create(data_for_new_cheatsheet)
+
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_cheatsheet_query()
+        result = await session.execute(query, {"title": "Test Cheatsheet"})
+        db_row = result.one()
+
+        expected_result = _create_cheatsheet_from_db_row(db_row)
+
+    assert created_cheatsheet == expected_result
+
+
 def _build_cheatsheet_query() -> TextClause:
     return text(
         """
@@ -50,30 +77,3 @@ def _create_cheatsheet_from_db_row(db_row: Row) -> Cheatsheet:
             Tag(tag_id=tag["tag_id"], tag_name=tag["tag_name"]) for tag in db_row.tags
         },
     )
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="session")
-async def test_created_cheatsheet_persists_to_database(
-    populate_db_for_single_cheatsheet,
-):
-    _, tags = populate_db_for_single_cheatsheet
-    sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
-
-    data_for_new_cheatsheet = dict(
-        title="Test Cheatsheet",
-        content="Test content",
-        is_public=True,
-        tags=tags,
-    )
-
-    created_cheatsheet = await sut.create(data_for_new_cheatsheet)
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"title": "Test Cheatsheet"})
-        db_row = result.one()
-
-        expected_result = _create_cheatsheet_from_db_row(db_row)
-
-    assert created_cheatsheet == expected_result
