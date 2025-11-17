@@ -85,7 +85,10 @@ class TestCheatsheetUseCase:
             title="title",
             content="content",
             is_public=True,
-            tags={Tag(1, "Python"), Tag(2, "Testing")},
+            tags=[
+                {"tag_id": 1, "tag_name": "Python"},
+                {"tag_id": 2, "tag_name": "Testing"},
+            ],
         )
 
         generated_fields = {
@@ -95,9 +98,12 @@ class TestCheatsheetUseCase:
         }
 
         expected_result = Cheatsheet(
+            title="title",
+            content="content",
+            is_public=True,
+            tags={Tag(1, "Python"), Tag(2, "Testing")},
             count_like=0,
             count_view=0,
-            **create_data,
             **generated_fields,
         )
 
@@ -116,7 +122,10 @@ class TestCheatsheetUseCase:
             title="Updated Title",
             content="Updated Content",
             is_public=False,
-            tags={Tag(1, "Updated_Tag"), Tag(3, "New_Tag")},
+            tags={
+                Tag(tag_id=3, tag_name="Updated_Tag"),
+                Tag(tag_id=4, tag_name="New_Tag"),
+            },
             created_at=datetime(2025, 1, 1),
             updated_at=datetime(2025, 1, 2),
             count_like=0,
@@ -128,7 +137,10 @@ class TestCheatsheetUseCase:
             title="Updated Title",
             content="Updated Content",
             is_public=False,
-            tags={Tag(1, "Updated_Tag"), Tag(3, "New_Tag")},
+            tags=[
+                {"tag_id": 3, "tag_name": "Updated_Tag"},
+                {"tag_id": 4, "tag_name": "New_Tag"},
+            ],
         )
 
         updated_cheatsheet = await sut.update(update_data)
