@@ -17,7 +17,9 @@ class UserUseCase:
             return user
 
     async def get_by_id(self, user_id: UUID) -> User:
-        pass
+        async with self._unit_of_work as uow:
+            user = await uow.user_repo.get_by_id(user_id)
+            return user
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         async with self._unit_of_work as uow:
