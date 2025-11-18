@@ -13,13 +13,13 @@ class Tag:
 
 @dataclass(slots=True)
 class Cheatsheet:
+    cheatsheet_id: UUID
     title: str
     content: str
     is_public: bool
     tags: set[Tag]
-    cheatsheet_id: UUID | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
     count_like: int = 0
     count_view: int = 0
 
@@ -34,6 +34,8 @@ class Cheatsheet:
 
     def update(self, kwargs: Mapping) -> Self:
         for key, value in kwargs.items():
+            if key == "tags" and not isinstance(value, set):
+                value = {Tag(**tag) for tag in value}
             setattr(self, key, value)
         return self
 

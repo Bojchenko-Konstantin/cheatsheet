@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 import pytest
@@ -24,14 +24,22 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
             count_view=10,
         )
 
-    async def create(self, cheatsheet: Cheatsheet) -> Cheatsheet:
-        updated_data = {
-            "cheatsheet_id": UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
-            "created_at": datetime(2025, 1, 1),
-            "updated_at": datetime(2025, 1, 1),
-        }
-        created_cheatsheet = cheatsheet.update(updated_data)
+    async def create(self, create_data: dict[str, Any]) -> Cheatsheet:
+        updated_data = dict(
+            cheatsheet_id=UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
+            created_at=datetime(2025, 1, 1),
+            updated_at=datetime(2025, 1, 1),
+        )
+
+        created_cheatsheet = Cheatsheet.from_dict(dict(**updated_data, **create_data))
         return created_cheatsheet
+
+    async def update(self, update_data: dict[str, Any]) -> Cheatsheet:
+        timestamp_fields = dict(
+            created_at=datetime(2025, 1, 1), updated_at=datetime(2025, 1, 2)
+        )
+
+        return Cheatsheet.from_dict(dict(**update_data, **timestamp_fields))
 
 
 class FakeUnitOfWork(IUnitOfWork):
@@ -72,13 +80,14 @@ class TestCheatsheetUseCase:
         unit_of_work = FakeUnitOfWork()
         sut = CheatsheetUseCase(unit_of_work)
 
-        creation_data = Cheatsheet(
+        create_data = dict(
             title="title",
             content="content",
             is_public=True,
-            tags={Tag(1, "Python"), Tag(2, "Testing")},
-            count_like=0,
-            count_view=0,
+            tags=[
+                {"tag_id": 1, "tag_name": "Python"},
+                {"tag_id": 2, "tag_name": "Testing"},
+            ],
         )
 
         generated_fields = {
@@ -87,8 +96,82 @@ class TestCheatsheetUseCase:
             "updated_at": datetime(2025, 1, 1),
         }
 
-        expected_result = creation_data.update(generated_fields)
+        expected_result = Cheatsheet(
+            title="title",
+            content="content",
+            is_public=True,
+            tags={Tag(1, "Python"), Tag(2, "Testing")},
+            count_like=0,
+            count_view=0,
+            **generated_fields,
+        )
 
-        created_cheatsheet = await sut.create(creation_data)
+        created_cheatsheet = await sut.create(create_data)
 
         assert created_cheatsheet == expected_result
+
+    async def test_update_modifies_fields_and_preserves_timestamps(self):
+        unit_of_work = FakeUnitOfWork()
+        sut = CheatsheetUseCase(unit_of_work)
+
+        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
+
+        expected_result = Cheatsheet(
+            cheatsheet_id=existing_id,
+            title="Updated Title",
+            content="Updated Content",
+            is_public=False,
+            tags={Tag(3, "Updated_Tag"), Tag(4, "New_Tag")},
+            created_at=datetime(2025, 1, 1),
+            updated_at=datetime(2025, 1, 2),
+            count_like=0,
+            count_view=0,
+        )
+
+        update_data = dict(
+            cheatsheet_id=existing_id,
+            title="Updated Title",
+            content="Updated Content",
+            is_public=False,
+            tags=[
+                {"tag_id": 3, "tag_name": "Updated_Tag"},
+                {"tag_id": 4, "tag_name": "New_Tag"},
+            ],
+        )
+
+        updated_cheatsheet = await sut.update(update_data)
+
+        assert updated_cheatsheet == expected_result
+
+    async def test_update_converts_tags_from_dict_to_objects(self):
+        unit_of_work = FakeUnitOfWork()
+        sut = CheatsheetUseCase(unit_of_work)
+
+        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
+
+        expected_result = Cheatsheet(
+            cheatsheet_id=existing_id,
+            title="Updated Title",
+            content="Updated Content",
+            is_public=True,
+            tags={Tag(1, "Python"), Tag(2, "Testing")},
+            created_at=datetime(2025, 1, 1),
+            updated_at=datetime(2025, 1, 2),
+            count_like=0,
+            count_view=0,
+        )
+
+        update_data = dict(
+            cheatsheet_id=existing_id,
+            title="Updated Title",
+            content="Updated Content",
+            is_public=True,
+            tags=[
+                {"tag_id": 1, "tag_name": "Python"},
+                {"tag_id": 2, "tag_name": "Testing"},
+            ],
+        )
+
+        updated_cheatsheet = await sut.update(update_data)
+
+        assert updated_cheatsheet == expected_result

@@ -21,12 +21,15 @@ def test_update_partial_fields():
         "title": "Updated Title",
         "content": "Updated Content",
         "is_public": False,
-        "tags": {Tag(3, "Algorithms")},
+        "tags": [{"tag_id": 3, "tag_name": "Algorithms"}],
     }
 
     expected_result = Cheatsheet(
-        **update_fields,
         cheatsheet_id=original_cheatsheet.cheatsheet_id,
+        title="Updated Title",
+        content="Updated Content",
+        is_public=False,
+        tags={Tag(3, "Algorithms")},
         created_at=original_cheatsheet.created_at,
         updated_at=original_cheatsheet.updated_at,
         count_like=original_cheatsheet.count_like,

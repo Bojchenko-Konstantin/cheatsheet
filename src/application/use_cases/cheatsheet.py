@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from src.application.interfaces import IUnitOfWork
@@ -13,7 +14,12 @@ class CheatsheetUseCase:
             cheatsheet = await uow.cheatsheet_repo.get_by_id(cheatsheet_id)
             return cheatsheet
 
-    async def create(self, cheatsheet_to_create: Cheatsheet) -> Cheatsheet:
+    async def create(self, create_data: dict[str, Any]) -> Cheatsheet:
         async with self._unit_of_work as uow:
-            cheatsheet = await uow.cheatsheet_repo.create(cheatsheet_to_create)
+            cheatsheet = await uow.cheatsheet_repo.create(create_data)
+            return cheatsheet
+
+    async def update(self, update_data: dict[str, Any]) -> Cheatsheet:
+        async with self._unit_of_work as uow:
+            cheatsheet = await uow.cheatsheet_repo.update(update_data)
             return cheatsheet

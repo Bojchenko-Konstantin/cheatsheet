@@ -8,3 +8,7 @@ class CheatsheetNotFoundError(ApplicationException):
 
 class CheatsheetCreationError(ApplicationException):
     """This exception will raise when cheatsheet failed to be created."""
+
+
+class CheatsheetUpdateError(ApplicationException):
+    """This exception will raise when cheatsheet failed to be updated."""
