@@ -13,7 +13,7 @@ class IUserRepo(ABC):
         pass
 
     @abstractmethod
-    async def get_by_id(self, user_id: UUID):
+    async def get_by_id(self, user_id: UUID) -> User:
         pass
 
     @abstractmethod
