@@ -15,7 +15,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.domain.entities import Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 START_INDEX: int = 1
@@ -68,6 +67,27 @@ def test_environment_lifecycle(request) -> None:
     request.addfinalizer(remove_container)
 
 
+@pytest_asyncio.fixture()
+async def populate_db_for_single_cheatsheet() -> (
+    AsyncGenerator[tuple[UUID, list[dict]], None]
+):
+    session = DEFAULT_SESSION_FACTORY()
+    cheatsheet_quantity = 1 + START_INDEX
+    tag_quantity = 3 + START_INDEX
+
+    cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
+    await _populate_md_tag(session, quantity=tag_quantity)
+    await _populate_cheatsheet_stats(
+        session, quantity=cheatsheet_quantity, cheatsheet_id=cheatsheet_id
+    )
+    await _populate_cheatsheet_to_tag(session)
+    tags = await _get_required_tags(session, cheatsheet_id)
+
+    yield cheatsheet_id, tags
+
+    await _truncate_all_tables(session)
+
+
 def _create_docker_client() -> DockerClient:
     return docker.from_env()
 
@@ -109,25 +129,6 @@ def _wait_for_container_healthcheck(container: Container) -> None:
 
 def _run_database_migrations() -> None:
     subprocess.run(["uv", "run", "alembic", "upgrade", "head"], check=True)
-
-
-@pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet() -> AsyncGenerator[tuple[UUID, set[Tag]]]:
-    session = DEFAULT_SESSION_FACTORY()
-    cheatsheet_quantity = 1 + START_INDEX
-    tag_quantity = 3 + START_INDEX
-
-    cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
-    await _populate_md_tag(session, quantity=tag_quantity)
-    await _populate_cheatsheet_stats(
-        session, quantity=cheatsheet_quantity, cheatsheet_id=cheatsheet_id
-    )
-    await _populate_cheatsheet_to_tag(session)
-    tags = await _get_required_tags(session, cheatsheet_id)
-
-    yield cheatsheet_id, tags
-
-    await _truncate_all_tables(session)
 
 
 async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> UUID:
@@ -198,7 +199,9 @@ async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     await session.commit()
 
 
-async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[Tag]:
+async def _get_required_tags(
+    session: AsyncSession, cheatsheet_id: UUID
+) -> list[dict[str, str | int]]:
     query = text(
         """SELECT tag_id, tag_name
            FROM md_tag
@@ -212,7 +215,7 @@ async def _get_required_tags(session: AsyncSession, cheatsheet_id: UUID) -> set[
     result = await session.execute(query, data)
     await session.commit()
     raw_tags = result.all()
-    tags = {Tag(tag_id, tag_name) for tag_id, tag_name in raw_tags}
+    tags = [{"tag_id": tag_id, "tag_name": tag_name} for tag_id, tag_name in raw_tags]
 
     return tags
 
