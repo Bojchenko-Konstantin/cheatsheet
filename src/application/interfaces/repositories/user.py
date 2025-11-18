@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any
+from uuid import UUID
 
 from src.application.dto import User, UserPayload
 
@@ -9,6 +10,10 @@ class IUserRepo(ABC):
 
     @abstractmethod
     async def get_by_user_name(self, user_name: str) -> User:
+        pass
+
+    @abstractmethod
+    async def get_by_id(self, user_id: UUID):
         pass
 
     @abstractmethod
