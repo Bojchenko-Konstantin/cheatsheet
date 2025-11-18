@@ -1,5 +1,6 @@
 from collections.abc import MutableMapping
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,6 +56,9 @@ class SQLAlchemyUserRepo(IUserRepo):
 
         user = User.from_dict(model.user)
         return user
+
+    async def get_by_id(self, user_id: UUID):
+        pass
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
