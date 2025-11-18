@@ -46,7 +46,7 @@ class SQLAlchemyUserRepo(IUserRepo):
                 UserModel.is_active,
                 UserModel.is_superuser,
                 UserModel.is_verified,
-            ),
+            )
         ).where(UserModel.user_name == user_name)
         result = await self._session.execute(statement)
         model = result.one_or_none()
@@ -57,8 +57,26 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User.from_dict(model.user)
         return user
 
-    async def get_by_id(self, user_id: UUID):
-        pass
+    async def get_by_id(self, user_id: UUID) -> User:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.hashed_password,
+                UserModel.is_active,
+                UserModel.is_superuser,
+                UserModel.is_verified,
+            )
+        ).where(UserModel.user_id == user_id)
+        result = await self._session.execute(statement)
+        model = result.one_or_none()
+
+        if not model:
+            raise
+
+        user = User.from_dict(model.user)
+        return user
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
