@@ -25,21 +25,24 @@ class JWTUseCase:
         algorithm: str,
         access_token_expires_in: int,
         refresh_token_expires_in: int,
+        hasher: PasswordHash,
     ):
         self._private_key = private_key
         self._public_key = public_key
         self._algorithm = algorithm
         self._access_token_expires_in = access_token_expires_in
         self._refresh_token_expires_in = refresh_token_expires_in
+        self._hasher = hasher
 
     async def get_jwt_tokens(self, payload: UserPayload) -> dict[str, str]:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
-        password_hash = PasswordHash.recommended()
+
+        refresh_token_hash = self._hasher.hash(refresh_token)  # noqa: F841
 
         # TODO This hash has to be saved in the database
         # with status (is_active) and device id.
-        refresh_token_hash = password_hash.hash(refresh_token)  # noqa: F841
+        # refresh_token_hash нужно сохранить в БД
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 

@@ -8,8 +8,9 @@ from src.application.interfaces import IUnitOfWork
 
 
 class UserUseCase:
-    def __init__(self, unit_of_work: IUnitOfWork):
+    def __init__(self, unit_of_work: IUnitOfWork, hasher: PasswordHash):
         self._unit_of_work = unit_of_work
+        self._hasher = hasher
 
     async def get_by_user_name(self, user_name: str) -> User:
         async with self._unit_of_work as uow:
@@ -29,12 +30,9 @@ class UserUseCase:
             user = await uow.user_repo.create(create_data)
             return user
 
-    @staticmethod
-    def _create_hashed_password(plain_password: str) -> str:
-        password_hash = PasswordHash.recommended()
-        return password_hash.hash(plain_password)
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        return self._hasher.verify(plain_password, hashed_password)
 
-    @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
-        password_hash = PasswordHash.recommended()
-        return password_hash.verify(plain_password, hashed_password)
+    def _create_hashed_password(self, plain_password: str) -> str:
+        password_hash = self._hasher.hash(plain_password)
+        return password_hash
