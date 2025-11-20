@@ -12,9 +12,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from src.infrastructure.database.models import Base
+from src.infrastructure.database.models.refresh_token import RefreshTokenModel
 
 if TYPE_CHECKING:
-    from src.infrastructure.database.models import CheatsheetModel, UserDetailModel
+    from src.infrastructure.database.models import (
+        CheatsheetModel,
+        RefreshTokenModel,
+        UserDetailModel,
+    )
 
 
 class UserModel(Base):
@@ -53,3 +58,6 @@ class UserModel(Base):
     )
     cheatsheets: Mapped[list[CheatsheetModel]] = relationship(back_populates="user")
     detail: Mapped[UserDetailModel] = relationship(back_populates="user")
+    refresh_tokens: Mapped[list["RefreshTokenModel"]] = relationship(
+        "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
+    )
