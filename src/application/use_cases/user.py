@@ -4,11 +4,12 @@ from uuid import UUID
 from pwdlib import PasswordHash
 
 from src.application.dto import User, UserPayload
+from src.application.hasher import HASHER
 from src.application.interfaces import IUnitOfWork
 
 
 class UserUseCase:
-    def __init__(self, unit_of_work: IUnitOfWork, hasher: PasswordHash):
+    def __init__(self, unit_of_work: IUnitOfWork, hasher: PasswordHash = HASHER):
         self._unit_of_work = unit_of_work
         self._hasher = hasher
 

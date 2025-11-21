@@ -11,6 +11,7 @@ from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
 from src.application.dto import UserPayload
+from src.application.hasher import HASHER
 
 
 class JWTUseCase:
@@ -25,7 +26,7 @@ class JWTUseCase:
         algorithm: str,
         access_token_expires_in: int,
         refresh_token_expires_in: int,
-        hasher: PasswordHash,
+        hasher: PasswordHash = HASHER,
     ):
         self._private_key = private_key
         self._public_key = public_key
