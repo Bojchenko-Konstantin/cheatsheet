@@ -62,7 +62,7 @@ class RefreshTokenModel(Base):
         "UserModel",
         back_populates="refresh_tokens",
     )
-    status: Mapped[RefreshTokenStatusModel] = relationship(
+    status_name: Mapped[RefreshTokenStatusModel] = relationship(
         "RefreshTokenStatusModel",
         back_populates="refresh_tokens",
     )

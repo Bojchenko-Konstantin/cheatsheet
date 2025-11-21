@@ -23,13 +23,13 @@ class RefreshTokenStatusModel(Base):
         Identity(always=True),
         primary_key=True,
     )
-    name: Mapped[str] = mapped_column(
+    status_name: Mapped[str] = mapped_column(
         String(20),
         unique=True,
         nullable=False,
     )
     refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel",
-        back_populates="status",
+        back_populates="status_name",
         cascade="all, delete-orphan",
     )
