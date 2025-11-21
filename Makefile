@@ -8,14 +8,18 @@ ENV_PATH = .env.$(ENV)
 runserver:
 	ENV_FILE=$(ENV_PATH) uvicorn src.main:app --reload
 
+# Apply all unapplied migrations to the latest version
+migrate:
+	ENV_FILE=$(ENV_PATH) alembic upgrade head
+
 # Run all tests.
-run_tests:
+test:
 	ENV_FILE=.env.test pytest
 
 # Run unit tests.
-run_unit_tests:
+unit:
 	ENV_FILE=.env.test pytest -m "not integration"
 
 # Run integration tests.
-run_integration_tests:
+integration:
 	ENV_FILE=.env.test pytest -m integration
