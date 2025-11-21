@@ -58,6 +58,6 @@ class UserModel(Base):
     )
     cheatsheets: Mapped[list[CheatsheetModel]] = relationship(back_populates="user")
     detail: Mapped[UserDetailModel] = relationship(back_populates="user")
-    refresh_tokens: Mapped[list["RefreshTokenModel"]] = relationship(
+    refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
     )

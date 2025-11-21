@@ -58,11 +58,11 @@ class RefreshTokenModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-    user: Mapped["UserModel"] = relationship(
+    user: Mapped[UserModel] = relationship(
         "UserModel",
         back_populates="refresh_tokens",
     )
-    status: Mapped["RefreshTokenStatusModel"] = relationship(
+    status: Mapped[RefreshTokenStatusModel] = relationship(
         "RefreshTokenStatusModel",
         back_populates="refresh_tokens",
     )

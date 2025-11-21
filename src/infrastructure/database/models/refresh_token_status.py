@@ -28,7 +28,7 @@ class RefreshTokenStatusModel(Base):
         unique=True,
         nullable=False,
     )
-    refresh_tokens: Mapped[list["RefreshTokenModel"]] = relationship(
+    refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel",
         back_populates="status",
         cascade="all, delete-orphan",
