@@ -10,9 +10,9 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
-from application.interfaces.unit_of_work import IUnitOfWork
 from src.application.dto import UserPayload
 from src.application.hasher import HASHER
+from src.application.interfaces.unit_of_work import IUnitOfWork
 
 
 class JWTUseCase:
