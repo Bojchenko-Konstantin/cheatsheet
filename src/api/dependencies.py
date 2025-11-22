@@ -20,8 +20,11 @@ def get_user_use_case(
     return UserUseCase(unit_of_work=unit_of_work)
 
 
-def get_jwt_use_case() -> JWTUseCase:
+def get_jwt_use_case(
+    unit_of_work: IUnitOfWork = Depends(get_unit_of_work),
+) -> JWTUseCase:
     return JWTUseCase(
+        unit_of_work=unit_of_work,
         private_key=settings.jwt.private_key,
         public_key=settings.jwt.public_key,
         algorithm=settings.jwt.algorithm,

@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
+from application.interfaces.unit_of_work import IUnitOfWork
 from src.application.dto import UserPayload
 from src.application.hasher import HASHER
 
@@ -21,6 +22,7 @@ class JWTUseCase:
 
     def __init__(
         self,
+        unit_of_work: IUnitOfWork,
         private_key: str,
         public_key: str,
         algorithm: str,
@@ -28,6 +30,7 @@ class JWTUseCase:
         refresh_token_expires_in: int,
         hasher: PasswordHash = HASHER,
     ):
+        self._unit_of_work = unit_of_work
         self._private_key = private_key
         self._public_key = public_key
         self._algorithm = algorithm
@@ -40,10 +43,6 @@ class JWTUseCase:
         refresh_token = str(uuid7())
 
         refresh_token_hash = self._hasher.hash(refresh_token)  # noqa: F841
-
-        # TODO This hash has to be saved in the database
-        # with status (is_active) and device id.
-        # refresh_token_hash нужно сохранить в БД
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 

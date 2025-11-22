@@ -2,11 +2,13 @@ from typing import Any, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.application.interfaces import ICheatsheetRepo, IUnitOfWork
-from src.application.interfaces.repositories.user import IUserRepo
+from src.application.interfaces import ICheatsheetRepo, IJWTRepo, IUnitOfWork, IUserRepo
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-from src.infrastructure.repositories import SQLAlchemyCheatsheetRepo
-from src.infrastructure.repositories.user_repository import SQLAlchemyUserRepo
+from src.infrastructure.repositories import (
+    SQLAlchemyCheatsheetRepo,
+    SQLAlchemyJWTRepo,
+    SQLAlchemyUserRepo,
+)
 
 
 class SQLAlchemyUnitOfWork(IUnitOfWork):
@@ -20,6 +22,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self._session: AsyncSession = self._session_factory()
         self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepo(self._session)
         self.user_repo: IUserRepo = SQLAlchemyUserRepo(self._session)
+        self.jwt_repo: IJWTRepo = SQLAlchemyJWTRepo(self._session)
         return await super().__aenter__()
 
     async def __aexit__(self, *args: Any) -> None:
