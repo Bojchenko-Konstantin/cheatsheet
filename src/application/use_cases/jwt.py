@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
-from src.application.dto import UserPayload
+from src.application.dto import RefreshToken, UserPayload
 from src.application.hasher import HASHER
 from src.application.interfaces.unit_of_work import IUnitOfWork
 
@@ -41,10 +41,27 @@ class JWTUseCase:
     async def get_jwt_tokens(self, payload: UserPayload) -> dict[str, str]:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
-
-        refresh_token_hash = self._hasher.hash(refresh_token)  # noqa: F841
+        user_id = payload.user_id
+        await self._save_refresh_token_hash(user_id, refresh_token)
 
         return dict(access_token=access_token, refresh_token=refresh_token)
+
+    async def _save_refresh_token_hash(self, user_id: str, refresh_token: str) -> None:
+        refresh_token_hash = self._hasher.hash(refresh_token)
+        expiration_time = datetime.now(tz=timezone.utc) + timedelta(
+            minutes=self._refresh_token_expires_in
+        )
+
+        # TODO: Add real fingerprint hash.
+        refresh_token_to_save = RefreshToken(
+            user_id=user_id,
+            token_hash=refresh_token_hash,
+            fingerprint_hash=refresh_token_hash,
+            expires_at=expiration_time,
+        )
+
+        async with self._unit_of_work as uow:
+            await uow.jwt_repo.save(refresh_token_to_save)
 
     async def verify_access_token(self, access_token: str) -> UserPayload:
         public_key = self._get_appropriate_public_key_form()

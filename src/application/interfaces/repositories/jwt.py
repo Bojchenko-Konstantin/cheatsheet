@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
+
+from src.application.dto import RefreshToken
 
 
 class IJWTRepo(ABC):
     """Abstract class for operations with user storage."""
 
     @abstractmethod
-    async def save(self, token_hash: str, expires_at: datetime) -> None:
+    async def save(self, refresh_token: RefreshToken) -> None:
         pass
