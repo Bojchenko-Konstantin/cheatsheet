@@ -1,8 +1,11 @@
+import logging
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Self
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -31,3 +34,22 @@ class UserPayload:
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+@dataclass(slots=True)
+class RefreshToken:
+    user_id: str | UUID
+    token_hash: str
+    fingerprint_hash: str
+    expires_at: datetime
+
+    def __post_init__(self):
+        if not isinstance(self.user_id, UUID):
+            try:
+                self.user_id = UUID(self.user_id)
+            except ValueError:
+                logger.exception(
+                    "Unable to convert user_id to UUID, invalid id provided: %s",
+                    self.user_id,
+                )
+                raise
