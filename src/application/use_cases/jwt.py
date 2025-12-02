@@ -1,5 +1,6 @@
 import base64
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 import jwt
 from cryptography.hazmat.primitives import serialization
@@ -10,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
-from src.application.dto import RefreshToken, UserPayload
+from src.application.dto import RefreshToken, TokenStatus, UserPayload
 from src.application.hasher import HASHER
 from src.application.interfaces.unit_of_work import IUnitOfWork
 
@@ -74,8 +75,37 @@ class JWTUseCase:
         user_payload = UserPayload.from_dict(payload)
         return user_payload
 
-    async def verify_refresh_token(self, refresh_token: str) -> dict[str, str]:
-        pass
+    async def verify_refresh_token(
+        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
+    ) -> None:
+        async with self._unit_of_work as uow:
+            tokens = await uow.jwt_repo.get_device_token_family(user_id, fingerprint)
+
+        active_token: bool = False
+
+        for token in tokens:
+            if token.status_id == TokenStatus.ACTIVE and self._hasher.verify(
+                plain_refresh_token, token.token_hash
+            ):
+                return
+
+            elif token.status_id == TokenStatus.ACTIVE:
+                active_token = True
+
+        for token in tokens:
+            if (
+                token.status_id == TokenStatus.EXPIRED
+                and not active_token
+                and self._hasher.verify(plain_refresh_token, token.token_hash)
+            ):
+                return
+
+            else:
+                # Here goes Taskiq.
+                pass
+
+        # TODO: implement logging out and delete compromised token family
+        # or set all token family as compromised.
 
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
