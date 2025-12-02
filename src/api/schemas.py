@@ -114,3 +114,9 @@ class TokenPair(Schema):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class TokenVerification(Schema):
+    refresh_token: str
+    fingerprint: str
+    user_id: UUID
