@@ -3,6 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.operators import not_in_op
 
 from src.application.dto import RefreshToken, TokenStatus
 from src.application.interfaces.repositories.jwt import IJWTRepo
@@ -19,8 +20,8 @@ class SQLAlchemyJWTRepo(IJWTRepo):
 
         model = RefreshTokenModel(
             user_id=refresh_token.user_id,
-            hashed_token=refresh_token.token_hash,
-            hashed_fingerprint=refresh_token.fingerprint_hash,
+            hashed_token=refresh_token.hashed_token,
+            hashed_fingerprint=refresh_token.hashed_fingerprint,
             expires_at=refresh_token.expires_at,
         )
         self._session.add(model)
@@ -40,7 +41,13 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             .where(
                 RefreshTokenModel.user_id == user_id,
                 RefreshTokenModel.hashed_fingerprint == fingerprint,
-                RefreshTokenModel.status_id != TokenStatus.COMPROMISED,
+                not_in_op(
+                    RefreshTokenModel.status_id,
+                    [
+                        TokenStatus.COMPROMISED,
+                        TokenStatus.REVOKED,
+                    ],
+                ),
             )
             .order_by(
                 RefreshTokenModel.status_id,
@@ -48,14 +55,14 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             )
         )
         result = await self._session.execute(statement)
-        [raw_tokens] = result.all()
+        raw_tokens = result.all()
 
         if not raw_tokens:
             raise
 
         tokens = [
-            RefreshToken.from_dict(dict(user_id=user_id, **token_data))
-            for token_data in raw_tokens.refresh_token
+            RefreshToken.from_dict(dict(user_id=user_id, **token_data.refresh_token))
+            for token_data in raw_tokens
         ]
 
         return tokens

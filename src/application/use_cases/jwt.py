@@ -56,8 +56,8 @@ class JWTUseCase:
         # TODO: Add real fingerprint hash.
         refresh_token_to_save = RefreshToken(
             user_id=user_id,
-            token_hash=refresh_token_hash,
-            fingerprint_hash=refresh_token_hash,
+            hashed_token=refresh_token_hash,
+            hashed_fingerprint=refresh_token_hash,
             expires_at=expiration_time,
         )
 
@@ -85,7 +85,7 @@ class JWTUseCase:
 
         for token in tokens:
             if token.status_id == TokenStatus.ACTIVE and self._hasher.verify(
-                plain_refresh_token, token.token_hash
+                plain_refresh_token, token.hashed_token
             ):
                 return
 
@@ -96,7 +96,7 @@ class JWTUseCase:
             if (
                 token.status_id == TokenStatus.EXPIRED
                 and not active_token
-                and self._hasher.verify(plain_refresh_token, token.token_hash)
+                and self._hasher.verify(plain_refresh_token, token.hashed_token)
             ):
                 return
 

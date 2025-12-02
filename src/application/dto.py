@@ -47,10 +47,10 @@ class UserPayload:
 @dataclass(slots=True)
 class RefreshToken:
     user_id: str | UUID
-    token_hash: str
-    fingerprint_hash: str
+    hashed_token: str
     expires_at: datetime
     status_id: int = TokenStatus.ACTIVE
+    hashed_fingerprint: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.user_id, UUID):
