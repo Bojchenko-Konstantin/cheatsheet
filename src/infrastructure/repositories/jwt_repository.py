@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.repositories.utils import DictBundle
 from src.application.dto import RefreshToken, TokenStatus
 from src.application.interfaces.repositories.jwt import IJWTRepo
 from src.infrastructure.database.models.refresh_token import RefreshTokenModel
+from src.infrastructure.repositories.utils import DictBundle
 
 
 class SQLAlchemyJWTRepo(IJWTRepo):
