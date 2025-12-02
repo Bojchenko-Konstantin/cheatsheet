@@ -2,10 +2,18 @@ import logging
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass
 from datetime import datetime
+from enum import IntEnum
 from typing import Self
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
+
+
+class TokenStatus(IntEnum):
+    ACTIVE = 1
+    REVOKED = 2
+    EXPIRED = 3
+    COMPROMISED = 4
 
 
 @dataclass(slots=True)
@@ -42,6 +50,7 @@ class RefreshToken:
     token_hash: str
     fingerprint_hash: str
     expires_at: datetime
+    status_id: int = TokenStatus.ACTIVE
 
     def __post_init__(self):
         if not isinstance(self.user_id, UUID):
@@ -53,3 +62,7 @@ class RefreshToken:
                     self.user_id,
                 )
                 raise
+
+    @classmethod
+    def from_dict(cls, kwargs: MutableMapping) -> Self:
+        return cls(**kwargs)
