@@ -24,8 +24,9 @@ def upgrade():
         """
         INSERT INTO md_refresh_token_status (status_name) VALUES
         ('active'),
+        ('revoked'),
         ('expired'),
-        ('revoked')
+        ('compromised')
         """
     )
 
