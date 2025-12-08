@@ -4,8 +4,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from taskiq import AsyncTaskiqDecoratedTask
 
-from src.api.dependencies import get_jwt_use_case, get_user_use_case, oauth2_scheme
+from src.api.dependencies import (
+    get_jwt_use_case,
+    get_user_use_case,
+    oauth2_scheme,
+    verify_token_is_not_compromised,
+)
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import UserPayload
 from src.application.use_cases.jwt import JWTUseCase
@@ -82,12 +88,27 @@ async def refresh(
     token_verification: TokenVerification,
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    verify_compromised_tokens: Annotated[
+        AsyncTaskiqDecoratedTask, Depends(verify_token_is_not_compromised)
+    ],
 ):
-    await jwt_use_case.verify_refresh_token(
-        token_verification.user_id,
-        token_verification.refresh_token,
-        token_verification.fingerprint,
-    )
+    try:
+        await jwt_use_case.verify_refresh_token(
+            user_id=token_verification.user_id,
+            plain_refresh_token=token_verification.refresh_token,
+            fingerprint=token_verification.fingerprint,
+        )
+    except Exception:
+        await verify_compromised_tokens.kiq(
+            user_id=token_verification.user_id,
+            plain_refresh_token=token_verification.refresh_token,
+            fingerprint=token_verification.fingerprint,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from None
 
     user = await user_use_case.get_by_id(token_verification.user_id)
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
