@@ -5,10 +5,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
-from infrastructure.broker import BROKER
 from src.api.v1.routers.auth import router as router_auth
 from src.api.v1.routers.cheatsheet import router as router_cheatsheet
 from src.core.logging_config import setup_logging
+from src.infrastructure.broker import BROKER
 from src.infrastructure.database import dispose
 
 
