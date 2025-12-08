@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from src.application.interfaces import IUnitOfWork
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.jwt import JWTUseCase
+from src.application.use_cases.tasks import verify_token_was_not_compromised
 from src.application.use_cases.user import UserUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
@@ -37,6 +38,10 @@ def get_cheatsheet_use_case(
     unit_of_work: IUnitOfWork = Depends(get_unit_of_work),
 ) -> CheatsheetUseCase:
     return CheatsheetUseCase(unit_of_work=unit_of_work)
+
+
+def verify_token_is_not_compromised():
+    return verify_token_was_not_compromised
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
