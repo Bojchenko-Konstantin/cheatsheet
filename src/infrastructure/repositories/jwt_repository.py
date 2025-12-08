@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from src.application.dto import RefreshToken, TokenStatus
 from src.application.interfaces.repositories.jwt import IJWTRepo
 from src.infrastructure.database.models.refresh_token import RefreshTokenModel
 from src.infrastructure.repositories.utils import DictBundle
+
+logger = logging.getLogger(__name__)
 
 
 class SQLAlchemyJWTRepo(IJWTRepo):
@@ -84,3 +87,22 @@ class SQLAlchemyJWTRepo(IJWTRepo):
 
         except Exception:
             raise
+
+    async def mark_tokens_as_compromised(
+        self, user_id: UUID, fingerprint: str, time_revealed: datetime
+    ) -> None:
+        update_statement = (
+            update(RefreshTokenModel)
+            .where(
+                RefreshTokenModel.user_id == user_id,
+                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.created_at <= time_revealed,
+            )
+            .values(status_id=TokenStatus.COMPROMISED)
+        )
+
+        try:
+            await self._session.execute(update_statement)
+
+        except Exception:
+            logger.error("Failed to mark tokens as compromised")
