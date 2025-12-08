@@ -46,6 +46,13 @@ class RedisConfig(BaseModel):
     password: str
 
 
+class BrokerConfig(BaseModel):
+    host: str
+    port: int
+    user: str
+    password: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -56,6 +63,7 @@ class Settings(BaseSettings):
     logging: LoggingConfig = LoggingConfig()
     jwt: JWTConfig
     redis: RedisConfig
+    broker: BrokerConfig
 
 
 settings = Settings()  # type: ignore
