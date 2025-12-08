@@ -57,7 +57,7 @@ class JWTUseCase:
         refresh_token_to_save = RefreshToken(
             user_id=user_id,
             hashed_token=refresh_token_hash,
-            hashed_fingerprint=refresh_token_hash,
+            hashed_fingerprint="mobile phone",
             expires_at=expiration_time,
         )
 
@@ -101,11 +101,7 @@ class JWTUseCase:
                 return
 
             else:
-                # Here goes Taskiq.
-                pass
-
-        # TODO: implement logging out and delete compromised token family
-        # or set all token family as compromised.
+                raise
 
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
