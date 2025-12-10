@@ -31,7 +31,7 @@ class TagModel(Base):
         nullable=False,
         unique=True,
     )
-    cheatsheets: Mapped[list["CheatsheetModel"]] = relationship(
+    cheatsheets: Mapped[list[CheatsheetModel]] = relationship(
         secondary="cheatsheet_to_tag",
         back_populates="tags",
         viewonly=True,

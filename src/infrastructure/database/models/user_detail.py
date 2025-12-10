@@ -17,7 +17,11 @@ from sqlalchemy.sql import func
 from src.infrastructure.database.models.base import Base
 
 if TYPE_CHECKING:
-    from src.infrastructure.database.models.user import UserModel
+    from src.infrastructure.database.models import (
+        SocialNetworkModel,
+        UserDetailToSocialNetworkModel,
+        UserModel,
+    )
 
 
 class UserDetailModel(Base):
@@ -45,3 +49,14 @@ class UserDetailModel(Base):
         server_default=func.now(),
     )
     user: Mapped[UserModel] = relationship(back_populates="detail")
+    social_network_associations: Mapped[list[UserDetailToSocialNetworkModel]] = (
+        relationship(
+            back_populates="user_detail",
+            cascade="all, delete-orphan",
+        )
+    )
+    social_networks: Mapped[list[SocialNetworkModel]] = relationship(
+        secondary="user_detail_to_social_network",
+        back_populates="user_details",
+        viewonly=True,
+    )
