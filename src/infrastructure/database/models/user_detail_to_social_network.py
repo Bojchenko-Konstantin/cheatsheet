@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class UserDetailToSocialNetworkModel(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("user.user_id", ondelete="CASCADE"),
+        ForeignKey("user_detail.user_id", ondelete="CASCADE"),
         primary_key=True,
     )
     social_network_id: Mapped[int] = mapped_column(
