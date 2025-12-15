@@ -14,6 +14,7 @@ class Tag:
 @dataclass(slots=True)
 class Cheatsheet:
     cheatsheet_id: UUID
+    user_id: UUID
     title: str
     content: str
     is_public: bool
@@ -27,6 +28,10 @@ class Cheatsheet:
     def from_dict(cls, kwargs: MutableMapping) -> Self:
         if not isinstance(kwargs["tags"], set):
             kwargs["tags"] = {Tag(**tag) for tag in kwargs["tags"]}
+
+        if isinstance(kwargs.get("user_id"), str):
+            kwargs["user_id"] = UUID(kwargs["user_id"])
+
         return cls(**kwargs)
 
     def to_dict(self) -> dict:
