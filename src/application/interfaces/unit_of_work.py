@@ -15,6 +15,10 @@ class IUnitOfWork(ABC):
     user_repo: IUserRepo
     jwt_repo: IJWTRepo
 
+    @abstractmethod
+    def readonly(self) -> Self:
+        pass
+
     async def __aenter__(self) -> Self:
         return self
 

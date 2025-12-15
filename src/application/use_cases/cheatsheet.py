@@ -10,7 +10,7 @@ class CheatsheetUseCase:
         self._unit_of_work = unit_of_work
 
     async def get_by_id(self, cheatsheet_id: UUID) -> Cheatsheet:
-        async with self._unit_of_work as uow:
+        async with self._unit_of_work.readonly() as uow:
             cheatsheet = await uow.cheatsheet_repo.get_by_id(cheatsheet_id)
             return cheatsheet
 
