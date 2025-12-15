@@ -66,6 +66,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
                 DictBundle(
                     "cheatsheet",
                     CheatsheetModel.cheatsheet_id,
+                    CheatsheetModel.user_id,
                     CheatsheetModel.title,
                     CheatsheetModel.content,
                     CheatsheetModel.created_at,
