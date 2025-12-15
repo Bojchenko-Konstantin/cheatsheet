@@ -42,6 +42,8 @@ async def create_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
 ):
     create_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
+    # TODO: IMPLEMENT get_current_user! Application won't work without this!
+    # Example: create_data["user_id"] = current_user.id
 
     try:
         cheatsheet = await cheatsheet_use_case.create(create_data)
@@ -67,6 +69,8 @@ async def update_cheatsheet(
     try:
         update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
         update_data["cheatsheet_id"] = cheatsheet_id
+        # TODO: IMPLEMENT get_current_user! Application won't work without this!
+        # Example: update_data["user_id"] = current_user.id
 
         updated_cheatsheet = await cheatsheet_use_case.update(update_data=update_data)
 
