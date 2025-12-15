@@ -14,12 +14,12 @@ class UserUseCase:
         self._hasher = hasher
 
     async def get_by_user_name(self, user_name: str) -> User:
-        async with self._unit_of_work as uow:
+        async with self._unit_of_work.readonly() as uow:
             user = await uow.user_repo.get_by_user_name(user_name)
             return user
 
     async def get_by_id(self, user_id: UUID) -> User:
-        async with self._unit_of_work as uow:
+        async with self._unit_of_work.readonly() as uow:
             user = await uow.user_repo.get_by_id(user_id)
             return user
 
