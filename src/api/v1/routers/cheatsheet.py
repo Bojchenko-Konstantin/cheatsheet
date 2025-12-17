@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.dependencies import get_cheatsheet_use_case
 from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
+from src.api.v1.routers.auth import get_current_user
+from src.application.dto import User
 from src.application.exceptions import (
     CheatsheetCreationError,
     CheatsheetNotFoundError,
@@ -40,10 +42,10 @@ async def get_cheatsheet_by_id(
 async def create_cheatsheet(
     cheatsheet_data: CheatsheetCreate,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     create_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
-    # TODO: IMPLEMENT get_current_user! Application won't work without this!
-    # Example: create_data["user_id"] = current_user.id
+    create_data["user_id"] = current_user.user_id
 
     try:
         cheatsheet = await cheatsheet_use_case.create(create_data)
@@ -65,12 +67,12 @@ async def update_cheatsheet(
     cheatsheet_id: UUID,
     cheatsheet_data: CheatsheetUpdate,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
         update_data["cheatsheet_id"] = cheatsheet_id
-        # TODO: IMPLEMENT get_current_user! Application won't work without this!
-        # Example: update_data["user_id"] = current_user.id
+        update_data["user_id"] = current_user.user_id
 
         updated_cheatsheet = await cheatsheet_use_case.update(update_data=update_data)
 

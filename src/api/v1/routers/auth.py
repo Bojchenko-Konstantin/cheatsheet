@@ -63,26 +63,6 @@ async def register(
     return token_pair
 
 
-@router.post("/token")
-async def get_current_active_user(
-    access_token: Annotated[str, Depends(oauth2_scheme)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-):
-    try:
-        payload = await jwt_use_case.verify_access_token(access_token)
-        user = await user_use_case.get_by_id(UUID(payload.user_id))
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            headers={"WWW-Authenticate": "Bearer"},
-            detail="Failed to authorize",
-        ) from e
-
-    return user
-
-
 @router.post("/refresh")
 async def refresh(
     token_verification: TokenVerification,
@@ -114,3 +94,22 @@ async def refresh(
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
     return token_pair
+
+
+async def get_current_user(
+    access_token: Annotated[str, Depends(oauth2_scheme)],
+    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
+):
+    try:
+        payload = await jwt_use_case.verify_access_token(access_token)
+        user = await user_use_case.get_by_id(UUID(payload.user_id))
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
+
+    return user
