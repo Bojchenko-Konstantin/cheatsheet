@@ -12,3 +12,7 @@ class CheatsheetCreationError(ApplicationException):
 
 class CheatsheetUpdateError(ApplicationException):
     """This exception will raise when cheatsheet failed to be updated."""
+
+
+class CheatsheetAccessDeniedError(ApplicationException):
+    """Raised when user doesn't have permission to access a cheatsheet."""
