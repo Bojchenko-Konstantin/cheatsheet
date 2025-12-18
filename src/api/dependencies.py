@@ -4,10 +4,10 @@ from fastapi.security import OAuth2PasswordBearer
 from src.application.interfaces import IUnitOfWork
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.jwt import JWTUseCase
-from src.application.use_cases.tasks import verify_token_was_not_compromised
 from src.application.use_cases.user import UserUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
+from src.infrastructure.tasks import verify_token_was_not_compromised
 
 
 async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
