@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.dependencies import get_cheatsheet_use_case
 from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
-from src.api.v1.routers.auth import get_current_user
+from src.api.v1.routers.auth import get_current_user, get_optional_user
 from src.application.dto import User
 from src.application.exceptions import (
+    CheatsheetAccessDeniedError,
     CheatsheetCreationError,
     CheatsheetNotFoundError,
     CheatsheetUpdateError,
@@ -24,9 +25,16 @@ logger = logging.getLogger(__name__)
 async def get_cheatsheet_by_id(
     cheatsheet_id: UUID,
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
+    current_user: Annotated[User | None, Depends(get_optional_user)],
 ):
     try:
-        cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id)
+        current_user_id = current_user.user_id if current_user else None
+        cheatsheet = await cheatsheet_use_case.get_by_id(cheatsheet_id, current_user_id)
+    except CheatsheetAccessDeniedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this cheatsheet",
+        ) from e
     except CheatsheetNotFoundError as e:
         logger.exception("Cheatsheet with id %s was not found", cheatsheet_id)
         raise HTTPException(

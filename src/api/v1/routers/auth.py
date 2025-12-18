@@ -10,10 +10,11 @@ from src.api.dependencies import (
     get_jwt_use_case,
     get_user_use_case,
     oauth2_scheme,
+    oauth2_scheme_optional,
     verify_token_is_not_compromised,
 )
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
-from src.application.dto import UserPayload
+from src.application.dto import User, UserPayload
 from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
 
@@ -113,3 +114,19 @@ async def get_current_user(
         ) from e
 
     return user
+
+
+async def get_optional_user(
+    access_token: Annotated[str | None, Depends(oauth2_scheme_optional)],
+    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
+) -> User | None:
+    if not access_token:
+        return None
+
+    try:
+        payload = await jwt_use_case.verify_access_token(access_token)
+        user = await user_use_case.get_by_id(UUID(payload.user_id))
+        return user
+    except Exception:
+        return None
