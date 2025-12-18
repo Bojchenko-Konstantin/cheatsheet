@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 
 from src.application.interfaces import IUnitOfWork
@@ -45,3 +45,17 @@ def verify_token_is_not_compromised():
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
+class OAuth2PasswordBearerOptional(OAuth2PasswordBearer):
+    async def __call__(self, request: Request) -> str | None:
+        authorization = request.headers.get("Authorization")
+        if not authorization:
+            return None
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer":
+            return None
+        return token
+
+
+oauth2_scheme_optional = OAuth2PasswordBearerOptional(tokenUrl="login")
