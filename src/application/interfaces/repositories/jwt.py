@@ -20,6 +20,12 @@ class IJWTRepo(ABC):
         pass
 
     @abstractmethod
+    async def get_device_blacklisted_token_family(
+        self, user_id: UUID, fingerprint: str
+    ) -> list[RefreshToken] | None:
+        pass
+
+    @abstractmethod
     async def mark_tokens_as_compromised(
         self, user_id: UUID, fingerprint: str, time_revealed: datetime
     ) -> Any:
