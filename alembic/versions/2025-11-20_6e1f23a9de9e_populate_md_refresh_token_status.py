@@ -20,10 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade():
     op.execute(
         """
-        INSERT INTO md_refresh_token_status (name) VALUES
+        INSERT INTO md_refresh_token_status (status_name) VALUES
         ('active'),
         ('revoked'),
-        ('expired')
+        ('expired'),
+        ('compromised')
     """
     )
 
@@ -31,5 +32,5 @@ def upgrade():
 def downgrade():
     op.execute(
         """DELETE FROM md_refresh_token_status
-        WHERE name IN ('active', 'revoked', 'expired')"""
+        WHERE status_name IN ('active', 'revoked', 'expired', 'compromised')"""
     )

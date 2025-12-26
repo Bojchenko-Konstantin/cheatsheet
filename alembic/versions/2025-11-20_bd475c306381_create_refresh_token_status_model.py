@@ -30,9 +30,11 @@ def upgrade() -> None:
             sa.Identity(always=True),
             nullable=False,
         ),
-        sa.Column("name", sa.String(length=20), nullable=False),
+        sa.Column("status_name", sa.String(length=20), nullable=False),
         sa.PrimaryKeyConstraint("status_id", name=op.f("pk_md_refresh_token_status")),
-        sa.UniqueConstraint("name", name=op.f("uq_md_refresh_token_status_name")),
+        sa.UniqueConstraint(
+            "status_name", name=op.f("uq_md_refresh_token_status_name")
+        ),
     )
     # ### end Alembic commands ###
 

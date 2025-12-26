@@ -1,7 +1,7 @@
 """add_social_networks_and_link_to_user_detail
 
 Revision ID: 87c32910ae5b
-Revises: 1c903d27104e
+Revises: 060e12e221ed
 Create Date: 2025-12-10 20:34:28.426754
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "87c32910ae5b"
-down_revision: Union[str, None] = "1c903d27104e"
+down_revision: Union[str, None] = "060e12e221ed"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
