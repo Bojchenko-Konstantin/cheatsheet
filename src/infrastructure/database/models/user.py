@@ -13,6 +13,9 @@ from sqlalchemy.sql import func
 
 from src.infrastructure.database.models import Base
 from src.infrastructure.database.models.refresh_token import RefreshTokenModel
+from src.infrastructure.database.models.refresh_token_blacklist import (
+    RefreshTokenBlacklistModel,
+)
 
 if TYPE_CHECKING:
     from src.infrastructure.database.models import (
@@ -60,4 +63,9 @@ class UserModel(Base):
     detail: Mapped[UserDetailModel] = relationship(back_populates="user")
     refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
+    )
+    blacklisted_tokens: Mapped[list[RefreshTokenBlacklistModel]] = relationship(
+        "RefreshTokenBlacklistModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
