@@ -60,9 +60,9 @@ class RefreshTokenBlacklistModel(Base):
     )
     user: Mapped[UserModel] = relationship(
         "UserModel",
-        back_populates="blacklist_tokens",
+        back_populates="blacklisted_tokens",
     )
     status_name: Mapped[RefreshTokenStatusModel] = relationship(
         "RefreshTokenStatusModel",
-        back_populates="refresh_tokens",
+        back_populates="blacklisted_refresh_tokens",
     )

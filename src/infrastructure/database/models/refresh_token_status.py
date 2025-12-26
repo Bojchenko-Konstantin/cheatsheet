@@ -10,6 +10,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.models import Base, RefreshTokenModel
+from src.infrastructure.database.models.refresh_token_blacklist import (
+    RefreshTokenBlacklistModel,
+)
 
 if TYPE_CHECKING:
     from src.infrastructure.database.models import RefreshTokenModel
@@ -30,6 +33,11 @@ class RefreshTokenStatusModel(Base):
     )
     refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel",
+        back_populates="status_name",
+        cascade="all, delete-orphan",
+    )
+    blacklisted_refresh_tokens: Mapped[list[RefreshTokenBlacklistModel]] = relationship(
+        "RefreshTokenBlacklistModel",
         back_populates="status_name",
         cascade="all, delete-orphan",
     )
