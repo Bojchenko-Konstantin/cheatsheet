@@ -66,18 +66,18 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             select(
                 DictBundle(
                     "refresh_token",
-                    RefreshTokenModel.hashed_token,
-                    RefreshTokenModel.expires_at,
-                    RefreshTokenModel.status_id,
+                    RefreshTokenBlacklistModel.hashed_token,
+                    RefreshTokenBlacklistModel.expires_at,
+                    RefreshTokenBlacklistModel.status_id,
                 )
             )
             .where(
-                RefreshTokenModel.user_id == user_id,
-                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenBlacklistModel.user_id == user_id,
+                RefreshTokenBlacklistModel.hashed_fingerprint == fingerprint,
             )
             .order_by(
-                RefreshTokenModel.status_id,
-                RefreshTokenModel.expires_at,
+                RefreshTokenBlacklistModel.status_id,
+                RefreshTokenBlacklistModel.expires_at,
             )
         )
         result = await self._session.execute(statement)
@@ -143,17 +143,66 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             raise e
 
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
+        time_revealed = datetime.now(timezone.utc)
         statement = (
-            update(RefreshTokenModel)
+            delete(RefreshTokenModel)
             .where(
                 RefreshTokenModel.user_id == user_id,
                 RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.created_at < time_revealed,
+            )
+            .returning(
+                RefreshTokenModel.user_id,
+                RefreshTokenModel.hashed_token,
+                RefreshTokenModel.hashed_fingerprint,
+                RefreshTokenModel.created_at,
+                RefreshTokenModel.expires_at,
+            )
+        )
+
+        try:
+            result = await self._session.execute(statement)
+            deleted_models = result.all()
+            blacklisted_models = []
+
+            for model in deleted_models:
+                blacklisted_models.append(
+                    RefreshTokenBlacklistModel(
+                        user_id=model.user_id,
+                        hashed_token=model.hashed_token,
+                        hashed_fingerprint=model.hashed_fingerprint,
+                        created_at=model.created_at,
+                        expires_at=model.expires_at,
+                        status_id=TokenStatus.COMPROMISED,
+                    )
+                )
+            self._session.add_all(blacklisted_models)
+
+        except Exception:
+            logger.error("Failed to delete compromised tokens")
+
+            statement = (
+                update(RefreshTokenModel)
+                .where(
+                    RefreshTokenModel.user_id == user_id,
+                    RefreshTokenModel.hashed_fingerprint == fingerprint,
+                    RefreshTokenModel.created_at < time_revealed,
+                )
+                .values(status_id=TokenStatus.COMPROMISED)
+            )
+            await self._session.execute(statement)
+
+        update_statement = (
+            update(RefreshTokenBlacklistModel)
+            .where(
+                RefreshTokenBlacklistModel.user_id == user_id,
+                RefreshTokenBlacklistModel.hashed_fingerprint == fingerprint,
             )
             .values(status_id=TokenStatus.COMPROMISED)
         )
 
         try:
-            await self._session.execute(statement)
+            await self._session.execute(update_statement)
 
         except Exception:
             logger.error("Failed to mark tokens as compromised")
