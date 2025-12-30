@@ -79,6 +79,7 @@ async def refresh(
             plain_refresh_token=token_verification.refresh_token,
             fingerprint=token_verification.fingerprint,
         )
+
     except Exception:
         await verify_compromised_tokens.kiq(
             user_id=token_verification.user_id,
@@ -128,5 +129,6 @@ async def get_optional_user(
         payload = await jwt_use_case.verify_access_token(access_token)
         user = await user_use_case.get_by_id(UUID(payload.user_id))
         return user
+
     except Exception:
         return None
