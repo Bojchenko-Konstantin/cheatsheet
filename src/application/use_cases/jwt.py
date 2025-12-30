@@ -43,6 +43,7 @@ class JWTUseCase:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
         user_id = payload.user_id
+        print(f"{refresh_token=}, {user_id=}")
         await self._save_refresh_token_hash(user_id, refresh_token)
 
         return dict(access_token=access_token, refresh_token=refresh_token)
@@ -79,29 +80,14 @@ class JWTUseCase:
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
         async with self._unit_of_work as uow:
-            tokens = await uow.jwt_repo.get_device_token_family(user_id, fingerprint)
+            token = await uow.jwt_repo.get_device_active_token(user_id, fingerprint)
 
-        active_token: bool = False
-
-        for token in tokens:
             if token.status_id == TokenStatus.ACTIVE and self._hasher.verify(
                 plain_refresh_token, token.hashed_token
             ):
                 return
 
-            elif token.status_id == TokenStatus.ACTIVE:
-                active_token = True
-
-        for token in tokens:
-            if (
-                token.status_id == TokenStatus.EXPIRED
-                and not active_token
-                and self._hasher.verify(plain_refresh_token, token.hashed_token)
-            ):
-                return
-
-            else:
-                raise
+            raise
 
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
