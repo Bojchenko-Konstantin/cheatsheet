@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -14,9 +13,9 @@ class IJWTRepo(ABC):
         pass
 
     @abstractmethod
-    async def get_device_token_family(
+    async def get_device_active_token(
         self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshToken]:
+    ) -> RefreshToken:
         pass
 
     @abstractmethod
@@ -26,7 +25,5 @@ class IJWTRepo(ABC):
         pass
 
     @abstractmethod
-    async def mark_tokens_as_compromised(
-        self, user_id: UUID, fingerprint: str, time_revealed: datetime
-    ) -> Any:
+    async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> Any:
         pass
