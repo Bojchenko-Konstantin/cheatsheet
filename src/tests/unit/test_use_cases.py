@@ -36,11 +36,14 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
         return created_cheatsheet
 
     async def update(self, update_data: dict[str, Any]) -> Cheatsheet:
-        timestamp_fields = dict(
-            created_at=datetime(2025, 1, 1), updated_at=datetime(2025, 1, 2)
+        return Cheatsheet.from_dict(
+            dict(
+                **update_data,
+                user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+                created_at=datetime(2025, 1, 1),
+                updated_at=datetime(2025, 1, 2),
+            )
         )
-
-        return Cheatsheet.from_dict(dict(**update_data, **timestamp_fields))
 
 
 class FakeUnitOfWork(IUnitOfWork):
@@ -138,7 +141,6 @@ class TestCheatsheetUseCase:
 
         update_data = dict(
             cheatsheet_id=existing_id,
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=False,
@@ -173,7 +175,6 @@ class TestCheatsheetUseCase:
 
         update_data = dict(
             cheatsheet_id=existing_id,
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=True,
