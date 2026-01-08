@@ -13,11 +13,12 @@ from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
     unit_of_work = SQLAlchemyUnitOfWork()
-    cheatsheet_id, raw_tags = populate_db_for_single_cheatsheet
+    cheatsheet_id, user_id, raw_tags = populate_db_for_single_cheatsheet
     tags = {Tag(tag_id=tag["tag_id"], tag_name=tag["tag_name"]) for tag in raw_tags}
     sut = CheatsheetUseCase(unit_of_work)
     expected_result = Cheatsheet(
         cheatsheet_id=cheatsheet_id,
+        user_id=user_id,
         title="title_1",
         content="content_1",
         created_at=datetime(2025, 1, 1),
@@ -28,7 +29,7 @@ async def test_get_cheathsheet_by_id(populate_db_for_single_cheatsheet):
         count_view=1,
     )
 
-    cheatsheet = await sut.get_by_id(cheatsheet_id)
+    cheatsheet = await sut.get_by_id(cheatsheet_id, current_user_id=user_id)
 
     assert cheatsheet == expected_result
 
