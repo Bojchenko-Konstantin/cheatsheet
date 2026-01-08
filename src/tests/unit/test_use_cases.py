@@ -16,6 +16,7 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
             cheatsheet_id=cheatsheet_id,
             title="title",
             content="content",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             created_at=datetime(2025, 1, 1),
             updated_at=datetime(2025, 1, 1),
             is_public=True,
@@ -47,6 +48,9 @@ class FakeUnitOfWork(IUnitOfWork):
         self.cheatsheet_repo: ICheatsheetRepo = FakeCheatsheetRepo()
         return await super().__aenter__()
 
+    def readonly(self) -> Any:
+        return self
+
     async def _commit(self) -> None:
         pass
 
@@ -62,6 +66,7 @@ class TestCheatsheetUseCase:
         existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
         expected_result = Cheatsheet(
             cheatsheet_id=existing_id,
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="title",
             content="content",
             created_at=datetime(2025, 1, 1),
@@ -82,6 +87,7 @@ class TestCheatsheetUseCase:
 
         create_data = dict(
             title="title",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             content="content",
             is_public=True,
             tags=[
@@ -98,6 +104,7 @@ class TestCheatsheetUseCase:
 
         expected_result = Cheatsheet(
             title="title",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             content="content",
             is_public=True,
             tags={Tag(1, "Python"), Tag(2, "Testing")},
@@ -118,6 +125,7 @@ class TestCheatsheetUseCase:
 
         expected_result = Cheatsheet(
             cheatsheet_id=existing_id,
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=False,
@@ -130,6 +138,7 @@ class TestCheatsheetUseCase:
 
         update_data = dict(
             cheatsheet_id=existing_id,
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=False,
@@ -151,6 +160,7 @@ class TestCheatsheetUseCase:
 
         expected_result = Cheatsheet(
             cheatsheet_id=existing_id,
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=True,
@@ -163,6 +173,7 @@ class TestCheatsheetUseCase:
 
         update_data = dict(
             cheatsheet_id=existing_id,
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             title="Updated Title",
             content="Updated Content",
             is_public=True,
