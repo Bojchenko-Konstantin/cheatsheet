@@ -7,6 +7,7 @@ from src.domain.entities import Cheatsheet, Tag
 def test_update_partial_fields():
     original_cheatsheet = Cheatsheet(
         cheatsheet_id=UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         title="Original Title",
         content="Original Content",
         is_public=True,
@@ -26,6 +27,7 @@ def test_update_partial_fields():
 
     expected_result = Cheatsheet(
         cheatsheet_id=original_cheatsheet.cheatsheet_id,
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         title="Updated Title",
         content="Updated Content",
         is_public=False,
@@ -49,6 +51,7 @@ def test_from_dict():
 
     test_data = {
         "cheatsheet_id": UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
+        "user_id": UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         "title": "Test Cheatsheet",
         "content": "Test content",
         "is_public": True,
