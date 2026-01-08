@@ -69,13 +69,16 @@ def test_environment_lifecycle(request) -> None:
 
 @pytest_asyncio.fixture()
 async def populate_db_for_single_cheatsheet() -> (
-    AsyncGenerator[tuple[UUID, list[dict]], None]
+    AsyncGenerator[tuple[UUID, UUID, list[dict]], None]
 ):
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
 
-    cheatsheet_id = await _populate_cheatsheet(session, quantity=cheatsheet_quantity)
+    user_id = await _populate_user(session)
+    cheatsheet_id = await _populate_cheatsheet(
+        session, user_id, quantity=cheatsheet_quantity
+    )
     await _populate_md_tag(session, quantity=tag_quantity)
     await _populate_cheatsheet_stats(
         session, quantity=cheatsheet_quantity, cheatsheet_id=cheatsheet_id
@@ -83,7 +86,7 @@ async def populate_db_for_single_cheatsheet() -> (
     await _populate_cheatsheet_to_tag(session)
     tags = await _get_required_tags(session, cheatsheet_id)
 
-    yield cheatsheet_id, tags
+    yield cheatsheet_id, user_id, tags
 
     await _truncate_all_tables(session)
 
@@ -131,16 +134,46 @@ def _run_database_migrations() -> None:
     subprocess.run(["uv", "run", "alembic", "upgrade", "head"], check=True)
 
 
-async def _populate_cheatsheet(session: AsyncSession, quantity: int) -> UUID:
+async def _populate_user(session: AsyncSession) -> UUID:
     query = text(
-        """INSERT INTO cheatsheet(title, content, is_public, created_at, updated_at)
-           VALUES (:title, :content, :is_public, :created_at, :updated_at)
+        """INSERT INTO "user"(user_name, is_verified, is_active,
+                              is_superuser, email, hashed_password)
+           VALUES (:user_name, :is_verified, :is_active,
+                   :is_superuser, :email, :hashed_password)
+           RETURNING user_id"""
+    )
+
+    data = [
+        {
+            "user_name": "test",
+            "is_verified": True,
+            "is_active": True,
+            "is_superuser": False,
+            "email": "test@random.mail",
+            "hashed_password": "hashed_password",
+        }
+    ]
+
+    result = await session.execute(query, data)
+    [user_id] = result.first()  # type: ignore
+
+    return user_id
+
+
+async def _populate_cheatsheet(
+    session: AsyncSession, user_id: UUID, quantity: int
+) -> UUID:
+    query = text(
+        """INSERT INTO cheatsheet(user_id, title, content,
+                                  is_public, created_at, updated_at)
+           VALUES (:user_id, :title, :content, :is_public, :created_at, :updated_at)
            RETURNING cheatsheet_id"""
     )
 
     test_date = datetime(2025, 1, 1)
     data = [
         {
+            "user_id": user_id,
             "title": f"title_{value}",
             "content": f"content_{value}",
             "is_public": _is_even(value),
@@ -174,7 +207,7 @@ async def _populate_cheatsheet_stats(
 ) -> None:
     query = text(
         """INSERT INTO cheatsheet_stats(cheatsheet_id, count_like, count_view)
-        VALUES (:cheatsheet_id, :count_like, :count_view)"""
+           VALUES (:cheatsheet_id, :count_like, :count_view)"""
     )
 
     data = [
@@ -189,10 +222,11 @@ async def _populate_cheatsheet_stats(
 async def _populate_cheatsheet_to_tag(session: AsyncSession) -> None:
     query = text(
         """INSERT INTO cheatsheet_to_tag(cheatsheet_id, tag_id) (
-            SELECT cheatsheet_id, tag_id
-            FROM cheatsheet
-            CROSS JOIN md_tag
-            ORDER BY tag_id)"""
+               SELECT cheatsheet_id, tag_id
+               FROM cheatsheet
+               CROSS JOIN md_tag
+               ORDER BY tag_id
+           )"""
     )
 
     await session.execute(query)
@@ -223,6 +257,7 @@ async def _get_required_tags(
 async def _truncate_all_tables(session: AsyncSession) -> None:
     query = text(
         """TRUNCATE cheatsheet,
+                    "user",
                     md_tag,
                     cheatsheet_stats,
                     cheatsheet_to_tag
