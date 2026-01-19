@@ -122,28 +122,33 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
                 content=update_data["content"],
                 is_public=update_data["is_public"],
             )
-            .returning(CheatsheetModel.created_at, CheatsheetModel.updated_at)
+            .returning(
+                CheatsheetModel.created_at,
+                CheatsheetModel.updated_at,
+                CheatsheetModel.user_id,
+            )
         )
 
         try:
-            [result_time] = await self._session.execute(update_statement)
+            [result] = await self._session.execute(update_statement)
 
         except Exception as e:
             raise CheatsheetUpdateError(
                 f"Failed to update cheatsheet {update_data['cheatsheet_id']}."
             ) from e
 
-        updated_cheatsheet = self._get_new_cheatsheet(result_time, update_data)
+        updated_cheatsheet = self._get_new_cheatsheet(result, update_data)
         await self._update_tags(updated_cheatsheet)
 
         return updated_cheatsheet
 
     @staticmethod
     def _get_new_cheatsheet(
-        result_time: Row[tuple[datetime, ...]], update_data: dict[str, Any]
+        result_time: Row[tuple[datetime, datetime, UUID]], update_data: dict[str, Any]
     ) -> Cheatsheet:
         cheatsheet = Cheatsheet.from_dict(
             dict(
+                user_id=result_time.user_id,
                 created_at=result_time.created_at,
                 updated_at=result_time.updated_at,
                 **update_data,

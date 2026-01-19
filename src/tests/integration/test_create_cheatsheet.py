@@ -13,10 +13,11 @@ from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 async def test_created_cheatsheet_persists_to_database(
     populate_db_for_single_cheatsheet,
 ):
-    _, tags = populate_db_for_single_cheatsheet
+    _, user_id, tags = populate_db_for_single_cheatsheet
     sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
 
     data_for_new_cheatsheet = dict(
+        user_id=user_id,
         title="Test Cheatsheet",
         content="Test content",
         is_public=True,
@@ -40,6 +41,7 @@ def _build_cheatsheet_query() -> TextClause:
         """
         SELECT
             c.cheatsheet_id,
+            c.user_id,
             c.title,
             c.content,
             c.is_public,
@@ -66,6 +68,7 @@ def _build_cheatsheet_query() -> TextClause:
 def _create_cheatsheet_from_db_row(db_row: Row) -> Cheatsheet:
     return Cheatsheet(
         cheatsheet_id=db_row.cheatsheet_id,
+        user_id=db_row.user_id,
         title=db_row.title,
         content=db_row.content,
         is_public=db_row.is_public,
