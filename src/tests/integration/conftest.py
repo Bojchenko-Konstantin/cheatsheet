@@ -1,9 +1,11 @@
 import subprocess
 import time
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import AsyncIterator
 from uuid import UUID
 
 import docker
@@ -11,11 +13,15 @@ import pytest
 import pytest_asyncio
 from docker import DockerClient
 from docker.models.containers import Container
+from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
+from src.main import router_auth, router_cheatsheet
 
 START_INDEX: int = 1
 
@@ -48,6 +54,32 @@ DATABASE_ENV = DatabaseConfig(
     password=settings.database.db_password,
     internal_container_port="5432",
 )
+
+
+@asynccontextmanager
+async def empty_lifespan(app: FastAPI) -> AsyncIterator:
+    yield
+
+
+@pytest.fixture()
+def app() -> FastAPI:
+    app = FastAPI(
+        default_response_class=ORJSONResponse,
+        lifespan=empty_lifespan,
+    )
+    app.include_router(router_cheatsheet)
+    app.include_router(router_auth)
+    return app
+
+
+@pytest.fixture()
+async def async_client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+    ) as client:
+        yield client
 
 
 @pytest.fixture(scope="session", autouse=True)
