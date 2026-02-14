@@ -1,22 +1,25 @@
 from typing import Any
 
 import pytest
-from fastapi import status
+from fastapi import FastAPI, status
+from httpx import AsyncClient
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
 from src.api.v1.routers.auth import get_current_user
 from src.application.dto import User
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
+from src.tests.integration.conftest import CheatsheetTestRecord
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_created_cheatsheet_persists_to_database(
-    populate_db_for_single_cheatsheet,
-    async_client,
-    app,
+    populate_db_for_single_cheatsheet: CheatsheetTestRecord,
+    async_client: AsyncClient,
+    app: FastAPI,
 ):
+    # Arrange.
     _, user_id, tags = populate_db_for_single_cheatsheet
 
     fake_user = User(
@@ -28,7 +31,7 @@ async def test_created_cheatsheet_persists_to_database(
         is_superuser=False,
     )
 
-    async def override_get_current_user():
+    async def override_get_current_user() -> User:
         return fake_user
 
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -40,6 +43,7 @@ async def test_created_cheatsheet_persists_to_database(
         "tags": tags,
     }
 
+    # Act.
     response = await async_client.post("/cheatsheets/", json=data_for_new_cheatsheet)
 
     async with DEFAULT_SESSION_FACTORY() as session:
@@ -50,6 +54,7 @@ async def test_created_cheatsheet_persists_to_database(
 
     response_data = response.json()
 
+    # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert response_data == expected_result
 

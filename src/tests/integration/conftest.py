@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import AsyncIterator
 from uuid import UUID
 
 import docker
@@ -22,6 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import settings
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.main import router_auth, router_cheatsheet
+
+type CheatsheetTestRecord = tuple[UUID, UUID, list[dict]]
 
 START_INDEX: int = 1
 
@@ -57,7 +58,7 @@ DATABASE_ENV = DatabaseConfig(
 
 
 @asynccontextmanager
-async def empty_lifespan(app: FastAPI) -> AsyncIterator:
+async def empty_lifespan(app: FastAPI) -> AsyncGenerator:
     yield
 
 
@@ -72,24 +73,20 @@ def app() -> FastAPI:
     return app
 
 
-@pytest.fixture()
-async def async_client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+@pytest.fixture
+async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
     transport = ASGITransport(app=app)
-    async with AsyncClient(
-        transport=transport,
-        base_url="http://test",
-    ) as client:
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 
 @pytest.fixture(scope="session", autouse=True)
 def test_environment_lifecycle(request) -> None:
     client = _create_docker_client()
-
     postgres_container = _setup_postgres_container(client)
 
     _wait_for_container_healthcheck(postgres_container)
-
     _run_database_migrations()
 
     def remove_container():
@@ -99,10 +96,10 @@ def test_environment_lifecycle(request) -> None:
     request.addfinalizer(remove_container)
 
 
-@pytest_asyncio.fixture()
-async def populate_db_for_single_cheatsheet() -> (
-    AsyncGenerator[tuple[UUID, UUID, list[dict]], None]
-):
+@pytest_asyncio.fixture
+async def populate_db_for_single_cheatsheet() -> AsyncGenerator[
+    CheatsheetTestRecord, None
+]:
     session = DEFAULT_SESSION_FACTORY()
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
@@ -158,6 +155,7 @@ def _wait_for_container_healthcheck(container: Container) -> None:
     ) != HealthcheckStatus.HEALTHY:
         if status == HealthcheckStatus.UNHEALTHY:
             raise UnhealthyContainerError("Container healthcheck failed")
+
         time.sleep(1)
         container.reload()
 
@@ -227,7 +225,6 @@ def _is_even(value: int) -> bool:
 
 async def _populate_md_tag(session: AsyncSession, quantity: int) -> None:
     query = text("""INSERT INTO md_tag(tag_name) VALUES (:tag_name)""")
-
     data = [{"tag_name": f"tag_name_{value}"} for value in range(START_INDEX, quantity)]
 
     await session.execute(query, data)
