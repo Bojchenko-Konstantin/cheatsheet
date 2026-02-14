@@ -1,37 +1,60 @@
 import pytest
+from fastapi import FastAPI, status
+from httpx import AsyncClient
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
+from application.dto import User
+from src.api.v1.routers.auth import get_current_user
 from src.application.use_cases import CheatsheetUseCase
-from src.domain.entities import Cheatsheet, Tag
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
+from src.tests.integration.conftest import CheatsheetTestRecord
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_updated_cheatsheet_persists_to_database(
-    populate_db_for_single_cheatsheet,
+    populate_db_for_single_cheatsheet: CheatsheetTestRecord,
+    async_client: AsyncClient,
+    app: FastAPI,
 ):
-    cheatsheet_id, _, original_tags = populate_db_for_single_cheatsheet
-    sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
+    # Arrange.
+    cheatsheet_id, user_id, original_tags = populate_db_for_single_cheatsheet
+
+    fake_user = User(
+        user_id=user_id,
+        user_name="test",
+        hashed_password="password",
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+    )
+
+    async def override_get_current_user() -> User:
+        return fake_user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
 
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_cheatsheet_query()
         result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        current_db_row = result.one()
+        bd_row = result.one()
+        print(f"first time added cheatsheet: {bd_row.count_view}, {bd_row.count_like}")
 
     update_data = {
-        "cheatsheet_id": cheatsheet_id,
         "title": "Updated Test Cheatsheet",
         "content": "Updated test content with more details",
         "is_public": False,
         "tags": original_tags[:2],
-        "count_like": current_db_row.count_like,
-        "count_view": current_db_row.count_view,
     }
 
-    updated_cheatsheet = await sut.update(update_data)
+    # Act.
+    response = await async_client.put(
+        f"/cheatsheets/{str(cheatsheet_id)}", json=update_data
+    )
+    print(response.status_code)
+    response_data = response.json()
 
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_cheatsheet_query()
@@ -39,7 +62,9 @@ async def test_updated_cheatsheet_persists_to_database(
         updated_db_row = result.one()
         expected_result = _create_cheatsheet_from_db_row(updated_db_row)
 
-    assert updated_cheatsheet == expected_result
+    # Assert.
+    assert response.status_code == status.HTTP_200_OK
+    assert response_data == expected_result
 
 
 @pytest.mark.integration
@@ -118,7 +143,6 @@ def _build_cheatsheet_query() -> TextClause:
     return text(
         """
         SELECT
-            c.user_id,
             c.cheatsheet_id,
             c.title,
             c.content,
@@ -143,19 +167,15 @@ def _build_cheatsheet_query() -> TextClause:
     )
 
 
-def _create_cheatsheet_from_db_row(db_row: Row) -> Cheatsheet:
-    return Cheatsheet(
-        cheatsheet_id=db_row.cheatsheet_id,
-        user_id=db_row.user_id,
+def _create_cheatsheet_from_db_row(db_row: Row) -> dict[str, str]:
+    return dict(
+        cheatsheet_id=str(db_row.cheatsheet_id),
         title=db_row.title,
         content=db_row.content,
         is_public=db_row.is_public,
-        created_at=db_row.created_at,
-        updated_at=db_row.updated_at,
+        created_at=db_row.created_at.strftime("%Y-%m-%dT%H:%M:%S"),
+        updated_at=db_row.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%f"),
         count_like=db_row.count_like,
         count_view=db_row.count_view,
-        tags={
-            Tag(tag_id=tag["tag_id"], tag_name=tag["tag_name"])
-            for tag in (db_row.tags if db_row.tags[0]["tag_id"] is not None else [])
-        },
+        tags=db_row.tags,
     )
