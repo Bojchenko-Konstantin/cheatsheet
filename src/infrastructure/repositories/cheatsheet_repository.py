@@ -1,5 +1,7 @@
+import contextlib
 from collections.abc import MutableMapping
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -21,6 +23,12 @@ from src.infrastructure.database.models import (
     TagModel,
 )
 from src.infrastructure.repositories.utils import DictBundle
+
+
+@dataclass(frozen=True, slots=True)
+class CheatsheetStats:
+    count_like: int = 0
+    count_view: int = 0
 
 
 class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
@@ -114,6 +122,16 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         return created_cheatsheet
 
     async def update(self, update_data: dict[str, Any]) -> Cheatsheet:
+        stats_statement = select(
+            CheatsheetStatsModel.count_like, CheatsheetStatsModel.count_view
+        ).where(CheatsheetStatsModel.cheatsheet_id == update_data["cheatsheet_id"])
+
+        current_stats = CheatsheetStats()
+
+        with contextlib.suppress(Exception):
+            stats_result = await self._session.execute(stats_statement)
+            current_stats = stats_result.one()
+
         update_statement = (
             update(CheatsheetModel)
             .where(CheatsheetModel.cheatsheet_id == update_data["cheatsheet_id"])
@@ -125,7 +143,6 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
             .returning(
                 CheatsheetModel.created_at,
                 CheatsheetModel.updated_at,
-                CheatsheetModel.user_id,
             )
         )
 
@@ -137,20 +154,25 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
                 f"Failed to update cheatsheet {update_data['cheatsheet_id']}."
             ) from e
 
-        updated_cheatsheet = self._get_new_cheatsheet(result, update_data)
+        updated_cheatsheet = self._get_new_cheatsheet(
+            result, current_stats, update_data
+        )
         await self._update_tags(updated_cheatsheet)
 
         return updated_cheatsheet
 
     @staticmethod
     def _get_new_cheatsheet(
-        result_time: Row[tuple[datetime, datetime, UUID]], update_data: dict[str, Any]
+        result_time: Row[tuple[datetime, datetime]],
+        current_stats: Row[tuple[int, int]] | CheatsheetStats,
+        update_data: dict[str, Any],
     ) -> Cheatsheet:
         cheatsheet = Cheatsheet.from_dict(
             dict(
-                user_id=result_time.user_id,
                 created_at=result_time.created_at,
                 updated_at=result_time.updated_at,
+                count_like=current_stats.count_like,
+                count_view=current_stats.count_view,
                 **update_data,
             )
         )
