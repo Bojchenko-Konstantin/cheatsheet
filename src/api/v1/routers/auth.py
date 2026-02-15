@@ -53,7 +53,7 @@ async def login(
         )
 
 
-@router.post("/register", response_model=TokenPair)
+@router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
 async def register(
     user_form: UserCreate,
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
