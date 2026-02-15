@@ -9,7 +9,7 @@ from sqlalchemy.sql.elements import TextClause
 from src.api.v1.routers.auth import get_current_user
 from src.application.dto import User
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-from src.tests.integration.conftest import CheatsheetTestRecord
+from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
 
 @pytest.mark.integration
