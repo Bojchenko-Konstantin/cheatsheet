@@ -43,7 +43,6 @@ class JWTUseCase:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
         user_id = payload.user_id
-        print(f"{refresh_token=}, {user_id=}")
         await self._save_refresh_token_hash(user_id, refresh_token)
 
         return dict(access_token=access_token, refresh_token=refresh_token)
