@@ -34,12 +34,6 @@ async def test_updated_cheatsheet_persists_to_database(
 
     app.dependency_overrides[get_current_user] = override_get_current_user
 
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        bd_row = result.one()
-        print(f"first time added cheatsheet: {bd_row.count_view}, {bd_row.count_like}")
-
     update_data = {
         "title": "Updated Test Cheatsheet",
         "content": "Updated test content with more details",
@@ -51,7 +45,6 @@ async def test_updated_cheatsheet_persists_to_database(
     response = await async_client.put(
         f"/cheatsheets/{str(cheatsheet_id)}", json=update_data
     )
-    print(response.status_code)
     response_data = response.json()
 
     async with DEFAULT_SESSION_FACTORY() as session:
