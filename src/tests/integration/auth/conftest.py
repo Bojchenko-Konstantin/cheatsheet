@@ -11,14 +11,14 @@ from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 @pytest_asyncio.fixture
 async def populate_db_for_single_user() -> AsyncGenerator[None]:
     session = DEFAULT_SESSION_FACTORY()
-    await _populate_user_for_login_test(session)
+    await _populate_user_for_auth_test(session)
 
     yield
 
     await _truncate_all_tables(session)
 
 
-async def _populate_user_for_login_test(session: AsyncSession) -> None:
+async def _populate_user_for_auth_test(session: AsyncSession) -> None:
     password = HASHER.hash("password")
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
