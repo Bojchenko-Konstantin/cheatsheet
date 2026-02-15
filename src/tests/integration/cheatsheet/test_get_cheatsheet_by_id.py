@@ -7,10 +7,7 @@ from sqlalchemy import Row, TextClause, text
 
 from src.api.v1.routers.auth import get_optional_user
 from src.application.dto import User
-from src.application.exceptions import CheatsheetNotFoundError
-from src.application.use_cases import CheatsheetUseCase
 from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
-from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 
 
 @pytest.mark.integration
@@ -52,13 +49,36 @@ async def test_get_cheatsheet_by_id(
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_get_non_existent_cheathsheet_by_id_raises_error():
-    unit_of_work = SQLAlchemyUnitOfWork()
-    sut = CheatsheetUseCase(unit_of_work)
+async def test_get_non_existent_cheatsheet_by_id(
+    async_client: AsyncClient, app: FastAPI
+):
+    # Arrange.
     non_existent_cheatsheet_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
-    with pytest.raises(CheatsheetNotFoundError):
-        await sut.get_by_id(non_existent_cheatsheet_id)
+    fake_user = User(
+        user_id=UUID("00000000-0000-0000-0000-000000000001"),
+        user_name="test",
+        hashed_password="password",
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+    )
+
+    async def override_get_current_user() -> User:
+        return fake_user
+
+    app.dependency_overrides[get_optional_user] = override_get_current_user
+
+    # Act.
+    response = await async_client.get(f"/cheatsheets/{str(non_existent_cheatsheet_id)}")
+    response_data = response.json()
+
+    # Assert.
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert (
+        response_data["detail"]
+        == f"Cheatsheet with id {non_existent_cheatsheet_id} was not found"
+    )
 
 
 def _build_cheatsheet_query() -> TextClause:
