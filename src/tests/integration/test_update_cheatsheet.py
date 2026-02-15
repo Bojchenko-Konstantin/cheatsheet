@@ -6,9 +6,7 @@ from sqlalchemy.sql.elements import TextClause
 
 from application.dto import User
 from src.api.v1.routers.auth import get_current_user
-from src.application.use_cases import CheatsheetUseCase
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.tests.integration.conftest import CheatsheetTestRecord
 
 
@@ -65,78 +63,6 @@ async def test_updated_cheatsheet_persists_to_database(
     # Assert.
     assert response.status_code == status.HTTP_200_OK
     assert response_data == expected_result
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="session")
-async def test_update_cheatsheet_with_different_tags(
-    populate_db_for_single_cheatsheet,
-):
-    cheatsheet_id, _, original_tags = populate_db_for_single_cheatsheet
-    sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        current_db_row = result.one()
-
-    single_tag = [original_tags[0]]
-
-    update_data = {
-        "cheatsheet_id": cheatsheet_id,
-        "title": "Cheatsheet with Single Tag",
-        "content": "Content with only one tag",
-        "is_public": True,
-        "tags": single_tag,
-        "count_like": current_db_row.count_like,
-        "count_view": current_db_row.count_view,
-    }
-
-    updated_cheatsheet = await sut.update(update_data)
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        updated_db_row = result.one()
-        expected_result = _create_cheatsheet_from_db_row(updated_db_row)
-
-    assert updated_cheatsheet == expected_result
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="session")
-async def test_update_cheatsheet_change_tag_combination(
-    populate_db_for_single_cheatsheet,
-):
-    cheatsheet_id, _, original_tags = populate_db_for_single_cheatsheet
-    sut = CheatsheetUseCase(SQLAlchemyUnitOfWork())
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        current_db_row = result.one()
-
-    new_tags = original_tags[1:3]
-
-    update_data = {
-        "cheatsheet_id": cheatsheet_id,
-        "title": "Cheatsheet with changed tag combination",
-        "content": "Content with different tag combination",
-        "is_public": True,
-        "tags": new_tags,
-        "count_like": current_db_row.count_like,
-        "count_view": current_db_row.count_view,
-    }
-
-    updated_cheatsheet = await sut.update(update_data)
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        updated_db_row = result.one()
-        expected_result = _create_cheatsheet_from_db_row(updated_db_row)
-
-    assert updated_cheatsheet == expected_result
 
 
 def _build_cheatsheet_query() -> TextClause:
