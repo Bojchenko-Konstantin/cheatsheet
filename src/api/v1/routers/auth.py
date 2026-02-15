@@ -29,7 +29,10 @@ async def login(
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
 ):
-    user = await user_use_case.get_by_user_name(user_form.username)
+    try:
+        user = await user_use_case.get_by_user_name(user_form.username)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from e
 
     hashed_password = user.hashed_password
     plain_password = user_form.password
