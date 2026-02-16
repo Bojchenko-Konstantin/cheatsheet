@@ -4,8 +4,8 @@ from httpx import AsyncClient
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
-from application.dto import User
 from src.api.v1.routers.auth import get_current_user_required
+from src.application.dto import User
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
