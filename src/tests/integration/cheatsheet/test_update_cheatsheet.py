@@ -5,7 +5,7 @@ from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
 from application.dto import User
-from src.api.v1.routers.auth import get_current_user
+from src.api.v1.routers.auth import get_current_user_required
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
@@ -32,7 +32,7 @@ async def test_updated_cheatsheet_persists_to_database(
     async def override_get_current_user() -> User:
         return fake_user
 
-    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[get_current_user_required] = override_get_current_user
 
     update_data = {
         "title": "Updated Test Cheatsheet",

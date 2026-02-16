@@ -101,7 +101,7 @@ async def refresh(
     return token_pair
 
 
-async def get_current_user(
+async def get_current_user_required(
     access_token: Annotated[str, Depends(oauth2_scheme)],
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
@@ -132,7 +132,7 @@ async def get_current_user(
     return user
 
 
-async def get_optional_user(
+async def get_current_user_optional(
     access_token: Annotated[str | None, Depends(oauth2_scheme_optional)],
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
     user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
@@ -140,7 +140,7 @@ async def get_optional_user(
     """
     Retrieves current user from JWT token if provided and valid.
 
-    Unlike get_current_user, this dependency does not raise an exception
+    Unlike get_current_user_required, this dependency does not raise an exception
     when the token is missing or invalid, but returns None instead.
 
     Why this approach:

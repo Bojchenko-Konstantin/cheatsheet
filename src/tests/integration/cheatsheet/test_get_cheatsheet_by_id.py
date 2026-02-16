@@ -5,7 +5,7 @@ from fastapi import FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
 
-from src.api.v1.routers.auth import get_optional_user
+from src.api.v1.routers.auth import get_current_user_optional
 from src.application.dto import User
 from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 
@@ -30,7 +30,7 @@ async def test_get_cheatsheet_by_id(
     async def override_get_current_user() -> User:
         return fake_user
 
-    app.dependency_overrides[get_optional_user] = override_get_current_user
+    app.dependency_overrides[get_current_user_optional] = override_get_current_user
 
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_cheatsheet_query()
@@ -67,7 +67,7 @@ async def test_get_non_existent_cheatsheet_by_id(
     async def override_get_current_user() -> User:
         return fake_user
 
-    app.dependency_overrides[get_optional_user] = override_get_current_user
+    app.dependency_overrides[get_current_user_optional] = override_get_current_user
 
     # Act.
     response = await async_client.get(f"/cheatsheets/{str(non_existent_cheatsheet_id)}")
