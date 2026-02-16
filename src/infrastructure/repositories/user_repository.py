@@ -7,9 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import User, UserPayload
 from src.application.interfaces.repositories.user import IUserRepo
-from src.infrastructure.database.models import (
-    UserModel,
-)
+from src.infrastructure.database.models import UserModel
 from src.infrastructure.database.models.user_detail import UserDetailModel
 from src.infrastructure.repositories.utils import DictBundle
 
