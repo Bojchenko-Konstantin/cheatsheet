@@ -40,12 +40,6 @@ class JWTConfig(BaseModel):
     public_key: str
 
 
-class RedisConfig(BaseModel):
-    host: str
-    port: int
-    password: str
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -55,7 +49,6 @@ class Settings(BaseSettings):
     database: DatabaseConfig
     logging: LoggingConfig = LoggingConfig()
     jwt: JWTConfig
-    redis: RedisConfig
 
 
 settings = Settings()  # type: ignore
