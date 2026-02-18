@@ -47,23 +47,6 @@ class JWTUseCase:
 
         return dict(access_token=access_token, refresh_token=refresh_token)
 
-    async def _save_refresh_token_hash(self, user_id: str, refresh_token: str) -> None:
-        refresh_token_hash = self._hasher.hash(refresh_token)
-        expiration_time = datetime.now(tz=timezone.utc) + timedelta(
-            minutes=self._refresh_token_expires_in
-        )
-
-        # TODO: Add real fingerprint hash.
-        refresh_token_to_save = RefreshToken(
-            user_id=user_id,
-            hashed_token=refresh_token_hash,
-            hashed_fingerprint="mobile phone",
-            expires_at=expiration_time,
-        )
-
-        async with self._unit_of_work as uow:
-            await uow.jwt_repo.save(refresh_token_to_save)
-
     async def verify_access_token(self, access_token: str) -> UserPayload:
         public_key = self._get_appropriate_public_key_form()
         payload = jwt.decode(
@@ -85,8 +68,27 @@ class JWTUseCase:
                 plain_refresh_token, token.hashed_token
             ):
                 return
+            else:
+                await self._verify_token_was_not_compromised(
+                    user_id, fingerprint, plain_refresh_token
+                )
 
-            raise
+    async def _save_refresh_token_hash(self, user_id: str, refresh_token: str) -> None:
+        refresh_token_hash = self._hasher.hash(refresh_token)
+        expiration_time = datetime.now(tz=timezone.utc) + timedelta(
+            minutes=self._refresh_token_expires_in
+        )
+
+        # TODO: Add real fingerprint hash.
+        refresh_token_to_save = RefreshToken(
+            user_id=user_id,
+            hashed_token=refresh_token_hash,
+            hashed_fingerprint="mobile phone",
+            expires_at=expiration_time,
+        )
+
+        async with self._unit_of_work as uow:
+            await uow.jwt_repo.save(refresh_token_to_save)
 
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
@@ -112,3 +114,22 @@ class JWTUseCase:
         private_key_der = base64.b64decode(self._public_key)
         public_key = serialization.load_der_public_key(private_key_der)
         return public_key
+
+    async def _verify_token_was_not_compromised(
+        self,
+        user_id: UUID,
+        fingerprint: str,
+        plain_refresh_token: str,
+    ) -> None:
+        async with self._unit_of_work as uow:
+            tokens = await uow.jwt_repo.get_device_blacklisted_token_family(
+                user_id, fingerprint
+            )
+
+            if tokens:
+                for token in tokens:
+                    if self._hasher.verify(plain_refresh_token, token.hashed_token):
+                        await uow.jwt_repo.mark_tokens_as_compromised(
+                            user_id=user_id,
+                            fingerprint=fingerprint,
+                        )
