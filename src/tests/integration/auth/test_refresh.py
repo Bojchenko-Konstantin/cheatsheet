@@ -1,9 +1,15 @@
 import asyncio
+import base64
 from typing import Any
+from uuid import UUID
 
+import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
 from fastapi import status
 from httpx import AsyncClient
+
+from src.core.config import settings
 
 
 @pytest.mark.integration
@@ -39,15 +45,32 @@ async def test_refresh_token_success(
     response_data = response.json()
     new_refresh_token = response_data["refresh_token"]
     new_access_token = response_data["access_token"]
-    access_token_parts = response_data["access_token"].split(".")
+
+    public_key_der = base64.b64decode(settings.jwt.public_key)
+    public_key = serialization.load_der_public_key(public_key_der)
+    payload = jwt.decode(
+        jwt=new_access_token,
+        key=public_key,  # type: ignore
+        algorithms=[settings.jwt.algorithm],
+        options={"require": ["exp"]},
+    )
 
     # Assert.
     assert response.status_code == status.HTTP_200_OK
-    assert login_response.status_code == status.HTTP_200_OK
     assert "access_token" in response_data
     assert "refresh_token" in response_data
     assert old_access_token != new_access_token
     assert old_refresh_token != new_refresh_token
-    assert len(access_token_parts) == 3
-    assert len(new_refresh_token) == 36
-    assert new_refresh_token.count("-") == 4
+    assert payload["user_id"] == user_id
+    assert _is_uuid(new_refresh_token)
+
+
+def _is_uuid(uuid_str: str) -> bool:
+    try:
+        UUID(uuid_str)
+
+    except ValueError:
+        return False
+
+    else:
+        return True
