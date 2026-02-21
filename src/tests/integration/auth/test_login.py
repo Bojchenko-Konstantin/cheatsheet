@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_login(
+async def test_login_success(
     populate_db_for_single_user: None,
     async_client: AsyncClient,
 ):
@@ -24,7 +24,7 @@ async def test_login(
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_login_was_unsuccessful(
+async def test_login_unsuccessful_with_nonexistent_username(
     populate_db_for_single_user: None,
     async_client: AsyncClient,
 ):
