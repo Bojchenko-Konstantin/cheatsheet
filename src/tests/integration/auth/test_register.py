@@ -12,8 +12,8 @@ from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_register(
-    populate_db_for_single_user: None,
+async def test_register_was_successful(
+    populate_db_for_multiple_users: None,
     async_client: AsyncClient,
 ):
     # Arrange.
@@ -42,16 +42,22 @@ async def test_register(
     # Act.
     response = await async_client.post("/register", json=data_for_register)
 
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_user_query()
-        result = await session.execute(query, {"user_name": "test_register"})
-        db_row = result.one()
-        registered_user = _create_user_from_db_row(db_row)
+    registered_user = await _get_user_from_db_row("test_register")
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert HASHER.verify("password", registered_user.pop("hashed_password"))
     assert registered_user == expected_result
+
+
+async def _get_user_from_db_row(username: str) -> dict[str, Any]:
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_user_query()
+        result = await session.execute(query, {"user_name": username})
+        db_row = result.one()
+        user_from_db = _create_user_from_db_row(db_row)
+
+        return user_from_db
 
 
 def _build_user_query() -> TextClause:

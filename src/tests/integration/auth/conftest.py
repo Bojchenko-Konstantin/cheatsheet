@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import pytest_asyncio
 from sqlalchemy import text
@@ -10,48 +9,47 @@ from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 
 @pytest_asyncio.fixture
-async def populate_db_for_single_user() -> AsyncGenerator[dict[str, Any]]:
+async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
     session = DEFAULT_SESSION_FACTORY()
-    user_data = await _populate_user_for_auth_test(session)
+    await _populate_users_for_auth_test(session)
 
-    yield user_data
+    yield
 
     await _truncate_all_tables(session)
 
 
-async def _populate_user_for_auth_test(session: AsyncSession) -> dict[str, Any]:
+async def _populate_users_for_auth_test(session: AsyncSession) -> None:
     password = HASHER.hash("password")
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
                               is_superuser, email, hashed_password)
            VALUES (:user_name, :is_verified, :is_active,
-                   :is_superuser, :email, :hashed_password)
-           RETURNING user_id, user_name"""
+                   :is_superuser, :email, :hashed_password)"""
     )
 
-    data = [
+    users_to_create = [
         {
-            "user_name": "test",
+            "user_name": "active_user",
             "is_verified": True,
             "is_active": True,
             "is_superuser": False,
             "email": "test@random.mail",
             "hashed_password": password,
-        }
+        },
+        {
+            "user_name": "inactive_user",
+            "is_verified": True,
+            "is_active": False,
+            "is_superuser": False,
+            "email": "test@random.mail",
+            "hashed_password": password,
+        },
     ]
 
-    result = await session.execute(query, data)
+    for user in users_to_create:
+        await session.execute(query, user)
+
     await session.commit()
-
-    row = result.first()
-    if row is None:
-        raise RuntimeError("Failed to insert test user - no row returned")
-
-    return {
-        "user_id": str(row.user_id),
-        "user_name": row.user_name,
-        "plain_password": "password",
-    }
 
 
 async def _truncate_all_tables(session: AsyncSession) -> None:

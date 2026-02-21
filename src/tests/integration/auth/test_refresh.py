@@ -4,21 +4,24 @@ from typing import Any
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+from sqlalchemy import Row, TextClause, text
+
+from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_refresh_token_success(
-    populate_db_for_single_user: dict[str, Any],
+async def test_refresh_token_was_successful(
+    populate_db_for_multiple_users: dict[str, Any],
     async_client: AsyncClient,
 ):
     # Arrange.
     data_for_login = {
-        "username": "test",
+        "username": "active_user",
         "password": "password",
     }
 
-    user_data = populate_db_for_single_user
+    user_data = await _get_user_from_db_row("active_user")
     user_id = user_data["user_id"]
 
     login_response = await async_client.post("/login", data=data_for_login)
@@ -46,3 +49,29 @@ async def test_refresh_token_success(
     assert "refresh_token" in response_data
     assert old_access_token != new_access_token
     assert old_refresh_token != new_refresh_token
+
+
+async def _get_user_from_db_row(username: str) -> dict[str, Any]:
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_user_query()
+        result = await session.execute(query, {"user_name": username})
+        db_row = result.one()
+        user_from_db = _create_user_from_db_row(db_row)
+
+        return user_from_db
+
+
+def _build_user_query() -> TextClause:
+    return text(
+        """
+    SELECT user_id
+    FROM "user"
+    WHERE user_name = :user_name
+    """
+    )
+
+
+def _create_user_from_db_row(db_row: Row) -> dict[str, Any]:
+    return dict(
+        user_id=str(db_row.user_id),
+    )
