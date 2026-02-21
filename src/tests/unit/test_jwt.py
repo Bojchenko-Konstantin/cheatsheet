@@ -115,19 +115,6 @@ async def test_verify_access_token(jwt_use_case: JWTUseCase):
     assert payload == expected_payload
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_verify_refresh_token(jwt_use_case: JWTUseCase):
-    sut = jwt_use_case
-    user_id = UUID("019b4a71-173e-7f64-a840-9e8b042658cd")
-    refresh_token = "18f47b4-5c2a-7b80-8f3c-92a1d4e6f8b0"
-    fingerprint = "mobile phone"
-
-    await sut.verify_refresh_token(
-        user_id=user_id, fingerprint=fingerprint, plain_refresh_token=refresh_token
-    )
-
-
 def _is_uuid(uuid_str: str) -> bool:
     try:
         UUID(uuid_str)
