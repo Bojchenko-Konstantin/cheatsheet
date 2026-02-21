@@ -1,7 +1,7 @@
 import logging
 from collections.abc import MutableMapping
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import IntEnum
 from typing import Self
 from uuid import UUID
@@ -35,6 +35,19 @@ class UserPayload:
     user_id: str
     is_superuser: bool
     exp: datetime | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.exp, datetime) and self.exp:
+            try:
+                self.exp = datetime.fromtimestamp(self.exp, tz=timezone.utc)
+
+            except ValueError:
+                logger.exception(
+                    "Unable to convert exp to datetime, "
+                    "invalid epoch value provided, %s",
+                    self.exp,
+                )
+                raise
 
     @classmethod
     def from_dict(cls, kwargs: MutableMapping) -> Self:
