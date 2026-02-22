@@ -21,7 +21,7 @@ async def test_refresh_token_was_successful(
         "password": "password",
     }
 
-    user_data = await _get_user_from_db_row("active_user")
+    user_data = await _get_user_from_db_by_username("active_user")
     user_id = user_data["user_id"]
 
     login_response = await async_client.post("/login", data=data_for_login)
@@ -51,7 +51,7 @@ async def test_refresh_token_was_successful(
     assert old_refresh_token != new_refresh_token
 
 
-async def _get_user_from_db_row(username: str) -> dict[str, Any]:
+async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_user_query()
         result = await session.execute(query, {"user_name": username})

@@ -42,7 +42,7 @@ async def test_register_was_successful(
     # Act.
     response = await async_client.post("/register", json=data_for_register)
 
-    registered_user = await _get_user_from_db_row("test_register")
+    registered_user = await _get_user_from_db_by_username("test_register")
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
@@ -74,7 +74,7 @@ async def test_register_fails_when_username_already_exists(
     assert response.status_code == status.HTTP_409_CONFLICT
 
 
-async def _get_user_from_db_row(username: str) -> dict[str, Any]:
+async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_user_query()
         result = await session.execute(query, {"user_name": username})
@@ -96,7 +96,7 @@ def _build_user_query() -> TextClause:
             du.profile_description,
             du.image_url
         FROM "user" u
-        JOIN user_detail du USING (user_id)
+        JOIN user_detail du USING(user_id)
         WHERE u.user_name = :user_name
     """
     )

@@ -4,7 +4,7 @@ from uuid import UUID
 from src.domain.entities import Cheatsheet, Tag
 
 
-def test_update_partial_fields():
+def test_cheatsheet_partial_update_was_successful():
     original_cheatsheet = Cheatsheet(
         cheatsheet_id=UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
@@ -43,7 +43,7 @@ def test_update_partial_fields():
     assert updated_cheatsheet == expected_result
 
 
-def test_from_dict():
+def test_cheatsheet_creation_from_dict_was_successful():
     raw_tags_data = [
         {"tag_id": 1, "tag_name": "Python"},
         {"tag_id": 2, "tag_name": "Testing"},

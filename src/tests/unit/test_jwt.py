@@ -69,7 +69,7 @@ def jwt_use_case():
 
 
 @pytest.mark.asyncio
-async def test_get_jwt_tokens(jwt_use_case: JWTUseCase):
+async def test_get_jwt_tokens_was_successful(jwt_use_case: JWTUseCase):
     sut = jwt_use_case
     expected_payload = UserPayload(
         user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
@@ -93,7 +93,7 @@ async def test_get_jwt_tokens(jwt_use_case: JWTUseCase):
 
 
 @pytest.mark.asyncio
-async def test_verify_access_token(jwt_use_case: JWTUseCase):
+async def test_verify_access_token_was_successful(jwt_use_case: JWTUseCase):
     sut = jwt_use_case
     expected_payload = UserPayload(
         user_id="019b4a71-173e-7f64-a840-9e8b042658cd",

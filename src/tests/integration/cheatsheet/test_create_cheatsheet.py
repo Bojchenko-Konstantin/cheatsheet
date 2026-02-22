@@ -14,7 +14,7 @@ from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_created_cheatsheet_persists_to_database(
+async def test_created_cheatsheet_was_persisted_to_database(
     populate_db_for_single_cheatsheet: CheatsheetTestRecord,
     async_client: AsyncClient,
     app: FastAPI,
@@ -45,18 +45,23 @@ async def test_created_cheatsheet_persists_to_database(
 
     # Act.
     response = await async_client.post("/cheatsheets/", json=data_for_new_cheatsheet)
-
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"title": "Test Cheatsheet"})
-        db_row = result.one()
-        expected_result = _create_cheatsheet_from_db_row(db_row)
-
     response_data = response.json()
+
+    expected_result = await _get_cheatsheet_from_db_by_title("Test Cheatsheet")
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert response_data == expected_result
+
+
+async def _get_cheatsheet_from_db_by_title(title: str) -> dict[str, Any]:
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_cheatsheet_query()
+        result = await session.execute(query, {"title": title})
+        db_row = result.one()
+        cheatsheet_from_db = _create_cheatsheet_from_db_row(db_row)
+
+        return cheatsheet_from_db
 
 
 def _build_cheatsheet_query() -> TextClause:
@@ -78,9 +83,9 @@ def _build_cheatsheet_query() -> TextClause:
                 )
             ) as tags
         FROM cheatsheet c
-        JOIN cheatsheet_stats cs ON c.cheatsheet_id = cs.cheatsheet_id
-        LEFT JOIN cheatsheet_to_tag ctt ON c.cheatsheet_id = ctt.cheatsheet_id
-        LEFT JOIN md_tag t ON ctt.tag_id = t.tag_id
+        JOIN cheatsheet_stats cs USING(cheatsheet_id)
+        JOIN cheatsheet_to_tag ctt USING(cheatsheet_id)
+        JOIN md_tag t USING(tag_id)
         WHERE c.title = :title
         GROUP BY c.cheatsheet_id, cs.count_like, cs.count_view
     """

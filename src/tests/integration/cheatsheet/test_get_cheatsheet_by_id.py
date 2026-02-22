@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -12,7 +13,7 @@ from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_get_cheatsheet_by_id(
+async def test_get_cheatsheet_by_id_was_successful(
     populate_db_for_single_cheatsheet, async_client: AsyncClient, app: FastAPI
 ):
     # Arrange.
@@ -32,11 +33,7 @@ async def test_get_cheatsheet_by_id(
 
     app.dependency_overrides[get_current_user_optional] = override_get_current_user
 
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        expected_db_row = result.one()
-        expected_result = _create_cheatsheet_from_db_row(expected_db_row)
+    expected_result = await _get_cheatsheet_from_db_by_id(cheatsheet_id)
 
     # Act.
     response = await async_client.get(f"/cheatsheets/{str(cheatsheet_id)}")
@@ -49,7 +46,7 @@ async def test_get_cheatsheet_by_id(
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_get_non_existent_cheatsheet_by_id(
+async def test_get_cheatsheet_fails_when_id_does_not_exist(
     async_client: AsyncClient, app: FastAPI
 ):
     # Arrange.
@@ -81,6 +78,16 @@ async def test_get_non_existent_cheatsheet_by_id(
     )
 
 
+async def _get_cheatsheet_from_db_by_id(cheatsheet_id: UUID) -> dict[str, Any]:
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_cheatsheet_query()
+        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
+        db_row = result.one()
+
+        cheatsheet_from_db = _create_cheatsheet_from_db_row(db_row)
+        return cheatsheet_from_db
+
+
 def _build_cheatsheet_query() -> TextClause:
     return text(
         """
@@ -100,9 +107,9 @@ def _build_cheatsheet_query() -> TextClause:
                 )
             ) as tags
         FROM cheatsheet c
-        JOIN cheatsheet_stats cs ON c.cheatsheet_id = cs.cheatsheet_id
-        LEFT JOIN cheatsheet_to_tag ctt ON c.cheatsheet_id = ctt.cheatsheet_id
-        LEFT JOIN md_tag t ON ctt.tag_id = t.tag_id
+        JOIN cheatsheet_stats cs USING(cheatsheet_id)
+        LEFT JOIN cheatsheet_to_tag ctt USING(cheatsheet_id)
+        LEFT JOIN md_tag t USING(tag_id)
         WHERE c.cheatsheet_id = :cheatsheet_id
         GROUP BY c.cheatsheet_id, cs.count_like, cs.count_view
     """

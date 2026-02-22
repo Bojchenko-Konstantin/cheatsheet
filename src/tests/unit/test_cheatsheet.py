@@ -62,128 +62,133 @@ class FakeUnitOfWork(IUnitOfWork):
 
 
 @pytest.mark.asyncio
-class TestCheatsheetUseCase:
-    async def test_get_cheatsheet_when_id_exist(self):
-        unit_of_work = FakeUnitOfWork()
-        sut = CheatsheetUseCase(unit_of_work)
-        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
-        expected_result = Cheatsheet(
-            cheatsheet_id=existing_id,
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            title="title",
-            content="content",
-            created_at=datetime(2025, 1, 1),
-            updated_at=datetime(2025, 1, 1),
-            is_public=True,
-            tags={Tag(1, "Tag_1")},
-            count_like=10,
-            count_view=10,
-        )
+async def test_get_cheatsheet_by_id_was_successful():
+    unit_of_work = FakeUnitOfWork()
+    sut = CheatsheetUseCase(unit_of_work)
+    existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
+    expected_result = Cheatsheet(
+        cheatsheet_id=existing_id,
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        title="title",
+        content="content",
+        created_at=datetime(2025, 1, 1),
+        updated_at=datetime(2025, 1, 1),
+        is_public=True,
+        tags={Tag(1, "Tag_1")},
+        count_like=10,
+        count_view=10,
+    )
 
-        cheatsheet = await sut.get_by_id(existing_id)
+    cheatsheet = await sut.get_by_id(existing_id)
 
-        assert cheatsheet == expected_result
+    assert cheatsheet == expected_result
 
-    async def test_create_cheatsheet_success(self):
-        unit_of_work = FakeUnitOfWork()
-        sut = CheatsheetUseCase(unit_of_work)
 
-        create_data = dict(
-            title="title",
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            content="content",
-            is_public=True,
-            tags=[
-                {"tag_id": 1, "tag_name": "Python"},
-                {"tag_id": 2, "tag_name": "Testing"},
-            ],
-        )
+@pytest.mark.asyncio
+async def test_create_cheatsheet_was_successful():
+    unit_of_work = FakeUnitOfWork()
+    sut = CheatsheetUseCase(unit_of_work)
 
-        generated_fields = {
-            "cheatsheet_id": UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
-            "created_at": datetime(2025, 1, 1),
-            "updated_at": datetime(2025, 1, 1),
-        }
+    create_data = dict(
+        title="title",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        content="content",
+        is_public=True,
+        tags=[
+            {"tag_id": 1, "tag_name": "Python"},
+            {"tag_id": 2, "tag_name": "Testing"},
+        ],
+    )
 
-        expected_result = Cheatsheet(
-            title="title",
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            content="content",
-            is_public=True,
-            tags={Tag(1, "Python"), Tag(2, "Testing")},
-            count_like=0,
-            count_view=0,
-            **generated_fields,
-        )
+    generated_fields = {
+        "cheatsheet_id": UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
+        "created_at": datetime(2025, 1, 1),
+        "updated_at": datetime(2025, 1, 1),
+    }
 
-        created_cheatsheet = await sut.create(create_data)
+    expected_result = Cheatsheet(
+        title="title",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        content="content",
+        is_public=True,
+        tags={Tag(1, "Python"), Tag(2, "Testing")},
+        count_like=0,
+        count_view=0,
+        **generated_fields,
+    )
 
-        assert created_cheatsheet == expected_result
+    created_cheatsheet = await sut.create(create_data)
 
-    async def test_update_modifies_fields_and_preserves_timestamps(self):
-        unit_of_work = FakeUnitOfWork()
-        sut = CheatsheetUseCase(unit_of_work)
+    assert created_cheatsheet == expected_result
 
-        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
-        expected_result = Cheatsheet(
-            cheatsheet_id=existing_id,
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            title="Updated Title",
-            content="Updated Content",
-            is_public=False,
-            tags={Tag(3, "Updated_Tag"), Tag(4, "New_Tag")},
-            created_at=datetime(2025, 1, 1),
-            updated_at=datetime(2025, 1, 2),
-            count_like=0,
-            count_view=0,
-        )
+@pytest.mark.asyncio
+async def test_cheatsheet_was_updated_and_timestamps_preserved():
+    unit_of_work = FakeUnitOfWork()
+    sut = CheatsheetUseCase(unit_of_work)
 
-        update_data = dict(
-            cheatsheet_id=existing_id,
-            title="Updated Title",
-            content="Updated Content",
-            is_public=False,
-            tags=[
-                {"tag_id": 3, "tag_name": "Updated_Tag"},
-                {"tag_id": 4, "tag_name": "New_Tag"},
-            ],
-        )
+    existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
-        updated_cheatsheet = await sut.update(update_data)
+    expected_result = Cheatsheet(
+        cheatsheet_id=existing_id,
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        title="Updated Title",
+        content="Updated Content",
+        is_public=False,
+        tags={Tag(3, "Updated_Tag"), Tag(4, "New_Tag")},
+        created_at=datetime(2025, 1, 1),
+        updated_at=datetime(2025, 1, 2),
+        count_like=0,
+        count_view=0,
+    )
 
-        assert updated_cheatsheet == expected_result
+    update_data = dict(
+        cheatsheet_id=existing_id,
+        title="Updated Title",
+        content="Updated Content",
+        is_public=False,
+        tags=[
+            {"tag_id": 3, "tag_name": "Updated_Tag"},
+            {"tag_id": 4, "tag_name": "New_Tag"},
+        ],
+    )
 
-    async def test_update_converts_tags_from_dict_to_objects(self):
-        unit_of_work = FakeUnitOfWork()
-        sut = CheatsheetUseCase(unit_of_work)
+    updated_cheatsheet = await sut.update(update_data)
 
-        existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
+    assert updated_cheatsheet == expected_result
 
-        expected_result = Cheatsheet(
-            cheatsheet_id=existing_id,
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            title="Updated Title",
-            content="Updated Content",
-            is_public=True,
-            tags={Tag(1, "Python"), Tag(2, "Testing")},
-            created_at=datetime(2025, 1, 1),
-            updated_at=datetime(2025, 1, 2),
-            count_like=0,
-            count_view=0,
-        )
 
-        update_data = dict(
-            cheatsheet_id=existing_id,
-            title="Updated Title",
-            content="Updated Content",
-            is_public=True,
-            tags=[
-                {"tag_id": 1, "tag_name": "Python"},
-                {"tag_id": 2, "tag_name": "Testing"},
-            ],
-        )
+@pytest.mark.asyncio
+async def test_tag_conversion_from_dict_to_objects_was_successful():
+    unit_of_work = FakeUnitOfWork()
+    sut = CheatsheetUseCase(unit_of_work)
 
-        updated_cheatsheet = await sut.update(update_data)
+    existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
-        assert updated_cheatsheet == expected_result
+    expected_result = Cheatsheet(
+        cheatsheet_id=existing_id,
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        title="Updated Title",
+        content="Updated Content",
+        is_public=True,
+        tags={Tag(1, "Python"), Tag(2, "Testing")},
+        created_at=datetime(2025, 1, 1),
+        updated_at=datetime(2025, 1, 2),
+        count_like=0,
+        count_view=0,
+    )
+
+    update_data = dict(
+        cheatsheet_id=existing_id,
+        title="Updated Title",
+        content="Updated Content",
+        is_public=True,
+        tags=[
+            {"tag_id": 1, "tag_name": "Python"},
+            {"tag_id": 2, "tag_name": "Testing"},
+        ],
+    )
+
+    updated_cheatsheet = await sut.update(update_data)
+
+    assert updated_cheatsheet == expected_result

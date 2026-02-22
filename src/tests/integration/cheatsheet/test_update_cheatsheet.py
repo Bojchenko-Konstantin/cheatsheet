@@ -1,3 +1,6 @@
+from typing import Any
+from uuid import UUID
+
 import pytest
 from fastapi import FastAPI, status
 from httpx import AsyncClient
@@ -12,7 +15,7 @@ from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
-async def test_updated_cheatsheet_persists_to_database(
+async def test_updated_cheatsheet_was_persisted_to_database(
     populate_db_for_single_cheatsheet: CheatsheetTestRecord,
     async_client: AsyncClient,
     app: FastAPI,
@@ -47,15 +50,21 @@ async def test_updated_cheatsheet_persists_to_database(
     )
     response_data = response.json()
 
-    async with DEFAULT_SESSION_FACTORY() as session:
-        query = _build_cheatsheet_query()
-        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
-        updated_db_row = result.one()
-        expected_result = _create_cheatsheet_from_db_row(updated_db_row)
+    expected_result = await _get_cheatsheet_from_db_by_id(cheatsheet_id)
 
     # Assert.
     assert response.status_code == status.HTTP_200_OK
     assert response_data == expected_result
+
+
+async def _get_cheatsheet_from_db_by_id(cheatsheet_id: UUID) -> dict[str, Any]:
+    async with DEFAULT_SESSION_FACTORY() as session:
+        query = _build_cheatsheet_query()
+        result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
+        db_row = result.one()
+        cheatsheet_from_db = _create_cheatsheet_from_db_row(db_row)
+
+        return cheatsheet_from_db
 
 
 def _build_cheatsheet_query() -> TextClause:
@@ -77,9 +86,9 @@ def _build_cheatsheet_query() -> TextClause:
                 )
             ) as tags
         FROM cheatsheet c
-        JOIN cheatsheet_stats cs ON c.cheatsheet_id = cs.cheatsheet_id
-        LEFT JOIN cheatsheet_to_tag ctt ON c.cheatsheet_id = ctt.cheatsheet_id
-        LEFT JOIN md_tag t ON ctt.tag_id = t.tag_id
+        JOIN cheatsheet_stats cs USING(cheatsheet_id)
+        JOIN cheatsheet_to_tag ctt USING(cheatsheet_id)
+        JOIN md_tag t USING(tag_id)
         WHERE c.cheatsheet_id = :cheatsheet_id
         GROUP BY c.cheatsheet_id, cs.count_like, cs.count_view
     """

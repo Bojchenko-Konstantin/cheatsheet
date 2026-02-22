@@ -62,7 +62,7 @@ def user_use_case():
     return UserUseCase(unit_of_work=FakeUnitOfWork())
 
 
-async def test_get_by_user_name(user_use_case: UserUseCase):
+async def test_get_user_by_user_name_was_successful(user_use_case: UserUseCase):
     sut = user_use_case
     user_name = "test"
     expected_user = User(
@@ -79,7 +79,7 @@ async def test_get_by_user_name(user_use_case: UserUseCase):
     assert user == expected_user
 
 
-async def test_get_by_id(user_use_case: UserUseCase):
+async def test_get_user_by_id_was_successful(user_use_case: UserUseCase):
     user_id = UUID("019b4a71-173e-7f64-a840-9e8b042658cd")
     sut = user_use_case
     expected_user = User(
@@ -96,7 +96,7 @@ async def test_get_by_id(user_use_case: UserUseCase):
     assert user == expected_user
 
 
-async def test_create(user_use_case: UserUseCase):
+async def test_create_user_was_successful(user_use_case: UserUseCase):
     sut = user_use_case
     create_data = dict(
         username="test",
@@ -121,7 +121,7 @@ async def test_create(user_use_case: UserUseCase):
     assert user_payload == expected_payload
 
 
-def test_verify_password(user_use_case: UserUseCase):
+def test_verify_password_was_successful(user_use_case: UserUseCase):
     plain_password = "password"
     hashed_password = HASHER.hash(plain_password)
     sut = user_use_case
