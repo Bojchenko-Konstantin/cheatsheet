@@ -6,6 +6,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import RefreshToken, TokenStatus
+from src.application.exceptions import RefreshTokenNotFoundError
 from src.application.interfaces.repositories.jwt import IJWTRepo
 from src.infrastructure.database.models.refresh_token import RefreshTokenModel
 from src.infrastructure.database.models.refresh_token_blacklist import (
@@ -54,7 +55,7 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         raw_token = result.one_or_none()
 
         if not raw_token:
-            raise
+            raise RefreshTokenNotFoundError
 
         token = RefreshToken.from_dict(dict(user_id=user_id, **raw_token.refresh_token))
         return token
@@ -84,7 +85,7 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         raw_tokens = result.all()
 
         if not raw_tokens:
-            return
+            raise RefreshTokenNotFoundError
 
         tokens = [
             RefreshToken.from_dict(dict(user_id=user_id, **token_data.refresh_token))

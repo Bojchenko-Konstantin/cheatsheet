@@ -13,6 +13,7 @@ from src.api.dependencies import (
 )
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import User, UserPayload
+from src.application.exceptions import RefreshTokenNotFoundError
 from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
 
@@ -86,12 +87,15 @@ async def refresh(
             fingerprint=token_verification.fingerprint,
         )
 
-    except Exception:
+    except RefreshTokenNotFoundError as e:
+        logger.exception(
+            "Refresh token not found for user_id: %s", token_verification.user_id
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from None
+        ) from e
 
     user = await user_use_case.get_by_id(token_verification.user_id)
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
