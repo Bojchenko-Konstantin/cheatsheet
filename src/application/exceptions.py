@@ -35,3 +35,10 @@ class RefreshTokenNotFoundError(RefreshTokenException):
 
 class RefreshTokenMoveToBlacklistError(RefreshTokenException):
     """This exception will raise when refresh token was not move to blacklist."""
+
+
+class RefreshTokenMarkAsCompromisedError(RefreshTokenException):
+    """
+    This exception will raise when refresh token fails
+    to be marked as compromised.
+    """

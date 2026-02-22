@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import RefreshToken, TokenStatus
 from src.application.exceptions import (
+    RefreshTokenMarkAsCompromisedError,
     RefreshTokenMoveToBlacklistError,
     RefreshTokenNotFoundError,
 )
@@ -209,5 +210,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         try:
             await self._session.execute(update_statement)
 
-        except Exception:
+        except Exception as e:
             logger.error("Failed to mark tokens as compromised")
+            raise RefreshTokenMarkAsCompromisedError from e
