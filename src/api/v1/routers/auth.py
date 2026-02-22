@@ -13,7 +13,11 @@ from src.api.dependencies import (
 )
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import User, UserPayload
-from src.application.exceptions import RefreshTokenNotFoundError
+from src.application.exceptions import (
+    RefreshTokenNotFoundError,
+    UserCreationError,
+    UserNotFoundError,
+)
 from src.application.use_cases.jwt import JWTUseCase
 from src.application.use_cases.user import UserUseCase
 
@@ -30,8 +34,13 @@ async def login(
 ):
     try:
         user = await user_use_case.get_by_user_name(user_form.username)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from e
+
+    except UserNotFoundError as e:
+        logger.exception("User with username %s was not found", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Failed to authorize",
+        ) from e
 
     hashed_password = user.hashed_password
     plain_password = user_form.password
@@ -63,7 +72,12 @@ async def register(
     try:
         user = await user_use_case.create(create_data)
 
-    except Exception as e:
+    except UserCreationError as e:
+        logger.exception(
+            "User registration failed for username: %s, email: %s",
+            user_form.username,
+            user_form.email,
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Registration failed due to an unexpected error",
@@ -97,7 +111,16 @@ async def refresh(
             detail="Failed to authorize",
         ) from e
 
-    user = await user_use_case.get_by_id(token_verification.user_id)
+    try:
+        user = await user_use_case.get_by_id(token_verification.user_id)
+
+    except UserNotFoundError as e:
+        logger.exception("User with id %s was not found", token_verification.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Failed to authorize",
+        ) from e
+
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
     return token_pair

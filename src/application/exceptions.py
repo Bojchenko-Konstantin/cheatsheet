@@ -10,6 +10,10 @@ class RefreshTokenException(ApplicationException):
     """This the base exception class for refresh token."""
 
 
+class UserException(ApplicationException):
+    """This the base exception class for user."""
+
+
 class CheatsheetNotFoundError(CheatsheetException):
     """This exception will raise when cheatsheet was not retrieved by ID."""
 
@@ -42,3 +46,11 @@ class RefreshTokenMarkAsCompromisedError(RefreshTokenException):
     This exception will raise when refresh token fails
     to be marked as compromised.
     """
+
+
+class UserNotFoundError(UserException):
+    """This exception will raise when user was not found."""
+
+
+class UserCreationError(UserException):
+    """This exception will raise when user failed to be created."""
