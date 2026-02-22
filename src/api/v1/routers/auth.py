@@ -58,7 +58,15 @@ async def register(
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
 ):
     create_data = user_form.model_dump(exclude_unset=True)
-    user = await user_use_case.create(create_data)
+
+    try:
+        user = await user_use_case.create(create_data)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Registration failed due to an unexpected error",
+        ) from e
 
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
