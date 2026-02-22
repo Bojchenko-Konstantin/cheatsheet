@@ -50,6 +50,30 @@ async def test_register_was_successful(
     assert registered_user == expected_result
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_register_fails_when_username_already_exists(
+    populate_db_for_multiple_users: None,
+    async_client: AsyncClient,
+):
+    data_for_register = {
+        "username": "active_user",  # Already exists in the database
+        "email": "user@example.com",
+        "first_name": "string",
+        "last_name": "string",
+        "profile_description": "string",
+        "image_url": "string",
+        "social_network_id": [0],
+        "profile_url": ["string"],
+        "password": "password",
+        "password_confirmation": "password",
+    }
+
+    response = await async_client.post("/register", json=data_for_register)
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+
+
 async def _get_user_from_db_row(username: str) -> dict[str, Any]:
     async with DEFAULT_SESSION_FACTORY() as session:
         query = _build_user_query()
