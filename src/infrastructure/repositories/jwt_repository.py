@@ -6,7 +6,10 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import RefreshToken, TokenStatus
-from src.application.exceptions import RefreshTokenNotFoundError
+from src.application.exceptions import (
+    RefreshTokenMoveToBlacklistError,
+    RefreshTokenNotFoundError,
+)
 from src.application.interfaces.repositories.jwt import IJWTRepo
 from src.infrastructure.database.models.refresh_token import RefreshTokenModel
 from src.infrastructure.database.models.refresh_token_blacklist import (
@@ -141,7 +144,8 @@ class SQLAlchemyJWTRepo(IJWTRepo):
                 self._session.add_all(blacklisted_models)
 
         except Exception as e:
-            raise e
+            logger.error("Failed to move refresh token to blacklist")
+            raise RefreshTokenMoveToBlacklistError from e
 
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
         time_revealed = datetime.now(timezone.utc)

@@ -6,6 +6,10 @@ class CheatsheetException(ApplicationException):
     """This the base exception class for cheatsheet."""
 
 
+class RefreshTokenException(ApplicationException):
+    """This the base exception class for refresh token."""
+
+
 class CheatsheetNotFoundError(CheatsheetException):
     """This exception will raise when cheatsheet was not retrieved by ID."""
 
@@ -25,5 +29,9 @@ class CheatsheetAccessDeniedError(CheatsheetException):
     """
 
 
-class RefreshTokenNotFoundError(ApplicationException):
+class RefreshTokenNotFoundError(RefreshTokenException):
     """This exception will raise when refresh token was not found."""
+
+
+class RefreshTokenMoveToBlacklistError(RefreshTokenException):
+    """This exception will raise when refresh token was not move to blacklist."""
