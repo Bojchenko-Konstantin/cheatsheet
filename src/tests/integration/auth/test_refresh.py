@@ -12,7 +12,7 @@ from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_refresh_token_was_successful(
-    populate_db_for_multiple_users: dict[str, Any],
+    populate_db_for_multiple_users: None,
     async_client: AsyncClient,
 ):
     # Arrange.
@@ -49,6 +49,31 @@ async def test_refresh_token_was_successful(
     assert "refresh_token" in response_data
     assert old_access_token != new_access_token
     assert old_refresh_token != new_refresh_token
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_refresh_token_was_not_found_when_token_does_not_exist(
+    populate_db_for_multiple_users: None,
+    async_client: AsyncClient,
+):
+    # Arrange.
+    user_data = await _get_user_from_db_by_username("active_user")
+    user_id = user_data["user_id"]
+
+    refresh_request_data = {
+        "refresh_token": "non-existent-token",
+        "fingerprint": "mobile phone",
+        "user_id": user_id,
+    }
+
+    # Act.
+    response = await async_client.post("/refresh", json=refresh_request_data)
+    response_data = response.json()
+
+    # Assert.
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response_data["detail"] == "Failed to authorize"
 
 
 async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
