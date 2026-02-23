@@ -14,6 +14,7 @@ from src.api.dependencies import (
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import User, UserPayload
 from src.application.exceptions import (
+    DuplicateUserError,
     RefreshTokenNotFoundError,
     UserCreationError,
     UserNotFoundError,
@@ -36,10 +37,20 @@ async def login(
         user = await user_use_case.get_by_user_name(user_form.username)
 
     except UserNotFoundError as e:
-        logger.exception("User with username %s was not found", user_form.username)
+        logger.debug("User with username %s was not found", user_form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Failed to authorize",
+            detail=f"User with username {user_form.username} was not found",
+        ) from e
+
+    except Exception as e:
+        logger.exception(
+            "Unexpected error during login for username: %s",
+            user_form.username,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during login. Please try again later.",
         ) from e
 
     hashed_password = user.hashed_password
@@ -72,15 +83,26 @@ async def register(
     try:
         user = await user_use_case.create(create_data)
 
-    except UserCreationError as e:
-        logger.exception(
-            "User registration failed for username: %s, email: %s",
+    except DuplicateUserError as e:
+        logger.debug(
+            "User registration failed - username '%s' already exists.",
             user_form.username,
-            user_form.email,
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Registration failed due to an unexpected error",
+            detail=f"User with username '{user_form.username}' already exists. "
+            "Please choose another one.",
+        ) from e
+
+    except UserCreationError as e:
+        logger.exception(
+            "Unexpected error during user registration for username: %s",
+            user_form.username,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration. "
+            "Please try again later.",
         ) from e
 
     payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
@@ -115,7 +137,7 @@ async def refresh(
         user = await user_use_case.get_by_id(token_verification.user_id)
 
     except UserNotFoundError as e:
-        logger.exception("User with id %s was not found", token_verification.user_id)
+        logger.debug("User with id %s was not found", token_verification.user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Failed to authorize",

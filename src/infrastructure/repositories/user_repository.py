@@ -8,7 +8,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import User, UserPayload
-from src.application.exceptions import UserCreationError, UserNotFoundError
+from src.application.exceptions import (
+    DuplicateUserError,
+    UserCreationError,
+    UserNotFoundError,
+)
 from src.application.interfaces.repositories.user import IUserRepo
 from src.infrastructure.database.models import UserModel
 from src.infrastructure.database.models.user_detail import UserDetailModel
@@ -94,11 +98,11 @@ class SQLAlchemyUserRepo(IUserRepo):
 
         except IntegrityError as e:
             if "uq_user_user_name" in str(e):
-                logger.error("User with this username already exists")
+                raise DuplicateUserError from e
+            else:
                 raise UserCreationError from e
 
         except Exception as e:
-            logger.error("Unexpected error during user creation")
             raise UserCreationError from e
 
         return UserPayload(model.user_id, model.is_superuser)

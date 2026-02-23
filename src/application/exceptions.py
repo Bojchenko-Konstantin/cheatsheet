@@ -54,3 +54,7 @@ class UserNotFoundError(UserException):
 
 class UserCreationError(UserException):
     """This exception will raise when user failed to be created."""
+
+
+class DuplicateUserError(UserCreationError):
+    """This exception will raise when user creation fails due to duplicate username."""
