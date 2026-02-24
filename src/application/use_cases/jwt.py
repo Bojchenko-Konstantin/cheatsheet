@@ -12,6 +12,7 @@ from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
 from src.application.dto import RefreshToken, TokenStatus, UserPayload
+from src.application.exceptions import AccessTokenGenerationError
 from src.application.hasher import HASHER
 from src.application.interfaces.unit_of_work import IUnitOfWork
 
@@ -98,11 +99,17 @@ class JWTUseCase:
         user_payload = payload.to_dict()
 
         private_key = self._get_appropriate_private_key_form()
-        access_token = jwt.encode(
-            payload=user_payload,
-            key=private_key,  # type: ignore
-            algorithm=self._algorithm,
-        )
+
+        try:
+            access_token = jwt.encode(
+                payload=user_payload,
+                key=private_key,  # type: ignore
+                algorithm=self._algorithm,
+            )
+
+        except jwt.PyJWTError as e:
+            raise AccessTokenGenerationError from e
+
         return access_token
 
     def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:

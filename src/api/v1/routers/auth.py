@@ -14,6 +14,7 @@ from src.api.dependencies import (
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import User, UserPayload
 from src.application.exceptions import (
+    AccessTokenGenerationError,
     DuplicateUserError,
     RefreshTokenNotFoundError,
     UserCreationError,
@@ -61,7 +62,19 @@ async def login(
         and user.is_active
     ):
         payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
-        token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+        try:
+            token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+        except AccessTokenGenerationError as e:
+            logger.exception(
+                "Failed to generate access token for username: %s", user_form.username
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to authorize. Please try again later.",
+            ) from e
+
         return token_pair
 
     else:

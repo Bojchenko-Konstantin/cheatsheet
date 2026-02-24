@@ -10,6 +10,14 @@ class RefreshTokenException(ApplicationException):
     """This the base exception class for refresh token."""
 
 
+class AccessTokenException(ApplicationException):
+    """This the base exception class for access token."""
+
+
+class AccessTokenGenerationError(AccessTokenException):
+    """This exception will raise when access token generation fails."""
+
+
 class UserException(ApplicationException):
     """This the base exception class for user."""
 
