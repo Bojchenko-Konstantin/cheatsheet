@@ -47,7 +47,7 @@ class JWTUseCase:
     async def get_jwt_tokens(self, payload: UserPayload) -> dict[str, str]:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
-        user_id = payload.user_id
+        user_id = str(payload.user_id)
         await self._save_refresh_token_hash(user_id, refresh_token)
 
         return dict(access_token=access_token, refresh_token=refresh_token)
@@ -72,7 +72,7 @@ class JWTUseCase:
         except Exception as e:
             raise AccessTokenException from e
 
-        user_payload = UserPayload.from_dict(payload)
+        user_payload = UserPayload.create(**payload)
         return user_payload
 
     async def verify_refresh_token(
@@ -112,7 +112,7 @@ class JWTUseCase:
             minutes=self._access_token_expires_in
         )
         payload.exp = expiration_time
-        user_payload = payload.to_dict()
+        user_payload = payload.to_payload()
 
         private_key = self._get_appropriate_private_key_form()
 

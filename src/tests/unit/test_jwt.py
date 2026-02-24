@@ -72,7 +72,7 @@ def jwt_use_case():
 async def test_get_jwt_tokens_was_successful(jwt_use_case: JWTUseCase):
     sut = jwt_use_case
     expected_payload = UserPayload(
-        user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         is_superuser=False,
         exp=None,
     )
@@ -88,7 +88,7 @@ async def test_get_jwt_tokens_was_successful(jwt_use_case: JWTUseCase):
 
     assert result.keys() == {"access_token", "refresh_token"}
     assert _is_uuid(result["refresh_token"])
-    assert payload["user_id"] == expected_payload.user_id
+    assert UUID(payload["user_id"]) == expected_payload.user_id
     assert payload["is_superuser"] == expected_payload.is_superuser
 
 
@@ -96,7 +96,7 @@ async def test_get_jwt_tokens_was_successful(jwt_use_case: JWTUseCase):
 async def test_verify_access_token_was_successful(jwt_use_case: JWTUseCase):
     sut = jwt_use_case
     expected_payload = UserPayload(
-        user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         is_superuser=False,
         # Expiration time must be greater than (now - leeway).
         exp=datetime(7049, 1, 1, tzinfo=timezone.utc),

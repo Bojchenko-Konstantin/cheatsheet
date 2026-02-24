@@ -1,6 +1,6 @@
 import logging
 from collections.abc import MutableMapping
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import IntEnum
 from typing import Self
@@ -32,36 +32,43 @@ class User:
 
 @dataclass(slots=True)
 class UserPayload:
-    user_id: str
+    user_id: UUID
     is_superuser: bool
     exp: datetime | None = None
 
-    def __post_init__(self):
-        if not isinstance(self.exp, datetime) and self.exp:
+    def to_payload(self) -> dict:
+        # Since 'UUID' is not serializable, it will be turned into 'str'.
+        return dict(
+            user_id=str(self.user_id), is_superuser=self.is_superuser, exp=self.exp
+        )
+
+    @classmethod
+    def create(
+        cls, user_id: UUID | str, is_superuser: bool, exp: datetime | int | None = None
+    ) -> Self:
+        if isinstance(user_id, str):
             try:
-                self.exp = datetime.fromtimestamp(self.exp, tz=timezone.utc)
+                user_id = UUID(user_id)
+
+            except ValueError:
+                logger.exception(
+                    "Unable to convert user_id to UUID, invalid ID provided, %s",
+                    user_id,
+                )
+                raise
+
+        if isinstance(exp, int):
+            try:
+                exp = datetime.fromtimestamp(exp, tz=timezone.utc)
 
             except ValueError:
                 logger.exception(
                     "Unable to convert exp to datetime, "
                     "invalid epoch value provided, %s",
-                    self.exp,
+                    exp,
                 )
                 raise
 
-    @classmethod
-    def from_dict(cls, kwargs: MutableMapping) -> Self:
-        return cls(**kwargs)
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def create(
-        cls, user_id: str | UUID, is_superuser: bool, exp: datetime | None = None
-    ) -> Self:
-        if isinstance(user_id, UUID):
-            user_id = str(user_id)
         return cls(user_id=user_id, is_superuser=is_superuser, exp=exp)
 
 

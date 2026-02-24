@@ -33,7 +33,7 @@ class FakeUserRepo(IUserRepo):
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         return UserPayload(
-            user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             is_superuser=False,
             exp=None,
         )
@@ -111,7 +111,7 @@ async def test_create_user_was_successful(user_use_case: UserUseCase):
         password_confirmation="password",
     )
     expected_payload = UserPayload(
-        user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         is_superuser=False,
         exp=None,
     )

@@ -1,6 +1,5 @@
 import logging
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -206,7 +205,7 @@ async def get_current_user_required(
         ) from e
 
     try:
-        user = await user_use_case.get_by_id(UUID(payload.user_id))
+        user = await user_use_case.get_by_id(payload.user_id)
 
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found", payload.user_id)
@@ -251,7 +250,7 @@ async def get_current_user_optional(
 
     try:
         payload = await jwt_use_case.verify_access_token(access_token)
-        user = await user_use_case.get_by_id(UUID(payload.user_id))
+        user = await user_use_case.get_by_id(payload.user_id)
         return user
 
     except Exception:
