@@ -111,8 +111,8 @@ class JWTUseCase:
         return private_key
 
     def _get_appropriate_public_key_form(self) -> PublicKeyTypes:
-        private_key_der = base64.b64decode(self._public_key)
-        public_key = serialization.load_der_public_key(private_key_der)
+        public_key_der = base64.b64decode(self._public_key)
+        public_key = serialization.load_der_public_key(public_key_der)
         return public_key
 
     async def _verify_token_was_not_compromised(
