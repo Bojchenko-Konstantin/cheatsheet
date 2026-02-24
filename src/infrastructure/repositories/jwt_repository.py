@@ -27,7 +27,7 @@ class SQLAlchemyJWTRepo(IJWTRepo):
 
     async def save(self, refresh_token: RefreshToken) -> None:
         await self._move_older_refresh_token_to_blacklist(
-            refresh_token.user_id,  # type: ignore
+            refresh_token.user_id,
             refresh_token.hashed_fingerprint,  # type: ignore
         )
 
@@ -61,7 +61,7 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         if not raw_token:
             raise RefreshTokenNotFoundError
 
-        token = RefreshToken.from_dict(dict(user_id=user_id, **raw_token.refresh_token))
+        token = RefreshToken(user_id=user_id, **raw_token.refresh_token)
         return token
 
     async def get_device_blacklisted_token_family(
@@ -92,7 +92,7 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             raise RefreshTokenNotFoundError
 
         tokens = [
-            RefreshToken.from_dict(dict(user_id=user_id, **token_data.refresh_token))
+            RefreshToken(user_id=user_id, **token_data.refresh_token)
             for token_data in raw_tokens
         ]
 

@@ -21,7 +21,7 @@ class FakeJWTRepo(IJWTRepo):
     ) -> RefreshToken:
         hashed_refresh_token = HASHER.hash("18f47b4-5c2a-7b80-8f3c-92a1d4e6f8b0")
         return RefreshToken(
-            user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             hashed_token=hashed_refresh_token,
             # Expiration time must be greater than (now - leeway).
             expires_at=datetime(7049, 1, 1, tzinfo=timezone.utc),

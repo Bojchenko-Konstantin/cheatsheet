@@ -47,7 +47,7 @@ class JWTUseCase:
     async def get_jwt_tokens(self, payload: UserPayload) -> dict[str, str]:
         access_token = self._get_access_token(payload)
         refresh_token = str(uuid7())
-        user_id = str(payload.user_id)
+        user_id = payload.user_id
         await self._save_refresh_token_hash(user_id, refresh_token)
 
         return dict(access_token=access_token, refresh_token=refresh_token)
@@ -90,7 +90,7 @@ class JWTUseCase:
                     user_id, fingerprint, plain_refresh_token
                 )
 
-    async def _save_refresh_token_hash(self, user_id: str, refresh_token: str) -> None:
+    async def _save_refresh_token_hash(self, user_id: UUID, refresh_token: str) -> None:
         refresh_token_hash = self._hasher.hash(refresh_token)
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
             minutes=self._refresh_token_expires_in

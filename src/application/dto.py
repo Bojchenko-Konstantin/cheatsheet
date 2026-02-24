@@ -74,23 +74,8 @@ class UserPayload:
 
 @dataclass(slots=True)
 class RefreshToken:
-    user_id: str | UUID
+    user_id: UUID
     hashed_token: str
     expires_at: datetime
     status_id: int = TokenStatus.ACTIVE
     hashed_fingerprint: str | None = None
-
-    def __post_init__(self):
-        if not isinstance(self.user_id, UUID):
-            try:
-                self.user_id = UUID(self.user_id)
-            except ValueError:
-                logger.exception(
-                    "Unable to convert user_id to UUID, invalid id provided: %s",
-                    self.user_id,
-                )
-                raise
-
-    @classmethod
-    def from_dict(cls, kwargs: MutableMapping) -> Self:
-        return cls(**kwargs)
