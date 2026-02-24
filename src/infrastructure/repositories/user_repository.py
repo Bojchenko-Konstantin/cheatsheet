@@ -61,7 +61,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         if not model:
             raise UserNotFoundError
 
-        user = User.from_dict(model.user)
+        user = User(**model.user)
         return user
 
     async def get_by_id(self, user_id: UUID) -> User:
@@ -82,7 +82,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         if not model:
             raise UserNotFoundError
 
-        user = User.from_dict(model.user)
+        user = User(**model.user)
         return user
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:

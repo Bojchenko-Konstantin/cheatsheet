@@ -1,5 +1,4 @@
 import logging
-from collections.abc import MutableMapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import IntEnum
@@ -24,10 +23,6 @@ class User:
     is_active: bool
     is_superuser: bool
     is_verified: bool
-
-    @classmethod
-    def from_dict(cls, kwargs: MutableMapping) -> Self:
-        return cls(**kwargs)
 
 
 @dataclass(slots=True)
