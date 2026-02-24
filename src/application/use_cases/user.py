@@ -28,8 +28,8 @@ class UserUseCase:
             password = create_data.pop("password")
             del create_data["password_confirmation"]
             create_data["hashed_password"] = self._create_hashed_password(password)
-            user = await uow.user_repo.create(create_data)
-            return user
+            user_payload = await uow.user_repo.create(create_data)
+            return user_payload
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return self._hasher.verify(plain_password, hashed_password)
