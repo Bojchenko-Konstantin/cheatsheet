@@ -14,6 +14,8 @@ from src.api.dependencies import (
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
 from src.application.dto import User, UserPayload
 from src.application.exceptions import (
+    AccessTokenException,
+    AccessTokenExpiredError,
     AccessTokenGenerationError,
     DuplicateUserError,
     RefreshTokenNotFoundError,
@@ -179,10 +181,39 @@ async def get_current_user_required(
     - Guarantees that user exists and is authenticated
     - Reusable across any endpoints that need protection
     """
-
     try:
         payload = await jwt_use_case.verify_access_token(access_token)
+
+    except AccessTokenExpiredError as e:
+        logger.exception(f"Access token expired: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to authorize"
+        ) from e
+
+    except AccessTokenException as e:
+        logger.exception(f"Invalid token: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to authorize"
+        ) from e
+
+    except Exception as e:
+        logger.critical(
+            f"Unexpected error during token verification: {str(e)}", exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during authentication.",
+        ) from e
+
+    try:
         user = await user_use_case.get_by_id(UUID(payload.user_id))
+
+    except UserNotFoundError as e:
+        logger.debug("User with id %s was not found", payload.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Failed to authorize",
+        ) from e
 
     except Exception as e:
         raise HTTPException(

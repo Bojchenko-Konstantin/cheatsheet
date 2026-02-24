@@ -12,7 +12,11 @@ from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
 from src.application.dto import RefreshToken, TokenStatus, UserPayload
-from src.application.exceptions import AccessTokenGenerationError
+from src.application.exceptions import (
+    AccessTokenException,
+    AccessTokenExpiredError,
+    AccessTokenGenerationError,
+)
 from src.application.hasher import HASHER
 from src.application.interfaces.unit_of_work import IUnitOfWork
 
@@ -50,12 +54,24 @@ class JWTUseCase:
 
     async def verify_access_token(self, access_token: str) -> UserPayload:
         public_key = self._get_appropriate_public_key_form()
-        payload = jwt.decode(
-            jwt=access_token,
-            key=public_key,  # type: ignore
-            algorithms=[self._algorithm],
-            options={"require": ["exp"]},
-        )
+
+        try:
+            payload = jwt.decode(
+                jwt=access_token,
+                key=public_key,  # type: ignore
+                algorithms=[self._algorithm],
+                options={"require": ["exp"]},
+            )
+
+        except jwt.ExpiredSignatureError as e:
+            raise AccessTokenExpiredError from e
+
+        except jwt.InvalidTokenError as e:
+            raise AccessTokenException from e
+
+        except Exception as e:
+            raise AccessTokenException from e
+
         user_payload = UserPayload.from_dict(payload)
         return user_payload
 

@@ -18,6 +18,10 @@ class AccessTokenGenerationError(AccessTokenException):
     """This exception will raise when access token generation fails."""
 
 
+class AccessTokenExpiredError(AccessTokenException):
+    """This exception will raise when access token has expired."""
+
+
 class UserException(ApplicationException):
     """This the base exception class for user."""
 
