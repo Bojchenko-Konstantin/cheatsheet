@@ -61,7 +61,9 @@ async def login(
         user_use_case.verify_password(plain_password, hashed_password)
         and user.is_active
     ):
-        payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
+        payload = UserPayload.create(
+            user_id=user.user_id, is_superuser=user.is_superuser
+        )
 
         try:
             token_pair = await jwt_use_case.get_jwt_tokens(payload)
@@ -118,7 +120,7 @@ async def register(
             "Please try again later.",
         ) from e
 
-    payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
+    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
     return token_pair
 
@@ -156,7 +158,7 @@ async def refresh(
             detail="Failed to authorize",
         ) from e
 
-    payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
+    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
     token_pair = await jwt_use_case.get_jwt_tokens(payload)
     return token_pair
 

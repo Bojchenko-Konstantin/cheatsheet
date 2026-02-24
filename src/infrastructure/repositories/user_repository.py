@@ -105,7 +105,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         except Exception as e:
             raise UserCreationError from e
 
-        return UserPayload(model.user_id, model.is_superuser)
+        return UserPayload.create(model.user_id, model.is_superuser)
 
     async def update(self, update_data: dict[str, Any]):
         pass

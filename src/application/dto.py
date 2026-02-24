@@ -56,6 +56,14 @@ class UserPayload:
     def to_dict(self) -> dict:
         return asdict(self)
 
+    @classmethod
+    def create(
+        cls, user_id: str | UUID, is_superuser: bool, exp: datetime | None = None
+    ) -> Self:
+        if isinstance(user_id, UUID):
+            user_id = str(user_id)
+        return cls(user_id=user_id, is_superuser=is_superuser, exp=exp)
+
 
 @dataclass(slots=True)
 class RefreshToken:
