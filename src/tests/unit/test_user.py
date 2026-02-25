@@ -11,11 +11,13 @@ from src.application.use_cases.user import UserUseCase
 
 
 class FakeUserRepo(IUserRepo):
+    PASSWORD_HASH = HASHER.hash("password")
+
     async def get_by_user_name(self, user_name: str) -> User:
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password="password",
+            hashed_password=self.PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -25,7 +27,7 @@ class FakeUserRepo(IUserRepo):
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password="password",
+            hashed_password=self.PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -68,7 +70,7 @@ async def test_get_user_by_user_name_was_successful(user_use_case: UserUseCase):
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password="password",
+        hashed_password=FakeUserRepo.PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -85,7 +87,7 @@ async def test_get_user_by_id_was_successful(user_use_case: UserUseCase):
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password="password",
+        hashed_password=FakeUserRepo.PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -121,9 +123,19 @@ async def test_create_user_was_successful(user_use_case: UserUseCase):
     assert user_payload == expected_payload
 
 
-def test_verify_password_was_successful(user_use_case: UserUseCase):
+async def test_authenticate_user_was_successful(user_use_case: UserUseCase):
+    user_name = "test"
     plain_password = "password"
-    hashed_password = HASHER.hash(plain_password)
     sut = user_use_case
+    expected_user = User(
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        user_name="test",
+        hashed_password=FakeUserRepo.PASSWORD_HASH,
+        is_active=True,
+        is_superuser=False,
+        is_verified=False,
+    )
 
-    assert sut.verify_password(plain_password, hashed_password)
+    user = await sut.authenticate_user(user_name, plain_password)
+
+    assert user == expected_user

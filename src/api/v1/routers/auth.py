@@ -17,7 +17,9 @@ from src.application.exceptions import (
     AccessTokenExpiredError,
     DuplicateUserError,
     RefreshTokenNotFoundError,
+    UserAuthenticationError,
     UserCreationError,
+    UserInactiveError,
     UserNotFoundError,
 )
 from src.application.use_cases.jwt import JWTUseCase
@@ -35,13 +37,31 @@ async def login(
     jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
 ):
     try:
-        user = await user_use_case.get_by_user_name(user_form.username)
+        user = await user_use_case.authenticate_user(
+            user_form.username, user_form.password
+        )
 
     except UserNotFoundError as e:
         logger.debug("User with username %s was not found", user_form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"User with username {user_form.username} was not found",
+            detail="Failed to authorize",
+        ) from e
+
+    except UserAuthenticationError as e:
+        logger.exception("Failed login attempt for username: %s", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid username or password",
+        ) from e
+
+    except UserInactiveError as e:
+        logger.warning("Inactive user attempted login: %s", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Account is inactive",
         ) from e
 
     except Exception as e:
@@ -54,45 +74,29 @@ async def login(
             detail="An unexpected error occurred during login. Please try again later.",
         ) from e
 
-    hashed_password = user.hashed_password
-    plain_password = user_form.password
+    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
 
-    if (
-        user_use_case.verify_password(plain_password, hashed_password)
-        and user.is_active
-    ):
-        payload = UserPayload.create(
-            user_id=user.user_id, is_superuser=user.is_superuser
-        )
+    try:
+        token_pair = await jwt_use_case.get_jwt_tokens(payload)
 
-        try:
-            token_pair = await jwt_use_case.get_jwt_tokens(payload)
-
-        except AccessTokenExpiredError as e:
-            logger.exception("Access token expired: %s", str(e))
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                headers={"WWW-Authenticate": "Bearer"},
-                detail="Failed to authorize",
-            ) from e
-
-        except AccessTokenException as e:
-            logger.exception(
-                "Failed to generate access token for username: %s", user_form.username
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to authorize. Please try again later.",
-            ) from e
-
-        return token_pair
-
-    else:
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
+        ) from e
+
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for username: %s", user_form.username
         )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+
+    return token_pair
 
 
 @router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)

@@ -14,14 +14,6 @@ class AccessTokenException(ApplicationException):
     """This the base exception class for access token."""
 
 
-class AccessTokenGenerationError(AccessTokenException):
-    """This exception will raise when access token generation fails."""
-
-
-class AccessTokenExpiredError(AccessTokenException):
-    """This exception will raise when access token has expired."""
-
-
 class UserException(ApplicationException):
     """This the base exception class for user."""
 
@@ -43,6 +35,14 @@ class CheatsheetAccessDeniedError(CheatsheetException):
     This exception will raise when user does not have permission
     to access a cheatsheet.
     """
+
+
+class AccessTokenGenerationError(AccessTokenException):
+    """This exception will raise when access token generation fails."""
+
+
+class AccessTokenExpiredError(AccessTokenException):
+    """This exception will raise when access token has expired."""
 
 
 class RefreshTokenNotFoundError(RefreshTokenException):
@@ -68,5 +68,16 @@ class UserCreationError(UserException):
     """This exception will raise when user failed to be created."""
 
 
-class DuplicateUserError(UserCreationError):
+class DuplicateUserError(UserException):
     """This exception will raise when user creation fails due to duplicate username."""
+
+
+class UserInactiveError(UserException):
+    """This exception will raise when user is inactive."""
+
+
+class UserAuthenticationError(UserException):
+    """
+    This exception will raise when user authentication
+    fails due to invalid credentials.
+    """
