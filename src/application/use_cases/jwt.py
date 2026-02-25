@@ -126,6 +126,9 @@ class JWTUseCase:
         except jwt.PyJWTError as e:
             raise AccessTokenGenerationError from e
 
+        except Exception as e:
+            raise AccessTokenException from e
+
         return access_token
 
     def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:

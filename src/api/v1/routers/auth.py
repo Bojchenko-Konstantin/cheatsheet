@@ -15,7 +15,6 @@ from src.application.dto import User, UserPayload
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
-    AccessTokenGenerationError,
     DuplicateUserError,
     RefreshTokenNotFoundError,
     UserCreationError,
@@ -69,7 +68,15 @@ async def login(
         try:
             token_pair = await jwt_use_case.get_jwt_tokens(payload)
 
-        except AccessTokenGenerationError as e:
+        except AccessTokenExpiredError as e:
+            logger.exception("Access token expired: %s", str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Bearer"},
+                detail="Failed to authorize",
+            ) from e
+
+        except AccessTokenException as e:
             logger.exception(
                 "Failed to generate access token for username: %s", user_form.username
             )
@@ -122,7 +129,27 @@ async def register(
         ) from e
 
     payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
-    token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+    try:
+        token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
+
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for username: %s", user_form.username
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+
     return token_pair
 
 
@@ -160,7 +187,28 @@ async def refresh(
         ) from e
 
     payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
-    token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+    try:
+        token_pair = await jwt_use_case.get_jwt_tokens(payload)
+
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
+
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for user with id: %s",
+            token_verification.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+
     return token_pair
 
 
