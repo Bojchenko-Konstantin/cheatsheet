@@ -62,17 +62,15 @@ class JWTUseCase:
                 algorithms=[self._algorithm],
                 options={"require": ["exp"]},
             )
-
         except jwt.ExpiredSignatureError as e:
             raise AccessTokenExpiredError from e
-
         except jwt.InvalidTokenError as e:
             raise AccessTokenException from e
-
         except Exception as e:
             raise AccessTokenException from e
 
         user_payload = UserPayload.create(**payload)
+
         return user_payload
 
     async def verify_refresh_token(
@@ -122,10 +120,8 @@ class JWTUseCase:
                 key=private_key,  # type: ignore
                 algorithm=self._algorithm,
             )
-
         except jwt.PyJWTError as e:
             raise AccessTokenGenerationError from e
-
         except Exception as e:
             raise AccessTokenException from e
 

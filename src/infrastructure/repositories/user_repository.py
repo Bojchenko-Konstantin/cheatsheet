@@ -95,13 +95,11 @@ class SQLAlchemyUserRepo(IUserRepo):
         try:
             self._session.add(model)
             await self._session.flush()
-
         except IntegrityError as e:
             if "uq_user_user_name" in str(e):
                 raise DuplicateUserError from e
             else:
                 raise UserCreationError from e
-
         except Exception as e:
             raise UserCreationError from e
 

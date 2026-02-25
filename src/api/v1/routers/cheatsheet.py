@@ -77,13 +77,12 @@ async def update_cheatsheet(
     cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
     current_user: Annotated[User, Depends(get_current_user_required)],
 ):
+    update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
+    update_data["cheatsheet_id"] = cheatsheet_id
+    update_data["user_id"] = current_user.user_id
+
     try:
-        update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
-        update_data["cheatsheet_id"] = cheatsheet_id
-        update_data["user_id"] = current_user.user_id
-
         updated_cheatsheet = await cheatsheet_use_case.update(update_data=update_data)
-
     except CheatsheetUpdateError as e:
         logger.exception(
             "Cheatsheet %s failed to be updated with data: %s",

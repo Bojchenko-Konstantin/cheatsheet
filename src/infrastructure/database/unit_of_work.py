@@ -37,7 +37,6 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
     async def __aexit__(self, *args: Any) -> None:
         if self._read_only:
             await self._session.close()
-
         else:
             await super().__aexit__(*args)
             await self._session.close()

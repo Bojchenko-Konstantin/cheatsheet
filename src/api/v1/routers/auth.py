@@ -40,14 +40,12 @@ async def login(
         user = await user_use_case.authenticate_user(
             user_form.username, user_form.password
         )
-
     except UserNotFoundError as e:
         logger.debug("User with username %s was not found", user_form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Failed to authorize",
         ) from e
-
     except UserAuthenticationError as e:
         logger.exception("Failed login attempt for username: %s", user_form.username)
         raise HTTPException(
@@ -55,7 +53,6 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Invalid username or password",
         ) from e
-
     except UserInactiveError as e:
         logger.warning("Inactive user attempted login: %s", user_form.username)
         raise HTTPException(
@@ -63,7 +60,6 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Account is inactive",
         ) from e
-
     except Exception as e:
         logger.exception(
             "Unexpected error during login for username: %s",
@@ -78,7 +74,6 @@ async def login(
 
     try:
         token_pair = await jwt_use_case.get_jwt_tokens(payload)
-
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -86,7 +81,6 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
-
     except AccessTokenException as e:
         logger.exception(
             "Failed to generate access token for username: %s", user_form.username
@@ -109,7 +103,6 @@ async def register(
 
     try:
         user = await user_use_case.create(create_data)
-
     except DuplicateUserError as e:
         logger.debug(
             "User registration failed - username '%s' already exists.",
@@ -120,7 +113,6 @@ async def register(
             detail=f"User with username '{user_form.username}' already exists. "
             "Please choose another one.",
         ) from e
-
     except UserCreationError as e:
         logger.exception(
             "Unexpected error during user registration for username: %s",
@@ -136,7 +128,6 @@ async def register(
 
     try:
         token_pair = await jwt_use_case.get_jwt_tokens(payload)
-
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -144,7 +135,6 @@ async def register(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
-
     except AccessTokenException as e:
         logger.exception(
             "Failed to generate access token for username: %s", user_form.username
@@ -169,7 +159,6 @@ async def refresh(
             plain_refresh_token=token_verification.refresh_token,
             fingerprint=token_verification.fingerprint,
         )
-
     except RefreshTokenNotFoundError as e:
         logger.exception(
             "Refresh token not found for user_id: %s", token_verification.user_id
@@ -182,7 +171,6 @@ async def refresh(
 
     try:
         user = await user_use_case.get_by_id(token_verification.user_id)
-
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found", token_verification.user_id)
         raise HTTPException(
@@ -194,7 +182,6 @@ async def refresh(
 
     try:
         token_pair = await jwt_use_case.get_jwt_tokens(payload)
-
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -202,7 +189,6 @@ async def refresh(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
-
     except AccessTokenException as e:
         logger.exception(
             "Failed to generate access token for user with id: %s",
@@ -234,19 +220,16 @@ async def get_current_user_required(
     """
     try:
         payload = await jwt_use_case.verify_access_token(access_token)
-
     except AccessTokenExpiredError as e:
         logger.exception(f"Access token expired: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to authorize"
         ) from e
-
     except AccessTokenException as e:
         logger.exception(f"Invalid token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to authorize"
         ) from e
-
     except Exception as e:
         logger.critical(
             f"Unexpected error during token verification: {str(e)}", exc_info=True
@@ -258,14 +241,12 @@ async def get_current_user_required(
 
     try:
         user = await user_use_case.get_by_id(payload.user_id)
-
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found", payload.user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Failed to authorize",
         ) from e
-
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -304,6 +285,5 @@ async def get_current_user_optional(
         payload = await jwt_use_case.verify_access_token(access_token)
         user = await user_use_case.get_by_id(payload.user_id)
         return user
-
     except Exception:
         return None

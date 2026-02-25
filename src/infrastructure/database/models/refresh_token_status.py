@@ -9,9 +9,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.infrastructure.database.models import Base, RefreshTokenModel
-from src.infrastructure.database.models.refresh_token_blacklist import (
+from src.infrastructure.database.models import (
+    Base,
     RefreshTokenBlacklistModel,
+    RefreshTokenModel,
 )
 
 if TYPE_CHECKING:

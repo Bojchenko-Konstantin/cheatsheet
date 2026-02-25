@@ -39,7 +39,6 @@ class UserUseCase:
     async def authenticate_user(self, user_name: str, password: str) -> User:
         try:
             user = await self.get_by_user_name(user_name)
-
         except UserNotFoundError:
             raise
 

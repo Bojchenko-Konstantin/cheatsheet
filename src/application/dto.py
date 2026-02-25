@@ -44,7 +44,6 @@ class UserPayload:
         if isinstance(user_id, str):
             try:
                 user_id = UUID(user_id)
-
             except ValueError:
                 logger.exception(
                     "Unable to convert user_id to UUID, invalid ID provided, %s",
@@ -55,7 +54,6 @@ class UserPayload:
         if isinstance(exp, int):
             try:
                 exp = datetime.fromtimestamp(exp, tz=timezone.utc)
-
             except ValueError:
                 logger.exception(
                     "Unable to convert exp to datetime, "

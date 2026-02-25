@@ -12,9 +12,9 @@ from src.application.exceptions import (
     RefreshTokenNotFoundError,
 )
 from src.application.interfaces.repositories.jwt import IJWTRepo
-from src.infrastructure.database.models.refresh_token import RefreshTokenModel
-from src.infrastructure.database.models.refresh_token_blacklist import (
+from src.infrastructure.database.models import (
     RefreshTokenBlacklistModel,
+    RefreshTokenModel,
 )
 from src.infrastructure.repositories.utils import DictBundle
 
@@ -95,7 +95,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             RefreshToken(user_id=user_id, **token_data.refresh_token)
             for token_data in raw_tokens
         ]
-
         return tokens
 
     async def _move_older_refresh_token_to_blacklist(
@@ -143,7 +142,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
                         )
                     )
                 self._session.add_all(blacklisted_models)
-
         except Exception as e:
             logger.error("Failed to move refresh token to blacklist")
             raise RefreshTokenMoveToBlacklistError from e
@@ -183,7 +181,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
                     )
                 )
             self._session.add_all(blacklisted_models)
-
         except Exception:
             logger.error("Failed to delete compromised tokens")
 
@@ -209,7 +206,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
 
         try:
             await self._session.execute(update_statement)
-
         except Exception as e:
             logger.error("Failed to mark tokens as compromised")
             raise RefreshTokenMarkAsCompromisedError from e
