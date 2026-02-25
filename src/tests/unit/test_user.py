@@ -9,15 +9,15 @@ from src.application.interfaces.repositories.user import IUserRepo
 from src.application.interfaces.unit_of_work import IUnitOfWork
 from src.application.use_cases.user import UserUseCase
 
+PASSWORD_HASH = HASHER.hash("password")
+
 
 class FakeUserRepo(IUserRepo):
-    PASSWORD_HASH = HASHER.hash("password")
-
     async def get_by_user_name(self, user_name: str) -> User:
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password=self.PASSWORD_HASH,
+            hashed_password=PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -27,7 +27,7 @@ class FakeUserRepo(IUserRepo):
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password=self.PASSWORD_HASH,
+            hashed_password=PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -70,7 +70,7 @@ async def test_get_user_by_user_name_was_successful(user_use_case: UserUseCase):
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password=FakeUserRepo.PASSWORD_HASH,
+        hashed_password=PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -87,7 +87,7 @@ async def test_get_user_by_id_was_successful(user_use_case: UserUseCase):
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password=FakeUserRepo.PASSWORD_HASH,
+        hashed_password=PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -130,7 +130,7 @@ async def test_authenticate_user_was_successful(user_use_case: UserUseCase):
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password=FakeUserRepo.PASSWORD_HASH,
+        hashed_password=PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
