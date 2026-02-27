@@ -8,6 +8,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 
 from src.application.dto import RefreshToken, UserPayload
+from src.application.exceptions import AccessTokenException, AccessTokenExpiredError
 from src.application.hasher import HASHER
 from src.application.interfaces.repositories.jwt import IJWTRepo
 from src.application.interfaces.unit_of_work import IUnitOfWork
@@ -115,12 +116,48 @@ async def test_verify_access_token_was_successful(jwt_use_case: JWTUseCase):
     assert payload == expected_payload
 
 
+@pytest.mark.asyncio
+async def test_verify_access_token_with_expired_token_was_not_successful(
+    jwt_use_case: JWTUseCase,
+):
+    sut = jwt_use_case
+    # Expired access token.
+    expected_access_token = (
+        "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
+        "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
+        "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
+        "J1c2VyIjpmYWxzZSwiZXhwIjoxMjYyMzA0MDAwfQ."
+        "4GI_yiWNqZHSqu-hB7LXJIkM1CowhLoNVjk2C2rnY"
+        "UZk3LOxR_SeK-xCeoHvpV08RudpGAxq8IZxZSu-Vu4FAQ"
+    )
+
+    with pytest.raises(AccessTokenExpiredError):
+        await sut.verify_access_token(expected_access_token)
+
+
+@pytest.mark.asyncio
+async def test_verify_access_token_with_invalid_token_was_not_successful(
+    jwt_use_case: JWTUseCase,
+):
+    sut = jwt_use_case
+    # Invalid access token
+    expected_access_token = (
+        "yJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
+        "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
+        "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
+        "J1c2VyIjpmYWxzZSwiZXhwIjoxMjYyMzA0MDAwfQ."
+        "4GI_yiWNqZHSqu-hB7LXJIkM1CowhLoNVjk2C2rnY"
+        "UZk3LOxR_SeK-xCeoHvpV08RudpGAxq8IZxZSu-Vu4FAQ"
+    )
+
+    with pytest.raises(AccessTokenException):
+        await sut.verify_access_token(expected_access_token)
+
+
 def _is_uuid(uuid_str: str) -> bool:
     try:
         UUID(uuid_str)
-
     except ValueError:
         return False
-
     else:
         return True
