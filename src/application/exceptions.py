@@ -1,87 +1,78 @@
 class ApplicationException(Exception):
-    """This the base exception class for application layer."""
+    """Base exception class for application layer."""
 
 
 class CheatsheetException(ApplicationException):
-    """This the base exception class for cheatsheet."""
+    """Base exception class for cheatsheet-related errors."""
 
 
 class RefreshTokenException(ApplicationException):
-    """This the base exception class for refresh token."""
+    """Base exception class for refresh token-related errors."""
 
 
 class AccessTokenException(ApplicationException):
-    """This the base exception class for access token."""
+    """Base exception class for access token-related errors."""
 
 
 class UserException(ApplicationException):
-    """This the base exception class for user."""
+    """Base exception class for user-related errors."""
 
 
 class CheatsheetNotFoundError(CheatsheetException):
-    """This exception will raise when cheatsheet was not retrieved by ID."""
+    """Raised when cheatsheet is not found by its ID."""
 
 
 class CheatsheetCreationError(CheatsheetException):
-    """This exception will raise when cheatsheet failed to be created."""
+    """Raised when cheatsheet creation fails."""
 
 
 class CheatsheetUpdateError(CheatsheetException):
-    """This exception will raise when cheatsheet failed to be updated."""
+    """Raised when cheatsheet update fails."""
 
 
 class CheatsheetAccessDeniedError(CheatsheetException):
-    """
-    This exception will raise when user does not have permission
-    to access a cheatsheet.
-    """
+    """Raised when user does not have permission to access a cheatsheet."""
 
 
 class AccessTokenGenerationError(AccessTokenException):
-    """This exception will raise when access token generation fails."""
+    """Raised when access token generation fails."""
 
 
 class AccessTokenExpiredError(AccessTokenException):
-    """This exception will raise when access token has expired."""
+    """Raised when access token has expired."""
 
 
 class RefreshTokenNotFoundError(RefreshTokenException):
-    """This exception will raise when refresh token was not found."""
+    """Raised when refresh token is not found."""
 
 
-class RefreshTokenMoveToBlacklistError(RefreshTokenException):
-    """This exception will raise when refresh token was not move to blacklist."""
+class RefreshTokenBlacklistAddError(RefreshTokenException):
+    """Raised when refresh token is not move to blacklist."""
 
 
-class RefreshTokenMarkAsCompromisedError(RefreshTokenException):
-    """
-    This exception will raise when refresh token fails
-    to be marked as compromised.
-    """
+class RefreshTokenCompromisedMarkError(RefreshTokenException):
+    """Raised when refresh token fails to be marked as compromised."""
 
 
-class RefreshTokenWasCompromisedError(RefreshTokenException):
-    """This exception will be raised when refresh token is proven to be compromised."""
+class RefreshTokenCompromisedError(RefreshTokenException):
+    """Raised when refresh token is proven to be compromised."""
 
 
 class UserNotFoundError(UserException):
-    """This exception will raise when user was not found."""
+    """Raised when user is not found."""
 
 
 class UserCreationError(UserException):
-    """This exception will raise when user failed to be created."""
+    """Raised when user creation fails."""
 
 
 class DuplicateUserError(UserException):
-    """This exception will raise when user creation fails due to duplicate username."""
+    """Raised when user creation fails due to duplicate username."""
 
 
 class UserInactiveError(UserException):
-    """This exception will raise when user is inactive."""
+    """Raised when user is inactive."""
 
 
 class UserAuthenticationError(UserException):
-    """
-    This exception will raise when user authentication
-    fails due to invalid credentials.
-    """
+    """Raised when user authentication fails due to invalid credentials."""
