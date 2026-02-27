@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import RefreshToken, TokenStatus
+from src.application.dto import RefreshTokenRecord, TokenStatus
 from src.application.exceptions import (
     RefreshTokenMarkAsCompromisedError,
     RefreshTokenMoveToBlacklistError,
@@ -25,23 +25,23 @@ class SQLAlchemyJWTRepo(IJWTRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def save(self, refresh_token: RefreshToken) -> None:
+    async def save(self, token_record: RefreshTokenRecord) -> None:
         await self._move_older_refresh_token_to_blacklist(
-            refresh_token.user_id,
-            refresh_token.hashed_fingerprint,  # type: ignore
+            token_record.user_id,
+            token_record.hashed_fingerprint,  # type: ignore
         )
 
         model = RefreshTokenModel(
-            user_id=refresh_token.user_id,
-            hashed_token=refresh_token.hashed_token,
-            hashed_fingerprint=refresh_token.hashed_fingerprint,
-            expires_at=refresh_token.expires_at,
+            user_id=token_record.user_id,
+            hashed_token=token_record.hashed_token,
+            hashed_fingerprint=token_record.hashed_fingerprint,
+            expires_at=token_record.expires_at,
         )
         self._session.add(model)
 
     async def get_device_active_token(
         self, user_id: UUID, fingerprint: str
-    ) -> RefreshToken:
+    ) -> RefreshTokenRecord:
         statement = select(
             DictBundle(
                 "refresh_token",
@@ -61,12 +61,12 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         if not raw_token:
             raise RefreshTokenNotFoundError
 
-        token = RefreshToken(user_id=user_id, **raw_token.refresh_token)
-        return token
+        token_record = RefreshTokenRecord(user_id=user_id, **raw_token.refresh_token)
+        return token_record
 
     async def get_device_blacklisted_token_family(
         self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshToken] | None:
+    ) -> list[RefreshTokenRecord] | None:
         statement = (
             select(
                 DictBundle(
@@ -86,16 +86,16 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             )
         )
         result = await self._session.execute(statement)
-        raw_tokens = result.all()
+        raw_token_records = result.all()
 
-        if not raw_tokens:
+        if not raw_token_records:
             raise RefreshTokenNotFoundError
 
-        tokens = [
-            RefreshToken(user_id=user_id, **token_data.refresh_token)
-            for token_data in raw_tokens
+        token_records = [
+            RefreshTokenRecord(user_id=user_id, **token_data.refresh_token)
+            for token_data in raw_token_records
         ]
-        return tokens
+        return token_records
 
     async def _move_older_refresh_token_to_blacklist(
         self, user_id: UUID, fingerprint: str

@@ -7,7 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 
-from src.application.dto import RefreshToken, UserPayload
+from src.application.dto import RefreshTokenRecord, UserPayload
 from src.application.exceptions import AccessTokenException, AccessTokenExpiredError
 from src.application.hasher import HASHER
 from src.application.interfaces.repositories.jwt import IJWTRepo
@@ -19,9 +19,9 @@ from src.core.config import settings
 class FakeJWTRepo(IJWTRepo):
     async def get_device_active_token(
         self, user_id: UUID, fingerprint: str
-    ) -> RefreshToken:
+    ) -> RefreshTokenRecord:
         hashed_refresh_token = HASHER.hash("18f47b4-5c2a-7b80-8f3c-92a1d4e6f8b0")
-        return RefreshToken(
+        return RefreshTokenRecord(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             hashed_token=hashed_refresh_token,
             # Expiration time must be greater than (now - leeway).
@@ -30,7 +30,7 @@ class FakeJWTRepo(IJWTRepo):
             status_id=1,
         )
 
-    async def save(self, refresh_token: RefreshToken) -> None:
+    async def save(self, token_record: RefreshTokenRecord) -> None:
         pass
 
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str):
@@ -38,7 +38,7 @@ class FakeJWTRepo(IJWTRepo):
 
     async def get_device_blacklisted_token_family(
         self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshToken] | None:
+    ) -> list[RefreshTokenRecord] | None:
         pass
 
 

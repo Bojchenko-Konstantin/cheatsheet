@@ -66,7 +66,7 @@ class UserPayload:
 
 
 @dataclass(slots=True)
-class RefreshToken:
+class RefreshTokenRecord:
     user_id: UUID
     hashed_token: str
     expires_at: datetime

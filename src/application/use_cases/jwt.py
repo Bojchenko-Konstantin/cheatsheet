@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
-from src.application.dto import RefreshToken, TokenStatus, UserPayload
+from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
@@ -98,7 +98,7 @@ class JWTUseCase:
         )
 
         # TODO: Add real fingerprint hash.
-        refresh_token_to_save = RefreshToken(
+        token_record = RefreshTokenRecord(
             user_id=user_id,
             hashed_token=refresh_token_hash,
             hashed_fingerprint="mobile phone",
@@ -106,7 +106,7 @@ class JWTUseCase:
         )
 
         async with self._unit_of_work as uow:
-            await uow.jwt_repo.save(refresh_token_to_save)
+            await uow.jwt_repo.save(token_record)
 
     def _get_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
@@ -147,15 +147,15 @@ class JWTUseCase:
         fingerprint: str,
         plain_refresh_token: str,
     ) -> None:
-        tokens = await uow.jwt_repo.get_device_blacklisted_token_family(
+        token_records = await uow.jwt_repo.get_device_blacklisted_token_family(
             user_id, fingerprint
         )
 
-        if not tokens:
+        if not token_records:
             return
 
-        for token in tokens:
-            if not self._is_valid_token(plain_refresh_token, token.hashed_token):
+        for record in token_records:
+            if not self._is_valid_token(plain_refresh_token, record.hashed_token):
                 continue
 
             await uow.jwt_repo.mark_tokens_as_compromised(
