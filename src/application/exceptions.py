@@ -60,6 +60,10 @@ class RefreshTokenMarkAsCompromisedError(RefreshTokenException):
     """
 
 
+class RefreshTokenWasCompromisedError(RefreshTokenException):
+    """This exception will be raised when refresh token is proven to be compromised."""
+
+
 class UserNotFoundError(UserException):
     """This exception will raise when user was not found."""
 
