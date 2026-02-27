@@ -85,7 +85,10 @@ class JWTUseCase:
                 return
             else:
                 await self._verify_token_was_not_compromised(
-                    user_id, fingerprint, plain_refresh_token
+                    uow=uow,
+                    user_id=user_id,
+                    fingerprint=fingerprint,
+                    plain_refresh_token=plain_refresh_token,
                 )
 
     async def _save_refresh_token_hash(self, user_id: UUID, refresh_token: str) -> None:
@@ -139,19 +142,26 @@ class JWTUseCase:
 
     async def _verify_token_was_not_compromised(
         self,
+        uow: IUnitOfWork,
         user_id: UUID,
         fingerprint: str,
         plain_refresh_token: str,
     ) -> None:
-        async with self._unit_of_work as uow:
-            tokens = await uow.jwt_repo.get_device_blacklisted_token_family(
-                user_id, fingerprint
+        tokens = await uow.jwt_repo.get_device_blacklisted_token_family(
+            user_id, fingerprint
+        )
+
+        if not tokens:
+            return
+
+        for token in tokens:
+            if not self._is_valid_token(plain_refresh_token, token.hashed_token):
+                continue
+
+            await uow.jwt_repo.mark_tokens_as_compromised(
+                user_id=user_id,
+                fingerprint=fingerprint,
             )
 
-            if tokens:
-                for token in tokens:
-                    if self._hasher.verify(plain_refresh_token, token.hashed_token):
-                        await uow.jwt_repo.mark_tokens_as_compromised(
-                            user_id=user_id,
-                            fingerprint=fingerprint,
-                        )
+    def _is_valid_token(self, plain_refresh_token: str, hashed_refresh_token: str):
+        return self._hasher.verify(plain_refresh_token, hashed_refresh_token)
