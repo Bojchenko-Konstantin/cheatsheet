@@ -1,20 +1,21 @@
 import logging
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import get_cheatsheet_use_case
+from src.api.dependencies import (
+    CheatsheetUseCaseDep,
+    CurrentUserOptionalDep,
+    CurrentUserRequiredDep,
+)
 from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
-from src.api.v1.routers.auth import get_current_user_optional, get_current_user_required
-from src.application.dto import User
 from src.application.exceptions import (
     CheatsheetAccessDeniedError,
     CheatsheetCreationError,
     CheatsheetNotFoundError,
     CheatsheetUpdateError,
 )
-from src.application.use_cases import CheatsheetUseCase
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 
@@ -24,8 +25,8 @@ logger = logging.getLogger(__name__)
 @router.get("/{cheatsheet_id}", response_model=CheatsheetRead)
 async def get_cheatsheet_by_id(
     cheatsheet_id: UUID,
-    cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
-    current_user: Annotated[User | None, Depends(get_current_user_optional)],
+    cheatsheet_use_case: CheatsheetUseCaseDep,
+    current_user: CurrentUserOptionalDep,
 ):
     try:
         current_user_id = current_user.user_id if current_user else None
@@ -49,8 +50,8 @@ async def get_cheatsheet_by_id(
 @router.post("/", response_model=CheatsheetRead, status_code=status.HTTP_201_CREATED)
 async def create_cheatsheet(
     cheatsheet_data: CheatsheetCreate,
-    cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
-    current_user: Annotated[User, Depends(get_current_user_required)],
+    cheatsheet_use_case: CheatsheetUseCaseDep,
+    current_user: CurrentUserRequiredDep,
 ):
     create_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
     create_data["user_id"] = current_user.user_id
@@ -74,8 +75,8 @@ async def create_cheatsheet(
 async def update_cheatsheet(
     cheatsheet_id: UUID,
     cheatsheet_data: CheatsheetUpdate,
-    cheatsheet_use_case: Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)],
-    current_user: Annotated[User, Depends(get_current_user_required)],
+    cheatsheet_use_case: CheatsheetUseCaseDep,
+    current_user: CurrentUserRequiredDep,
 ):
     update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
     update_data["cheatsheet_id"] = cheatsheet_id
