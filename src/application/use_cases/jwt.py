@@ -16,6 +16,7 @@ from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     AccessTokenGenerationError,
+    RefreshTokenCompromisedError,
 )
 from src.application.hasher import HASHER
 from src.application.interfaces.unit_of_work import IUnitOfWork
@@ -162,6 +163,7 @@ class JWTUseCase:
                 user_id=user_id,
                 fingerprint=fingerprint,
             )
+            raise RefreshTokenCompromisedError
 
     def _is_valid_token(self, plain_refresh_token: str, hashed_refresh_token: str):
         return self._hasher.verify(plain_refresh_token, hashed_refresh_token)

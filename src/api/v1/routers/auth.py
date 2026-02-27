@@ -13,6 +13,7 @@ from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
+    RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     UserAuthenticationError,
     UserCreationError,
@@ -163,6 +164,11 @@ async def refresh(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
+    except RefreshTokenCompromisedError:
+        logger.info(
+            "Refresh token was compromised for user_id: %s", token_verification.user_id
+        )
+        # TODO: add force logout.
 
     try:
         user = await user_use_case.get_by_id(token_verification.user_id)
