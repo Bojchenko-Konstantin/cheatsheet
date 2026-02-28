@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from application.dto import UserPayload
+from src.application.dto import UserPayload
 
 
 class ITokenService(ABC):
