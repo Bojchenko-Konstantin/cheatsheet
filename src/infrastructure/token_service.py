@@ -9,7 +9,6 @@ from cryptography.hazmat.primitives.asymmetric.types import (
     PublicKeyTypes,
 )
 from pwdlib import PasswordHash
-from src.application.interfaces.token_port import ITokenService
 from uuid_extensions import uuid7
 
 from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
@@ -19,6 +18,7 @@ from src.application.exceptions import (
     AccessTokenGenerationError,
     RefreshTokenCompromisedError,
 )
+from src.application.interfaces.token_service import ITokenService
 from src.application.interfaces.unit_of_work import IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.hasher import HASHER
@@ -29,12 +29,12 @@ class TokenService(ITokenService):
 
     def __init__(
         self,
-        unit_of_work: SQLAlchemyUnitOfWork,
         private_key: str,
         public_key: str,
         algorithm: str,
         access_token_expires_in: int,
         refresh_token_expires_in: int,
+        unit_of_work: IUnitOfWork = SQLAlchemyUnitOfWork(),
         hasher: PasswordHash = HASHER,
     ):
         self._unit_of_work = unit_of_work
