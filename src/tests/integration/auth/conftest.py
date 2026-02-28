@@ -4,8 +4,8 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.hasher import HASHER
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.hasher import HASHER
 
 
 @pytest_asyncio.fixture

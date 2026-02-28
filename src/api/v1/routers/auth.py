@@ -3,12 +3,10 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 
 from src.api.dependencies import (
-    JWTUseCaseDep,
+    AuthUseCaseDep,
     OAuth2FormDep,
-    UserUseCaseDep,
 )
 from src.api.schemas import TokenPair, TokenVerification, UserCreate
-from src.application.dto import UserPayload
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
@@ -29,11 +27,10 @@ logger = logging.getLogger(__name__)
 @router.post("/login", response_model=TokenPair)
 async def login(
     user_form: OAuth2FormDep,
-    user_use_case: UserUseCaseDep,
-    jwt_use_case: JWTUseCaseDep,
+    auth_use_case: AuthUseCaseDep,
 ):
     try:
-        user = await user_use_case.authenticate_user(
+        token_pair = await auth_use_case.authenticate(
             user_form.username, user_form.password
         )
     except UserNotFoundError as e:
@@ -56,20 +53,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Account is inactive",
         ) from e
-    except Exception as e:
-        logger.exception(
-            "Unexpected error during login for username: %s",
-            user_form.username,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during login. Please try again later.",
-        ) from e
 
-    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
-
-    try:
-        token_pair = await jwt_use_case.get_jwt_tokens(payload)
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -85,6 +69,15 @@ async def login(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
+    except Exception as e:
+        logger.exception(
+            "Unexpected error during login for username: %s",
+            user_form.username,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during login. Please try again later.",
+        ) from e
 
     return token_pair
 
@@ -92,13 +85,12 @@ async def login(
 @router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
 async def register(
     user_form: UserCreate,
-    user_use_case: UserUseCaseDep,
-    jwt_use_case: JWTUseCaseDep,
+    auth_use_case: AuthUseCaseDep,
 ):
     create_data = user_form.model_dump(exclude_unset=True)
 
     try:
-        user = await user_use_case.create(create_data)
+        token_pair = await auth_use_case.register(create_data)
     except DuplicateUserError as e:
         logger.debug(
             "User registration failed - username '%s' already exists.",
@@ -119,11 +111,6 @@ async def register(
             detail="An unexpected error occurred during registration. "
             "Please try again later.",
         ) from e
-
-    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
-
-    try:
-        token_pair = await jwt_use_case.get_jwt_tokens(payload)
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -139,22 +126,19 @@ async def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
-
-    return token_pair
+    else:
+        return token_pair
 
 
 @router.post("/refresh")
 async def refresh(
     token_verification: TokenVerification,
-    user_use_case: UserUseCaseDep,
-    jwt_use_case: JWTUseCaseDep,
+    auth_use_case: AuthUseCaseDep,
 ):
+    refresh_data = token_verification.model_dump(exclude_unset=True)
+
     try:
-        await jwt_use_case.verify_refresh_token(
-            user_id=token_verification.user_id,
-            plain_refresh_token=token_verification.refresh_token,
-            fingerprint=token_verification.fingerprint,
-        )
+        token_pair = await auth_use_case.refresh(refresh_data)
     except RefreshTokenNotFoundError as e:
         logger.exception(
             "Refresh token not found for user_id: %s", token_verification.user_id
@@ -170,8 +154,6 @@ async def refresh(
         )
         # TODO: add force logout.
 
-    try:
-        user = await user_use_case.get_by_id(token_verification.user_id)
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found", token_verification.user_id)
         raise HTTPException(
@@ -179,10 +161,6 @@ async def refresh(
             detail="Failed to authorize",
         ) from e
 
-    payload = UserPayload.create(user_id=user.user_id, is_superuser=user.is_superuser)
-
-    try:
-        token_pair = await jwt_use_case.get_jwt_tokens(payload)
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -199,5 +177,5 @@ async def refresh(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
-
-    return token_pair
+    else:
+        return token_pair

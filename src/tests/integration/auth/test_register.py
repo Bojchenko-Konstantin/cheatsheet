@@ -6,8 +6,8 @@ from httpx import AsyncClient
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
-from src.application.hasher import HASHER
 from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.hasher import HASHER
 
 
 @pytest.mark.integration
