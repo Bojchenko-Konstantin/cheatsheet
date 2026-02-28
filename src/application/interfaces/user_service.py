@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
-from application.dto import User, UserPayload
+from src.application.dto import User, UserPayload
 
 
 class IUserService(ABC):
