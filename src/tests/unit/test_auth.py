@@ -24,7 +24,9 @@ class FakeTokenService(ITokenService):
         )
 
     async def verify_access_token(self, access_token: str) -> UserPayload:
-        return UserPayload(user_id=UUID(""), is_superuser=False)
+        return UserPayload(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
+        )
 
     async def verify_refresh_token(
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
@@ -54,7 +56,9 @@ class FakeUserService(IUserService):
         )
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
-        return UserPayload(user_id=UUID(""), is_superuser=False)
+        return UserPayload(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
+        )
 
     async def authenticate_user(self, user_name: str, password: str) -> User:
         return User(
@@ -91,6 +95,82 @@ async def test_authenticate_was_successful(auth_use_case: AuthUseCase):
             "6PWpigmaRo3GuHYalglzUCV07y4cBNlZmbBJXGHT6Dw"
         ),
         refresh_token="019c958f-82e1-7eca-b4c0-a68043ac5ec5",
+    )
+
+    assert result == expected_result
+
+
+@pytest.mark.asyncio
+async def test_register_was_successful(auth_use_case: AuthUseCase):
+    sut = auth_use_case
+    create_data = {
+        "username": "new_user",
+        "password": "new_password",
+        "password_confirmation": "new_password",
+        "email": "new@example.com",
+    }
+
+    result = await sut.register(create_data)
+    expected_result = dict(
+        access_token=(
+            "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
+            "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
+            "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
+            "J1c2VyIjpmYWxzZSwiZXhwIjoxNjAyNzc3ODg4MDB9."
+            "Quu1rKO3N8UGfwhv-6Hf-0mf-OPRq0-8VWC9avgIVuU"
+            "6PWpigmaRo3GuHYalglzUCV07y4cBNlZmbBJXGHT6Dw"
+        ),
+        refresh_token="019c958f-82e1-7eca-b4c0-a68043ac5ec5",
+    )
+
+    assert result == expected_result
+
+
+@pytest.mark.asyncio
+async def test_refresh_was_successful(auth_use_case: AuthUseCase):
+    sut = auth_use_case
+    refresh_data = {
+        "user_id": UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        "refresh_token": "019c958f-82e1-7eca-b4c0-a68043ac5ec5",
+        "fingerprint": "test_fingerprint",
+    }
+
+    result = await sut.refresh(refresh_data)
+    expected_result = dict(
+        access_token=(
+            "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
+            "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
+            "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
+            "J1c2VyIjpmYWxzZSwiZXhwIjoxNjAyNzc3ODg4MDB9."
+            "Quu1rKO3N8UGfwhv-6Hf-0mf-OPRq0-8VWC9avgIVuU"
+            "6PWpigmaRo3GuHYalglzUCV07y4cBNlZmbBJXGHT6Dw"
+        ),
+        refresh_token="019c958f-82e1-7eca-b4c0-a68043ac5ec5",
+    )
+
+    assert result == expected_result
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_was_successful(auth_use_case: AuthUseCase):
+    sut = auth_use_case
+    access_token = (
+        "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
+        "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
+        "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
+        "J1c2VyIjpmYWxzZSwiZXhwIjoxNjAyNzc3ODg4MDB9."
+        "Quu1rKO3N8UGfwhv-6Hf-0mf-OPRq0-8VWC9avgIVuU"
+        "6PWpigmaRo3GuHYalglzUCV07y4cBNlZmbBJXGHT6Dw"
+    )
+
+    result = await sut.get_current_user(access_token)
+    expected_result = User(
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        user_name="test",
+        hashed_password="password",
+        is_active=True,
+        is_superuser=False,
+        is_verified=True,
     )
 
     assert result == expected_result
