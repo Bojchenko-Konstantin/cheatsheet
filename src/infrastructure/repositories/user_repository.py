@@ -13,7 +13,7 @@ from src.application.exceptions import (
     UserCreationError,
     UserNotFoundError,
 )
-from src.application.interfaces.repositories.user import IUserRepo
+from src.application.interfaces.repositories import IUserRepo
 from src.infrastructure.database.models import UserModel
 from src.infrastructure.database.models.user_detail import UserDetailModel
 from src.infrastructure.repositories.utils import DictBundle

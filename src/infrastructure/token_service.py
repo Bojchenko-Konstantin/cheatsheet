@@ -18,8 +18,7 @@ from src.application.exceptions import (
     AccessTokenGenerationError,
     RefreshTokenCompromisedError,
 )
-from src.application.interfaces.token_service import ITokenService
-from src.application.interfaces.unit_of_work import IUnitOfWork
+from src.application.interfaces import ITokenService, IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.hasher import HASHER
 

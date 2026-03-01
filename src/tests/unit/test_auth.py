@@ -4,9 +4,8 @@ from uuid import UUID
 import pytest
 
 from src.application.dto import User, UserPayload
-from src.application.interfaces.token_service import ITokenService
-from src.application.interfaces.user_service import IUserService
-from src.application.use_cases.auth import AuthUseCase
+from src.application.interfaces import ITokenService, IUserService
+from src.application.use_cases import AuthUseCase
 
 
 class FakeTokenService(ITokenService):

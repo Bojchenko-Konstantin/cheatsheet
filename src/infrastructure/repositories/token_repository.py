@@ -11,7 +11,7 @@ from src.application.exceptions import (
     RefreshTokenCompromisedMarkError,
     RefreshTokenNotFoundError,
 )
-from src.application.interfaces.repositories.token import ITokenRepo
+from src.application.interfaces.repositories import ITokenRepo
 from src.infrastructure.database.models import (
     RefreshTokenBlacklistModel,
     RefreshTokenModel,

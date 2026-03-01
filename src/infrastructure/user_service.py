@@ -9,8 +9,7 @@ from src.application.exceptions import (
     UserInactiveError,
     UserNotFoundError,
 )
-from src.application.interfaces.unit_of_work import IUnitOfWork
-from src.application.interfaces.user_service import IUserService
+from src.application.interfaces import IUnitOfWork, IUserService
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.hasher import HASHER
 

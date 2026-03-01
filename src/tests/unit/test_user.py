@@ -4,10 +4,10 @@ from uuid import UUID
 import pytest
 
 from src.application.dto import User, UserPayload
-from src.application.interfaces.repositories.user import (
+from src.application.interfaces import (
+    IUnitOfWork,
     IUserRepo,
 )
-from src.application.interfaces.unit_of_work import IUnitOfWork
 from src.infrastructure.hasher import HASHER
 from src.infrastructure.user_service import UserService
 

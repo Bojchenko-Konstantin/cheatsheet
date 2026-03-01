@@ -8,8 +8,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 
 from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
-from src.application.interfaces.repositories.token import ITokenRepo
-from src.application.interfaces.unit_of_work import IUnitOfWork
+from src.application.interfaces import ITokenRepo, IUnitOfWork
 from src.core.config import settings
 from src.infrastructure.hasher import HASHER
 from src.infrastructure.token_service import TokenService

@@ -1,8 +1,7 @@
 from typing import Any
 
 from src.application.dto import User, UserPayload
-from src.application.interfaces.token_service import ITokenService
-from src.application.interfaces.user_service import IUserService
+from src.application.interfaces import ITokenService, IUserService
 
 
 class AuthUseCase:

@@ -5,7 +5,7 @@ from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
 
-from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
 

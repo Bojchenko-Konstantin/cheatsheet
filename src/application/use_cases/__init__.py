@@ -1,3 +1,7 @@
-__all__ = ("CheatsheetUseCase",)
+__all__ = (
+    "CheatsheetUseCase",
+    "AuthUseCase",
+)
 
+from .auth import AuthUseCase
 from .cheatsheet import CheatsheetUseCase
