@@ -11,7 +11,7 @@ from src.application.exceptions import (
     RefreshTokenCompromisedMarkError,
     RefreshTokenNotFoundError,
 )
-from src.application.interfaces.repositories.jwt import IJWTRepo
+from src.application.interfaces.repositories.token import ITokenRepo
 from src.infrastructure.database.models import (
     RefreshTokenBlacklistModel,
     RefreshTokenModel,
@@ -21,7 +21,7 @@ from src.infrastructure.repositories.utils import DictBundle
 logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyJWTRepo(IJWTRepo):
+class SQLAlchemyTokenRepo(ITokenRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 

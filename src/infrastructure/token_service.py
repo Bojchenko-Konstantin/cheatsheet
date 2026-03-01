@@ -81,7 +81,7 @@ class TokenService(ITokenService):
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
         async with self._unit_of_work as uow:
-            token_record = await uow.jwt_repo.get_device_active_token(
+            token_record = await uow.token_repo.get_device_active_token(
                 user_id, fingerprint
             )
 
@@ -139,7 +139,7 @@ class TokenService(ITokenService):
         )
 
         async with self._unit_of_work as uow:
-            await uow.jwt_repo.save(token_record)
+            await uow.token_repo.save(token_record)
 
     def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:
         private_key_der = base64.b64decode(self._private_key)
@@ -158,7 +158,7 @@ class TokenService(ITokenService):
         fingerprint: str,
         plain_refresh_token: str,
     ) -> None:
-        token_records = await uow.jwt_repo.get_device_blacklisted_token_family(
+        token_records = await uow.token_repo.get_device_blacklisted_token_family(
             user_id, fingerprint
         )
 
@@ -169,7 +169,7 @@ class TokenService(ITokenService):
             if not self._is_valid_token(plain_refresh_token, record.hashed_token):
                 continue
 
-            await uow.jwt_repo.mark_tokens_as_compromised(
+            await uow.token_repo.mark_tokens_as_compromised(
                 user_id=user_id,
                 fingerprint=fingerprint,
             )

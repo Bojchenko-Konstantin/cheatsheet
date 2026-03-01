@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Self
 
-from src.application.interfaces import ICheatsheetRepo, IJWTRepo, IUserRepo
+from src.application.interfaces import ICheatsheetRepo, ITokenRepo, IUserRepo
 
 
 class IUnitOfWork(ABC):
@@ -13,7 +13,7 @@ class IUnitOfWork(ABC):
 
     cheatsheet_repo: ICheatsheetRepo
     user_repo: IUserRepo
-    jwt_repo: IJWTRepo
+    token_repo: ITokenRepo
 
     @abstractmethod
     def readonly(self) -> Self:

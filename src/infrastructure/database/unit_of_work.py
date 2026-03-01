@@ -2,11 +2,16 @@ from typing import Any, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.application.interfaces import ICheatsheetRepo, IJWTRepo, IUnitOfWork, IUserRepo
+from src.application.interfaces import (
+    ICheatsheetRepo,
+    ITokenRepo,
+    IUnitOfWork,
+    IUserRepo,
+)
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.repositories import (
     SQLAlchemyCheatsheetRepo,
-    SQLAlchemyJWTRepo,
+    SQLAlchemyTokenRepo,
     SQLAlchemyUserRepo,
 )
 
@@ -27,7 +32,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         self._session: AsyncSession = self._session_factory()
         self.cheatsheet_repo: ICheatsheetRepo = SQLAlchemyCheatsheetRepo(self._session)
         self.user_repo: IUserRepo = SQLAlchemyUserRepo(self._session)
-        self.jwt_repo: IJWTRepo = SQLAlchemyJWTRepo(self._session)
+        self.token_repo: ITokenRepo = SQLAlchemyTokenRepo(self._session)
 
         if not self._read_only:
             await self._session.begin()

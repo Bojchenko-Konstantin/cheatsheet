@@ -5,7 +5,7 @@ from uuid import UUID
 from src.application.dto import RefreshTokenRecord
 
 
-class IJWTRepo(ABC):
+class ITokenRepo(ABC):
     """Abstract class for operations with user storage."""
 
     @abstractmethod
