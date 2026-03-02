@@ -54,6 +54,10 @@ class RefreshTokenCompromisedMarkError(RefreshTokenException):
     """Raised when refresh token fails to be marked as compromised."""
 
 
+class RefreshTokenRevokeError(RefreshTokenException):
+    """Raised when refresh token revocation fails."""
+
+
 class RefreshTokenCompromisedError(RefreshTokenException):
     """Raised when refresh token is proven to be compromised."""
 
