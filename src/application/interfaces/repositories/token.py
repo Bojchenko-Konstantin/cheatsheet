@@ -27,3 +27,9 @@ class ITokenRepo(ABC):
     @abstractmethod
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> Any:
         pass
+
+    @abstractmethod
+    async def revoke_token(
+        self, user_id: UUID, fingerprint: str, hashed_token: str
+    ) -> None:
+        pass

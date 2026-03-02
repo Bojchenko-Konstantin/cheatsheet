@@ -6,13 +6,14 @@ from src.api.dependencies import (
     AuthUseCaseDep,
     OAuth2FormDep,
 )
-from src.api.schemas import TokenPair, TokenVerification, UserCreate
+from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
+    RefreshTokenRevokeError,
     UserAuthenticationError,
     UserCreationError,
     UserInactiveError,
@@ -179,3 +180,34 @@ async def refresh(
         ) from e
     else:
         return token_pair
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    logout_request: LogoutRequest,
+    auth_use_case: AuthUseCaseDep,
+):
+    try:
+        await auth_use_case.logout(
+            user_id=logout_request.user_id,
+            refresh_token=logout_request.refresh_token,
+            fingerprint=logout_request.fingerprint,
+        )
+    except RefreshTokenRevokeError as e:
+        logger.exception(
+            "Failed to revoke refresh token for user %s: %s",
+            logout_request.user_id,
+            str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to logout due to a technical issue. Please try again later.",
+        ) from e
+    except Exception as e:
+        logger.exception(
+            "Unexpected error during logout for user %s", logout_request.user_id
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during logout.",
+        ) from e

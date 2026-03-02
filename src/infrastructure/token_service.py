@@ -17,6 +17,8 @@ from src.application.exceptions import (
     AccessTokenExpiredError,
     AccessTokenGenerationError,
     RefreshTokenCompromisedError,
+    RefreshTokenNotFoundError,
+    RefreshTokenRevokeError,
 )
 from src.application.interfaces import ITokenService, IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
@@ -93,6 +95,32 @@ class TokenService(ITokenService):
                     fingerprint=fingerprint,
                     plain_refresh_token=plain_refresh_token,
                 )
+
+    async def revoke_refresh_token(
+        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
+    ) -> None:
+        try:
+            async with self._unit_of_work as uow:
+                token_record = await uow.token_repo.get_device_active_token(
+                    user_id, fingerprint
+                )
+        except RefreshTokenNotFoundError:
+            return
+
+        if not self._hasher.verify(plain_refresh_token, token_record.hashed_token):
+            return
+
+        try:
+            async with self._unit_of_work as uow:
+                await uow.token_repo.revoke_token(
+                    user_id=user_id,
+                    fingerprint=fingerprint,
+                    hashed_token=token_record.hashed_token,
+                )
+        except RefreshTokenRevokeError:
+            raise
+        except Exception as e:
+            raise RefreshTokenRevokeError from e
 
     def _generate_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(

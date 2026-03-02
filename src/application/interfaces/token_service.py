@@ -20,3 +20,9 @@ class ITokenService(ABC):
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
         pass
+
+    @abstractmethod
+    async def revoke_refresh_token(
+        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
+    ) -> None:
+        pass

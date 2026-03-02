@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from src.application.dto import User, UserPayload
 from src.application.interfaces import ITokenService, IUserService
@@ -39,6 +40,13 @@ class AuthUseCase:
         )
         token_pair = await self._token_service.generate_tokens(payload)
         return token_pair
+
+    async def logout(self, user_id: UUID, refresh_token: str, fingerprint: str) -> None:
+        await self._token_service.revoke_refresh_token(
+            user_id=user_id,
+            plain_refresh_token=refresh_token,
+            fingerprint=fingerprint,
+        )
 
     async def get_current_user(self, access_token: str) -> User:
         payload = await self._token_service.verify_access_token(access_token)

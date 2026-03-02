@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import RefreshTokenRecord, TokenStatus
@@ -10,6 +11,7 @@ from src.application.exceptions import (
     RefreshTokenBlacklistAddError,
     RefreshTokenCompromisedMarkError,
     RefreshTokenNotFoundError,
+    RefreshTokenRevokeError,
 )
 from src.application.interfaces.repositories import ITokenRepo
 from src.infrastructure.database.models import (
@@ -96,6 +98,37 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             for token_data in raw_token_records
         ]
         return token_records
+
+    async def revoke_token(
+        self, user_id: UUID, fingerprint: str, hashed_token: str
+    ) -> None:
+        try:
+            statement = select(RefreshTokenModel).where(
+                RefreshTokenModel.user_id == user_id,
+                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.hashed_token == hashed_token,
+                RefreshTokenModel.status_id == TokenStatus.ACTIVE,
+            )
+            result = await self._session.execute(statement)
+            token_model = result.scalar_one_or_none()
+
+            if not token_model:
+                raise RefreshTokenNotFoundError
+
+            await self._session.delete(token_model)
+
+            blacklisted_model = RefreshTokenBlacklistModel(
+                user_id=token_model.user_id,
+                hashed_token=token_model.hashed_token,
+                hashed_fingerprint=token_model.hashed_fingerprint,
+                created_at=token_model.created_at,
+                expires_at=token_model.expires_at,
+                revoked_at=datetime.now(timezone.utc),
+                status_id=TokenStatus.REVOKED,
+            )
+            self._session.add(blacklisted_model)
+        except IntegrityError as e:
+            raise RefreshTokenRevokeError from e
 
     async def _move_older_refresh_token_to_blacklist(
         self, user_id: UUID, fingerprint: str
