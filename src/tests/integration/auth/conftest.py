@@ -24,7 +24,8 @@ async def _populate_users_for_auth_test(session: AsyncSession) -> None:
         """INSERT INTO "user"(user_name, is_verified, is_active,
                               is_superuser, email, hashed_password)
            VALUES (:user_name, :is_verified, :is_active,
-                   :is_superuser, :email, :hashed_password)"""
+                   :is_superuser, :email, :hashed_password)
+           RETURNING user_id"""
     )
 
     users_to_create = [
@@ -47,21 +48,24 @@ async def _populate_users_for_auth_test(session: AsyncSession) -> None:
     ]
 
     for user in users_to_create:
-        await session.execute(query, user)
+        result = await session.execute(query, user)
+        result.scalar_one()
 
     await session.commit()
 
 
 async def _truncate_all_tables(session: AsyncSession) -> None:
     query = text(
-        """TRUNCATE cheatsheet,
+        """TRUNCATE refresh_token_blacklist,
+                    refresh_token,
+                    cheatsheet,
                     "user",
                     md_tag,
                     cheatsheet_stats,
                     cheatsheet_to_tag
            RESTART IDENTITY
            CASCADE
-            """
+        """
     )
 
     await session.execute(query)
