@@ -37,7 +37,7 @@ async def login(
     except UserNotFoundError as e:
         logger.debug("User with username %s was not found", user_form.username)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
         ) from e
     except UserAuthenticationError as e:
@@ -50,7 +50,7 @@ async def login(
     except UserInactiveError as e:
         logger.warning("Inactive user attempted login: %s", user_form.username)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Account is inactive",
         ) from e
@@ -158,7 +158,7 @@ async def refresh(
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found", token_verification.user_id)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
         ) from e
 
