@@ -41,7 +41,7 @@ async def test_login_was_unsuccessful_with_nonexistent_username(
 
     response = await async_client.post("/login", data=data_for_login)
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.integration
@@ -78,7 +78,7 @@ async def test_login_by_inactive_user_was_unsuccessful(
 
     user = await _get_user_from_db_by_username("inactive_user")
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
     assert not user["is_active"]
 
 

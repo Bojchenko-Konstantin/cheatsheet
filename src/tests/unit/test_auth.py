@@ -32,6 +32,11 @@ class FakeTokenService(ITokenService):
     ) -> None:
         pass
 
+    async def revoke_refresh_token(
+        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
+    ) -> None:
+        pass
+
 
 class FakeUserService(IUserService):
     async def get_by_user_name(self, user_name: str) -> User:

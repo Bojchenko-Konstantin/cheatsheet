@@ -39,6 +39,11 @@ class FakeTokenRepo(ITokenRepo):
     ) -> list[RefreshTokenRecord] | None:
         return None
 
+    async def revoke_token(
+        self, user_id: UUID, fingerprint: str, hashed_token: str
+    ) -> None:
+        pass
+
 
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self):
