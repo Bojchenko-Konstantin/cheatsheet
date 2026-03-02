@@ -120,3 +120,9 @@ class TokenVerification(Schema):
     refresh_token: str
     fingerprint: str
     user_id: UUID
+
+
+class LogoutRequest(Schema):
+    user_id: UUID
+    refresh_token: str
+    fingerprint: str
