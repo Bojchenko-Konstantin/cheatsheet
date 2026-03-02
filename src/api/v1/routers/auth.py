@@ -41,7 +41,7 @@ async def login(
             detail="Failed to authorize",
         ) from e
     except UserAuthenticationError as e:
-        logger.exception("Failed login attempt for username: %s", user_form.username)
+        logger.debug("Failed login attempt for username: %s", user_form.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
@@ -69,15 +69,6 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
-        ) from e
-    except Exception as e:
-        logger.exception(
-            "Unexpected error during login for username: %s",
-            user_form.username,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during login. Please try again later.",
         ) from e
 
     return token_pair
@@ -193,6 +184,17 @@ async def logout(
             refresh_token=logout_request.refresh_token,
             fingerprint=logout_request.fingerprint,
         )
+    except UserNotFoundError as e:
+        logger.debug("User %s not found during logout", logout_request.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        ) from e
+    except RefreshTokenNotFoundError:
+        logger.debug(
+            "Refresh token not found for user %s during logout", logout_request.user_id
+        )
+        return None
     except RefreshTokenRevokeError as e:
         logger.exception(
             "Failed to revoke refresh token for user %s: %s",
@@ -202,12 +204,4 @@ async def logout(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout due to a technical issue. Please try again later.",
-        ) from e
-    except Exception as e:
-        logger.exception(
-            "Unexpected error during logout for user %s", logout_request.user_id
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during logout.",
         ) from e

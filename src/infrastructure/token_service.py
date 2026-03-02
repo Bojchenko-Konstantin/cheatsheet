@@ -19,6 +19,7 @@ from src.application.exceptions import (
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     RefreshTokenRevokeError,
+    UserNotFoundError,
 )
 from src.application.interfaces import ITokenService, IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
@@ -99,6 +100,12 @@ class TokenService(ITokenService):
     async def revoke_refresh_token(
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
+        try:
+            async with self._unit_of_work as uow:
+                await uow.user_repo.get_by_id(user_id)
+        except UserNotFoundError:
+            raise
+
         try:
             async with self._unit_of_work as uow:
                 token_record = await uow.token_repo.get_device_active_token(
