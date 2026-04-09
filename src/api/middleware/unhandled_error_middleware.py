@@ -1,5 +1,5 @@
 import logging
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 from uuid import uuid4
 
 from fastapi import Request, Response, status
