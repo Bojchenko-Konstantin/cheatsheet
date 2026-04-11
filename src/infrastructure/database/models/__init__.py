@@ -8,7 +8,7 @@ __all__ = (
     "UserDetailModel",
     "RefreshTokenModel",
     "RefreshTokenStatusModel",
-    "UserDetailToSocialNetworkModel",
+    "UserToSocialNetworkModel",
     "SocialNetworkModel",
     "RefreshTokenBlacklistModel",
 )
@@ -24,4 +24,4 @@ from .social_network import SocialNetworkModel
 from .tag import TagModel
 from .user import UserModel
 from .user_detail import UserDetailModel
-from .user_detail_to_social_network import UserDetailToSocialNetworkModel
+from .user_to_social_network import UserToSocialNetworkModel

@@ -14,7 +14,7 @@ from src.infrastructure.database.models import Base
 if TYPE_CHECKING:
     from src.infrastructure.database.models import (
         UserDetailModel,
-        UserDetailToSocialNetworkModel,
+        UserToSocialNetworkModel,
     )
 
 
@@ -35,8 +35,8 @@ class SocialNetworkModel(Base):
         String(500),
         nullable=False,
     )
-    user_detail_associations: Mapped[list[UserDetailToSocialNetworkModel]] = (
-        relationship(back_populates="social_network")
+    user_detail_associations: Mapped[list[UserToSocialNetworkModel]] = relationship(
+        back_populates="social_network"
     )
     user_details: Mapped[list[UserDetailModel]] = relationship(
         secondary="user_detail_to_social_network",

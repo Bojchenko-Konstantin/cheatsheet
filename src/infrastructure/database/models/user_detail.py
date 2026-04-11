@@ -19,8 +19,8 @@ from src.infrastructure.database.models.base import Base
 if TYPE_CHECKING:
     from src.infrastructure.database.models import (
         SocialNetworkModel,
-        UserDetailToSocialNetworkModel,
         UserModel,
+        UserToSocialNetworkModel,
     )
 
 
@@ -49,11 +49,9 @@ class UserDetailModel(Base):
         server_default=func.now(),
     )
     user: Mapped[UserModel] = relationship(back_populates="detail")
-    social_network_associations: Mapped[list[UserDetailToSocialNetworkModel]] = (
-        relationship(
-            back_populates="user_detail",
-            cascade="all, delete-orphan",
-        )
+    social_network_associations: Mapped[list[UserToSocialNetworkModel]] = relationship(
+        back_populates="user_detail",
+        cascade="all, delete-orphan",
     )
     social_networks: Mapped[list[SocialNetworkModel]] = relationship(
         secondary="user_detail_to_social_network",
