@@ -115,7 +115,7 @@ async def test_create_user_was_successful(user_service: UserService):
         profile_description="",
         image_url="",
         social_network_id=[1],
-        profile_url="",
+        network_url="",
         password="password",
         password_confirmation="password",
     )

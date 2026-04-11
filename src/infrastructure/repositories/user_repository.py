@@ -88,7 +88,7 @@ class SQLAlchemyUserRepo(IUserRepo):
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
         social_network_id = create_data.pop("social_network_id")  # noqa: F841
-        profile_url = create_data.pop("profile_url")  # noqa: F841
+        network_url = create_data.pop("network_url")  # noqa: F841
 
         model = self._to_model(create_data)
 
