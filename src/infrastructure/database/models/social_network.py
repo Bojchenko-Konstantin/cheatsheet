@@ -39,7 +39,7 @@ class SocialNetworkModel(Base):
         back_populates="social_network"
     )
     user_details: Mapped[list[UserDetailModel]] = relationship(
-        secondary="user_detail_to_social_network",
+        secondary="user_to_social_network",
         back_populates="social_networks",
         viewonly=True,
     )

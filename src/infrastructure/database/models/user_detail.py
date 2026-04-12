@@ -54,7 +54,7 @@ class UserDetailModel(Base):
         cascade="all, delete-orphan",
     )
     social_networks: Mapped[list[SocialNetworkModel]] = relationship(
-        secondary="user_detail_to_social_network",
+        secondary="user_to_social_network",
         back_populates="user_details",
         viewonly=True,
     )
