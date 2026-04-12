@@ -26,7 +26,7 @@ def upgrade() -> None:
         "md_social_network",
         sa.Column(
             "social_network_id",
-            sa.BigInteger(),
+            sa.SmallInteger(),
             sa.Identity(always=True),
             nullable=False,
         ),
@@ -40,7 +40,7 @@ def upgrade() -> None:
     op.create_table(
         "user_to_social_network",
         sa.Column("user_id", sa.UUID(), nullable=False),
-        sa.Column("social_network_id", sa.BigInteger(), nullable=False),
+        sa.Column("social_network_id", sa.SmallInteger(), nullable=False),
         sa.ForeignKeyConstraint(
             ["social_network_id"],
             ["md_social_network.social_network_id"],

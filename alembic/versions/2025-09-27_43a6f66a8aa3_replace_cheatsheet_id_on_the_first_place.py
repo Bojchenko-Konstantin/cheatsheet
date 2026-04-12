@@ -59,7 +59,7 @@ def upgrade() -> None:
     op.create_table(
         "cheatsheet_to_tag_temp",
         sa.Column("cheatsheet_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("tag_id", sa.BigInteger(), nullable=False),
+        sa.Column("tag_id", sa.SmallInteger(), nullable=False),
     )
 
     op.execute(
@@ -193,7 +193,7 @@ def downgrade() -> None:
 
     op.create_table(
         "cheatsheet_to_tag_old",
-        sa.Column("tag_id", sa.BigInteger(), nullable=False),
+        sa.Column("tag_id", sa.SmallInteger(), nullable=False),
         sa.Column("cheatsheet_id", postgresql.UUID(as_uuid=True), nullable=False),
     )
 

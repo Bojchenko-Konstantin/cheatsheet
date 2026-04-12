@@ -26,7 +26,7 @@ def upgrade() -> None:
         "md_refresh_token_status",
         sa.Column(
             "status_id",
-            sa.BigInteger(),
+            sa.SmallInteger(),
             sa.Identity(always=True),
             nullable=False,
         ),

@@ -31,7 +31,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("user_id", sa.UUID(), nullable=False),
-        sa.Column("status_id", sa.BigInteger(), server_default="1", nullable=False),
+        sa.Column("status_id", sa.SmallInteger(), server_default="1", nullable=False),
         sa.Column("hashed_token", sa.Text(), nullable=False),
         sa.Column("hashed_fingerprint", sa.Text(), nullable=False),
         sa.Column(
