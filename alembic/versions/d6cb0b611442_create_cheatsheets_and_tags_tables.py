@@ -59,7 +59,9 @@ def upgrade() -> None:
     )
     op.create_table(
         "md_tag",
-        sa.Column("tag_id", sa.BigInteger(), sa.Identity(always=True), nullable=False),
+        sa.Column(
+            "tag_id", sa.SmallInteger(), sa.Identity(always=True), nullable=False
+        ),
         sa.Column("tag_name", sa.String(length=20), nullable=False),
         sa.PrimaryKeyConstraint("tag_id", name=op.f("pk_md_tag")),
         sa.UniqueConstraint("tag_name", name=op.f("uq_md_tag_tag_name")),
@@ -67,7 +69,7 @@ def upgrade() -> None:
     op.create_table(
         "cheatsheet_to_tag",
         sa.Column("cheatsheet_id", sa.BigInteger(), nullable=False),
-        sa.Column("tag_id", sa.BigInteger(), nullable=False),
+        sa.Column("tag_id", sa.SmallInteger(), nullable=False),
         sa.ForeignKeyConstraint(
             ["cheatsheet_id"],
             ["cheatsheet.cheatsheet_id"],

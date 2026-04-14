@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from src.infrastructure.database.models import SocialNetworkModel, UserDetailModel
 
 
-class UserDetailToSocialNetworkModel(Base):
+class UserToSocialNetworkModel(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("user_detail.user_id", ondelete="CASCADE"),
         primary_key=True,

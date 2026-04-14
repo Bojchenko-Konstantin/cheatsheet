@@ -3,40 +3,47 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import RefreshToken, TokenStatus
-from src.application.interfaces.repositories.jwt import IJWTRepo
-from src.infrastructure.database.models.refresh_token import RefreshTokenModel
-from src.infrastructure.database.models.refresh_token_blacklist import (
+from src.application.dto import RefreshTokenRecord, TokenStatus
+from src.application.exceptions import (
+    RefreshTokenBlacklistAddError,
+    RefreshTokenCompromisedMarkError,
+    RefreshTokenNotFoundError,
+    RefreshTokenRevokeError,
+)
+from src.application.interfaces.repositories import ITokenRepo
+from src.infrastructure.database.models import (
     RefreshTokenBlacklistModel,
+    RefreshTokenModel,
 )
 from src.infrastructure.repositories.utils import DictBundle
 
 logger = logging.getLogger(__name__)
 
 
-class SQLAlchemyJWTRepo(IJWTRepo):
+class SQLAlchemyTokenRepo(ITokenRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def save(self, refresh_token: RefreshToken) -> None:
+    async def save(self, token_record: RefreshTokenRecord) -> None:
         await self._move_older_refresh_token_to_blacklist(
-            refresh_token.user_id,  # type: ignore
-            refresh_token.hashed_fingerprint,  # type: ignore
+            token_record.user_id,
+            token_record.hashed_fingerprint,  # type: ignore
         )
 
         model = RefreshTokenModel(
-            user_id=refresh_token.user_id,
-            hashed_token=refresh_token.hashed_token,
-            hashed_fingerprint=refresh_token.hashed_fingerprint,
-            expires_at=refresh_token.expires_at,
+            user_id=token_record.user_id,
+            hashed_token=token_record.hashed_token,
+            hashed_fingerprint=token_record.hashed_fingerprint,
+            expires_at=token_record.expires_at,
         )
         self._session.add(model)
 
     async def get_device_active_token(
         self, user_id: UUID, fingerprint: str
-    ) -> RefreshToken:
+    ) -> RefreshTokenRecord:
         statement = select(
             DictBundle(
                 "refresh_token",
@@ -54,14 +61,14 @@ class SQLAlchemyJWTRepo(IJWTRepo):
         raw_token = result.one_or_none()
 
         if not raw_token:
-            raise
+            raise RefreshTokenNotFoundError
 
-        token = RefreshToken.from_dict(dict(user_id=user_id, **raw_token.refresh_token))
-        return token
+        token_record = RefreshTokenRecord(user_id=user_id, **raw_token.refresh_token)
+        return token_record
 
     async def get_device_blacklisted_token_family(
         self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshToken] | None:
+    ) -> list[RefreshTokenRecord] | None:
         statement = (
             select(
                 DictBundle(
@@ -81,17 +88,49 @@ class SQLAlchemyJWTRepo(IJWTRepo):
             )
         )
         result = await self._session.execute(statement)
-        raw_tokens = result.all()
+        raw_token_records = result.all()
 
-        if not raw_tokens:
-            return
+        if not raw_token_records:
+            raise RefreshTokenNotFoundError
 
-        tokens = [
-            RefreshToken.from_dict(dict(user_id=user_id, **token_data.refresh_token))
-            for token_data in raw_tokens
+        token_records = [
+            RefreshTokenRecord(user_id=user_id, **token_data.refresh_token)
+            for token_data in raw_token_records
         ]
+        return token_records
 
-        return tokens
+    async def revoke_token(
+        self, user_id: UUID, fingerprint: str, hashed_token: str
+    ) -> None:
+        try:
+            statement = select(RefreshTokenModel).where(
+                RefreshTokenModel.user_id == user_id,
+                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.hashed_token == hashed_token,
+                RefreshTokenModel.status_id == TokenStatus.ACTIVE,
+            )
+            result = await self._session.execute(statement)
+            token_model = result.scalar_one_or_none()
+
+            if not token_model:
+                raise RefreshTokenNotFoundError
+
+            await self._session.delete(token_model)
+
+            blacklisted_model = RefreshTokenBlacklistModel(
+                user_id=token_model.user_id,
+                hashed_token=token_model.hashed_token,
+                hashed_fingerprint=token_model.hashed_fingerprint,
+                created_at=token_model.created_at,
+                expires_at=token_model.expires_at,
+                revoked_at=datetime.now(timezone.utc),
+                status_id=TokenStatus.REVOKED,
+            )
+            self._session.add(blacklisted_model)
+        except IntegrityError as e:
+            raise RefreshTokenRevokeError from e
+        except RefreshTokenNotFoundError:
+            raise
 
     async def _move_older_refresh_token_to_blacklist(
         self, user_id: UUID, fingerprint: str
@@ -138,9 +177,9 @@ class SQLAlchemyJWTRepo(IJWTRepo):
                         )
                     )
                 self._session.add_all(blacklisted_models)
-
         except Exception as e:
-            raise e
+            logger.error("Failed to move refresh token to blacklist")
+            raise RefreshTokenBlacklistAddError from e
 
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
         time_revealed = datetime.now(timezone.utc)
@@ -177,7 +216,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
                     )
                 )
             self._session.add_all(blacklisted_models)
-
         except Exception:
             logger.error("Failed to delete compromised tokens")
 
@@ -203,6 +241,6 @@ class SQLAlchemyJWTRepo(IJWTRepo):
 
         try:
             await self._session.execute(update_statement)
-
-        except Exception:
+        except Exception as e:
             logger.error("Failed to mark tokens as compromised")
+            raise RefreshTokenCompromisedMarkError from e

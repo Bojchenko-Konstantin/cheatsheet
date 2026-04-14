@@ -1,15 +1,24 @@
+import logging
 from collections.abc import MutableMapping
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import User, UserPayload
-from src.application.interfaces.repositories.user import IUserRepo
+from src.application.exceptions import (
+    DuplicateUserError,
+    UserCreationError,
+    UserNotFoundError,
+)
+from src.application.interfaces.repositories import IUserRepo
 from src.infrastructure.database.models import UserModel
 from src.infrastructure.database.models.user_detail import UserDetailModel
 from src.infrastructure.repositories.utils import DictBundle
+
+logger = logging.getLogger(__name__)
 
 
 class SQLAlchemyUserRepo(IUserRepo):
@@ -50,9 +59,9 @@ class SQLAlchemyUserRepo(IUserRepo):
         model = result.one_or_none()
 
         if not model:
-            raise
+            raise UserNotFoundError
 
-        user = User.from_dict(model.user)
+        user = User(**model.user)
         return user
 
     async def get_by_id(self, user_id: UUID) -> User:
@@ -71,24 +80,30 @@ class SQLAlchemyUserRepo(IUserRepo):
         model = result.one_or_none()
 
         if not model:
-            raise
+            raise UserNotFoundError
 
-        user = User.from_dict(model.user)
+        user = User(**model.user)
         return user
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
         social_network_id = create_data.pop("social_network_id")  # noqa: F841
-        profile_url = create_data.pop("profile_url")  # noqa: F841
+        network_url = create_data.pop("network_url")  # noqa: F841
 
         model = self._to_model(create_data)
+
         try:
             self._session.add(model)
             await self._session.flush()
-        except Exception:
-            raise
+        except IntegrityError as e:
+            if "uq_user_user_name" in str(e):
+                raise DuplicateUserError from e
+            else:
+                raise UserCreationError from e
+        except Exception as e:
+            raise UserCreationError from e
 
-        return UserPayload(model.user_id, model.is_superuser)
+        return UserPayload.create(model.user_id, model.is_superuser)
 
     async def update(self, update_data: dict[str, Any]):
         pass

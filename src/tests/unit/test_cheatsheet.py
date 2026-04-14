@@ -4,9 +4,8 @@ from uuid import UUID
 
 import pytest
 
-from application.interfaces.repositories.cheatsheet import ICheatsheetRepo
-from application.interfaces.unit_of_work import IUnitOfWork
-from application.use_cases.cheatsheet import CheatsheetUseCase
+from application.interfaces import ICheatsheetRepo, IUnitOfWork
+from application.use_cases import CheatsheetUseCase
 from domain.entities import Cheatsheet, Tag
 
 

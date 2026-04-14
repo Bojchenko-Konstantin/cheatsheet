@@ -98,6 +98,19 @@ def _setup_postgres_container(client: DockerClient) -> Container:
             "POSTGRES_PASSWORD": DATABASE_ENV.password,
             "POSTGRES_USER": DATABASE_ENV.user,
         },
+        command=[
+            "postgres",
+            "-c",
+            "fsync=off",
+            "-c",
+            "full_page_writes=off",
+            "-c",
+            "log_statement=none",
+            "-c",
+            "log_min_messages=warning",
+            "-c",
+            "synchronous_commit=off",
+        ],
         healthcheck={
             "test": [
                 "CMD-SHELL",
@@ -109,6 +122,7 @@ def _setup_postgres_container(client: DockerClient) -> Container:
             "start_period": 10**10,
         },
         ports={f"{DATABASE_ENV.internal_container_port}/tcp": DATABASE_ENV.port},
+        tmpfs={"/var/lib/postgresql/data": "size=512m"},
         detach=True,
     )
     return container

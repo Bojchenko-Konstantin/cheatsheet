@@ -1,10 +1,10 @@
 __all__ = (
     "ICheatsheetRepo",
     "IUserRepo",
-    "IJWTRepo",
+    "ITokenRepo",
 )
 
 
 from .cheatsheet import ICheatsheetRepo
-from .jwt import IJWTRepo
+from .token import ITokenRepo
 from .user import IUserRepo

@@ -6,8 +6,8 @@ from httpx import AsyncClient
 from sqlalchemy import Row, text
 from sqlalchemy.sql.elements import TextClause
 
-from src.application.hasher import HASHER
-from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.hasher import HASHER
 
 
 @pytest.mark.integration
@@ -25,7 +25,7 @@ async def test_register_was_successful(
         "profile_description": "string",
         "image_url": "string",
         "social_network_id": [0],
-        "profile_url": ["string"],
+        "network_url": ["string"],
         "password": "password",
         "password_confirmation": "password",
     }
@@ -64,7 +64,7 @@ async def test_register_fails_when_username_already_exists(
         "profile_description": "string",
         "image_url": "string",
         "social_network_id": [0],
-        "profile_url": ["string"],
+        "network_url": ["string"],
         "password": "password",
         "password_confirmation": "password",
     }

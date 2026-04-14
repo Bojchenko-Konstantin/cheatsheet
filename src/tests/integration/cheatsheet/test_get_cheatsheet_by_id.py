@@ -6,9 +6,9 @@ from fastapi import FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
 
-from src.api.v1.routers.auth import get_current_user_optional
+from src.api.dependencies import get_current_user_optional
 from src.application.dto import User
-from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 
 @pytest.mark.integration

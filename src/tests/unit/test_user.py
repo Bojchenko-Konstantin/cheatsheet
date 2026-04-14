@@ -3,11 +3,15 @@ from uuid import UUID
 
 import pytest
 
-from application.hasher import HASHER
 from src.application.dto import User, UserPayload
-from src.application.interfaces.repositories.user import IUserRepo
-from src.application.interfaces.unit_of_work import IUnitOfWork
-from src.application.use_cases.user import UserUseCase
+from src.application.interfaces import (
+    IUnitOfWork,
+    IUserRepo,
+)
+from src.infrastructure.hasher import HASHER
+from src.infrastructure.user_service import UserService
+
+PASSWORD_HASH = HASHER.hash("password")
 
 
 class FakeUserRepo(IUserRepo):
@@ -15,7 +19,7 @@ class FakeUserRepo(IUserRepo):
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password="password",
+            hashed_password=PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -25,7 +29,7 @@ class FakeUserRepo(IUserRepo):
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
-            hashed_password="password",
+            hashed_password=PASSWORD_HASH,
             is_active=True,
             is_superuser=False,
             is_verified=False,
@@ -33,21 +37,26 @@ class FakeUserRepo(IUserRepo):
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         return UserPayload(
-            user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             is_superuser=False,
             exp=None,
         )
 
-    async def update(self, update_data: dict[str, Any]):
+    async def update(self, update_data: dict[str, Any]) -> None:
         pass
 
 
 class FakeUnitOfWork(IUnitOfWork):
-    async def __aenter__(self) -> Self:
-        self.user_repo: IUserRepo = FakeUserRepo()
-        return await super().__aenter__()
+    def __init__(self):
+        self.user_repo = FakeUserRepo()
 
-    def readonly(self) -> Any:
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def readonly(self) -> Self:
         return self
 
     async def _commit(self) -> None:
@@ -58,17 +67,17 @@ class FakeUnitOfWork(IUnitOfWork):
 
 
 @pytest.fixture
-def user_use_case():
-    return UserUseCase(unit_of_work=FakeUnitOfWork())
+def user_service():
+    return UserService(unit_of_work=FakeUnitOfWork())
 
 
-async def test_get_user_by_user_name_was_successful(user_use_case: UserUseCase):
-    sut = user_use_case
+async def test_get_user_by_user_name_was_successful(user_service: UserService):
+    sut = user_service
     user_name = "test"
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password="password",
+        hashed_password=PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -79,13 +88,13 @@ async def test_get_user_by_user_name_was_successful(user_use_case: UserUseCase):
     assert user == expected_user
 
 
-async def test_get_user_by_id_was_successful(user_use_case: UserUseCase):
+async def test_get_user_by_id_was_successful(user_service: UserService):
     user_id = UUID("019b4a71-173e-7f64-a840-9e8b042658cd")
-    sut = user_use_case
+    sut = user_service
     expected_user = User(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         user_name="test",
-        hashed_password="password",
+        hashed_password=PASSWORD_HASH,
         is_active=True,
         is_superuser=False,
         is_verified=False,
@@ -96,8 +105,8 @@ async def test_get_user_by_id_was_successful(user_use_case: UserUseCase):
     assert user == expected_user
 
 
-async def test_create_user_was_successful(user_use_case: UserUseCase):
-    sut = user_use_case
+async def test_create_user_was_successful(user_service: UserService):
+    sut = user_service
     create_data = dict(
         username="test",
         email="test@email.com",
@@ -106,12 +115,12 @@ async def test_create_user_was_successful(user_use_case: UserUseCase):
         profile_description="",
         image_url="",
         social_network_id=[1],
-        profile_url="",
+        network_url="",
         password="password",
         password_confirmation="password",
     )
     expected_payload = UserPayload(
-        user_id="019b4a71-173e-7f64-a840-9e8b042658cd",
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         is_superuser=False,
         exp=None,
     )
@@ -121,9 +130,19 @@ async def test_create_user_was_successful(user_use_case: UserUseCase):
     assert user_payload == expected_payload
 
 
-def test_verify_password_was_successful(user_use_case: UserUseCase):
+async def test_authenticate_user_was_successful(user_service: UserService):
+    user_name = "test"
     plain_password = "password"
-    hashed_password = HASHER.hash(plain_password)
-    sut = user_use_case
+    sut = user_service
+    expected_user = User(
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        user_name="test",
+        hashed_password=PASSWORD_HASH,
+        is_active=True,
+        is_superuser=False,
+        is_verified=False,
+    )
 
-    assert sut.verify_password(plain_password, hashed_password)
+    user = await sut.authenticate_user(user_name, plain_password)
+
+    assert user == expected_user

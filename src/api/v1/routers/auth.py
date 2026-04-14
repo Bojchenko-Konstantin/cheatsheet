@@ -1,20 +1,24 @@
 import logging
-from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException, status
 
 from src.api.dependencies import (
-    get_jwt_use_case,
-    get_user_use_case,
-    oauth2_scheme,
-    oauth2_scheme_optional,
+    AuthUseCaseDep,
+    OAuth2FormDep,
 )
-from src.api.schemas import TokenPair, TokenVerification, UserCreate
-from src.application.dto import User, UserPayload
-from src.application.use_cases.jwt import JWTUseCase
-from src.application.use_cases.user import UserUseCase
+from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
+from src.application.exceptions import (
+    AccessTokenException,
+    AccessTokenExpiredError,
+    DuplicateUserError,
+    RefreshTokenCompromisedError,
+    RefreshTokenNotFoundError,
+    RefreshTokenRevokeError,
+    UserAuthenticationError,
+    UserCreationError,
+    UserInactiveError,
+    UserNotFoundError,
+)
 
 router = APIRouter(tags=["Authentication"])
 
@@ -23,141 +27,181 @@ logger = logging.getLogger(__name__)
 
 @router.post("/login", response_model=TokenPair)
 async def login(
-    user_form: Annotated[OAuth2PasswordRequestForm, Depends()],
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    user_form: OAuth2FormDep,
+    auth_use_case: AuthUseCaseDep,
 ):
     try:
-        user = await user_use_case.get_by_user_name(user_form.username)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED) from e
+        token_pair = await auth_use_case.authenticate(
+            user_form.username, user_form.password
+        )
+    except UserNotFoundError as e:
+        logger.debug("User with username %s was not found", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Failed to authorize",
+        ) from e
+    except UserAuthenticationError as e:
+        logger.debug("Failed login attempt for username: %s", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid username or password",
+        ) from e
+    except UserInactiveError as e:
+        logger.warning("Inactive user attempted login: %s", user_form.username)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Account is inactive",
+        ) from e
 
-    hashed_password = user.hashed_password
-    plain_password = user_form.password
-
-    if (
-        user_use_case.verify_password(plain_password, hashed_password)
-        and user.is_active
-    ):
-        payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
-        token_pair = await jwt_use_case.get_jwt_tokens(payload)
-        return token_pair
-
-    else:
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
+        ) from e
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for username: %s", user_form.username
         )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+
+    return token_pair
 
 
 @router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
 async def register(
     user_form: UserCreate,
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    auth_use_case: AuthUseCaseDep,
 ):
     create_data = user_form.model_dump(exclude_unset=True)
 
     try:
-        user = await user_use_case.create(create_data)
-
-    except Exception as e:
+        token_pair = await auth_use_case.register(create_data)
+    except DuplicateUserError as e:
+        logger.debug(
+            "User registration failed - username '%s' already exists.",
+            user_form.username,
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Registration failed due to an unexpected error",
+            detail=f"User with username '{user_form.username}' already exists. "
+            "Please choose another one.",
         ) from e
-
-    payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
-    token_pair = await jwt_use_case.get_jwt_tokens(payload)
-    return token_pair
+    except UserCreationError as e:
+        logger.exception(
+            "Unexpected error during user registration for username: %s",
+            user_form.username,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration. "
+            "Please try again later.",
+        ) from e
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for username: %s", user_form.username
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+    else:
+        return token_pair
 
 
 @router.post("/refresh")
 async def refresh(
     token_verification: TokenVerification,
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
+    auth_use_case: AuthUseCaseDep,
 ):
+    refresh_data = token_verification.model_dump(exclude_unset=True)
+
     try:
-        await jwt_use_case.verify_refresh_token(
-            user_id=token_verification.user_id,
-            plain_refresh_token=token_verification.refresh_token,
-            fingerprint=token_verification.fingerprint,
+        token_pair = await auth_use_case.refresh(refresh_data)
+    except RefreshTokenNotFoundError as e:
+        logger.exception(
+            "Refresh token not found for user_id: %s", token_verification.user_id
         )
-
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            headers={"WWW-Authenticate": "Bearer"},
-            detail="Failed to authorize",
-        ) from None
-
-    user = await user_use_case.get_by_id(token_verification.user_id)
-    payload = UserPayload(user_id=str(user.user_id), is_superuser=user.is_superuser)
-    token_pair = await jwt_use_case.get_jwt_tokens(payload)
-    return token_pair
-
-
-async def get_current_user_required(
-    access_token: Annotated[str, Depends(oauth2_scheme)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-):
-    """
-    Mandatory dependency for retrieving the current authenticated user.
-
-    Used in endpoints that require authentication.
-    Raises HTTPException 401 if token is missing, invalid, or user not found.
-
-    Why this approach:
-    - Single place to handle authentication errors
-    - Guarantees that user exists and is authenticated
-    - Reusable across any endpoints that need protection
-    """
-
-    try:
-        payload = await jwt_use_case.verify_access_token(access_token)
-        user = await user_use_case.get_by_id(UUID(payload.user_id))
-
-    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
+    except RefreshTokenCompromisedError:
+        logger.info(
+            "Refresh token was compromised for user_id: %s", token_verification.user_id
+        )
+        # TODO: add force logout.
 
-    return user
+    except UserNotFoundError as e:
+        logger.debug("User with id %s was not found", token_verification.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Failed to authorize",
+        ) from e
+
+    except AccessTokenExpiredError as e:
+        logger.exception("Access token expired: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
+    except AccessTokenException as e:
+        logger.exception(
+            "Failed to generate access token for user with id: %s",
+            token_verification.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to authorize. Please try again later.",
+        ) from e
+    else:
+        return token_pair
 
 
-async def get_current_user_optional(
-    access_token: Annotated[str | None, Depends(oauth2_scheme_optional)],
-    jwt_use_case: Annotated[JWTUseCase, Depends(get_jwt_use_case)],
-    user_use_case: Annotated[UserUseCase, Depends(get_user_use_case)],
-) -> User | None:
-    """
-    Retrieves current user from JWT token if provided and valid.
-
-    Unlike get_current_user_required, this dependency does not raise an exception
-    when the token is missing or invalid, but returns None instead.
-
-    Why this approach:
-    - Avoids boilerplate code duplication across endpoints
-    - Endpoint must work without authentication (public access)
-    - But if user is authenticated, we can:
-        * Check access to private resources
-    - Exceptions are intentionally not propagated:
-        * Request won't be interrupted due to token issues
-        * Client receives public version instead of an error
-    """
-
-    if not access_token:
-        return None
-
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    logout_request: LogoutRequest,
+    auth_use_case: AuthUseCaseDep,
+):
     try:
-        payload = await jwt_use_case.verify_access_token(access_token)
-        user = await user_use_case.get_by_id(UUID(payload.user_id))
-        return user
-
-    except Exception:
+        await auth_use_case.logout(
+            user_id=logout_request.user_id,
+            refresh_token=logout_request.refresh_token,
+            fingerprint=logout_request.fingerprint,
+        )
+    except UserNotFoundError as e:
+        logger.debug("User %s not found during logout", logout_request.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        ) from e
+    except RefreshTokenNotFoundError:
+        logger.debug(
+            "Refresh token not found for user %s during logout", logout_request.user_id
+        )
         return None
+    except RefreshTokenRevokeError as e:
+        logger.exception(
+            "Failed to revoke refresh token for user %s: %s",
+            logout_request.user_id,
+            str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to logout due to a technical issue. Please try again later.",
+        ) from e

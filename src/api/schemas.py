@@ -73,7 +73,7 @@ class UserBase(Schema):
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt
-    profile_url: list[str]
+    network_url: list[str]
 
 
 class UserRead(UserBase):
@@ -107,7 +107,7 @@ class UserUpdate(Schema):
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt | None = None
-    profile_url: list[str] | None = None
+    network_url: list[str] | None = None
 
 
 class TokenPair(Schema):
@@ -120,3 +120,9 @@ class TokenVerification(Schema):
     refresh_token: str
     fingerprint: str
     user_id: UUID
+
+
+class LogoutRequest(Schema):
+    user_id: UUID
+    refresh_token: str
+    fingerprint: str
