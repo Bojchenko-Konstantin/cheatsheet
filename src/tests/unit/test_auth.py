@@ -3,9 +3,23 @@ from uuid import UUID
 
 import pytest
 
-from src.application.dto import User, UserPayload
-from src.application.interfaces import ITokenService, IUserService
+from application.use_cases.notification import NotificationUseCase
+from src.application.dto import User, UserPayload, WelcomeEmailData
+from src.application.interfaces import INotificationService, ITokenService, IUserService
 from src.application.use_cases import AuthUseCase
+
+
+class FakeNotificationService(INotificationService):
+    async def send_email(self, message) -> None:
+        pass
+
+
+class FakeNotificationUseCase(NotificationUseCase):
+    def __init__(self):
+        super().__init__(FakeNotificationService())
+
+    async def send_welcome_email(self, data: WelcomeEmailData) -> None:
+        pass
 
 
 class FakeTokenService(ITokenService):
@@ -80,6 +94,7 @@ def auth_use_case():
     return AuthUseCase(
         FakeTokenService(),
         FakeUserService(),
+        FakeNotificationUseCase(),
     )
 
 
