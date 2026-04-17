@@ -1,0 +1,82 @@
+from typing import Any
+
+import httpx
+from tenacity import (
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from src.application.dto import EmailMessage
+from src.application.exceptions import EmailSendError
+from src.application.interfaces.notification_service import INotificationService
+from src.core.config import settings
+
+
+def _is_retryable_error(exception: BaseException) -> bool:
+    """
+    Predicate for the tenacity library. Determines whether a request should be retried.
+
+    Retry only for:
+    - Network issues (httpx.TimeoutException, httpx.NetworkError).
+    - Server errors (HTTP status 5xx).
+
+    Do not retry for client errors (4xx) as they indicate invalid data
+    (e.g., wrong API key) and retrying won't help.
+    """
+    return isinstance(exception, (httpx.TimeoutException, httpx.NetworkError))
+
+
+class NotiSendNotificationService(INotificationService):
+    """Implementation of notification service using NotiSend REST API."""
+
+    def __init__(self) -> None:
+        self._api_url: str = settings.notisend.api_url.rstrip("/")
+        self._api_key: str = settings.notisend.api_key
+        self._from_email: str = settings.notisend.from_email
+        self._from_name: str | None = settings.notisend.from_name
+        self._timeout: int = settings.notisend.timeout
+        self._max_retries: int = settings.notisend.max_retries
+
+        self._send_endpoint: str = f"{self._api_url}/email/messages"
+
+        self._headers: dict[str, str] = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+    async def send_email(self, message: EmailMessage) -> None:
+        """Send an email message using NotiSend API with retry logic."""
+        try:
+            await self._post_message_with_retry(message)
+        except Exception as e:
+            raise EmailSendError from e
+
+    @retry(
+        stop=stop_after_attempt(settings.notisend.max_retries),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception(_is_retryable_error),
+        reraise=True,  # Re-raise the original exception when retries are exhausted
+    )
+    async def _post_message_with_retry(self, message: EmailMessage) -> None:
+        """Make HTTP request to NotiSend API."""
+        payload: dict[str, Any] = {
+            "to": message.to,
+            "subject": message.subject,
+            "text": message.text,
+            "from_email": self._from_email,
+        }
+
+        if self._from_name:
+            payload["from_name"] = self._from_name
+
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            response: httpx.Response = await client.post(
+                self._send_endpoint,
+                headers=self._headers,
+                json=payload,
+            )
+
+            response.raise_for_status()
