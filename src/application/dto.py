@@ -96,8 +96,8 @@ class EmailMessage:
 @dataclass(slots=True)
 class WelcomeEmailData:
     email: str
-    username: str
+    user_name: str
     first_name: str | None = None
 
     def get_display_name(self) -> str:
-        return self.first_name if self.first_name else self.username
+        return self.user_name
