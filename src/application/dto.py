@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from typing import Self
 from uuid import UUID
 
@@ -74,11 +74,16 @@ class RefreshTokenRecord:
     hashed_fingerprint: str | None = None
 
 
+class EmailType(StrEnum):
+    WELCOME = "welcome"
+
+
 @dataclass(slots=True)
 class EmailMessage:
     to: str
     subject: str
     text: str
+    email_type: EmailType
 
     def to_api_payload(self) -> dict:
         return {
@@ -86,3 +91,13 @@ class EmailMessage:
             "subject": self.subject,
             "text": self.text,
         }
+
+
+@dataclass(slots=True)
+class WelcomeEmailData:
+    email: str
+    username: str
+    first_name: str | None = None
+
+    def get_display_name(self) -> str:
+        return self.first_name if self.first_name else self.username
