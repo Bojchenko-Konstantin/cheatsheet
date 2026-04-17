@@ -40,6 +40,15 @@ class JWTConfig(BaseModel):
     public_key: str
 
 
+class NotiSendConfig(BaseModel):
+    api_url: str
+    api_key: str
+    from_email: str
+    from_name: str | None = None
+    timeout: int = 10
+    max_retries: int = 3
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -49,6 +58,7 @@ class Settings(BaseSettings):
     database: DatabaseConfig
     logging: LoggingConfig = LoggingConfig()
     jwt: JWTConfig
+    notisend: NotiSendConfig
 
 
 settings = Settings()  # type: ignore
