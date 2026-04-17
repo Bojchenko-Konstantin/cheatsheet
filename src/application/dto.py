@@ -79,3 +79,10 @@ class EmailMessage:
     to: str
     subject: str
     text: str
+
+    def to_api_payload(self) -> dict:
+        return {
+            "to": self.to,
+            "subject": self.subject,
+            "text": self.text,
+        }
