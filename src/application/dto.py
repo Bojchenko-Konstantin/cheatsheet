@@ -72,3 +72,10 @@ class RefreshTokenRecord:
     expires_at: datetime
     status_id: int = TokenStatus.ACTIVE
     hashed_fingerprint: str | None = None
+
+
+@dataclass(slots=True)
+class EmailMessage:
+    to: str
+    subject: str
+    text: str
