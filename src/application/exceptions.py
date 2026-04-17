@@ -18,6 +18,10 @@ class UserException(ApplicationException):
     """Base exception class for user-related errors."""
 
 
+class NotificationException(ApplicationException):
+    """Base exception class for notification error."""
+
+
 class CheatsheetNotFoundError(CheatsheetException):
     """Raised when cheatsheet is not found by its ID."""
 
@@ -80,3 +84,7 @@ class UserInactiveError(UserException):
 
 class UserAuthenticationError(UserException):
     """Raised when user authentication fails due to invalid credentials."""
+
+
+class EmailSendError(NotificationException):
+    """Raised when email sending fails due to network or service issues."""
