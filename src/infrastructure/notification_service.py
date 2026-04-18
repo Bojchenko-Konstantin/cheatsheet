@@ -9,7 +9,7 @@ from tenacity import (
 )
 
 from src.application.dto import EmailMessage
-from src.application.exceptions import EmailSendError
+from src.application.exceptions import SendEmailError
 from src.application.interfaces.notification_service import INotificationService
 from src.core.config import settings
 
@@ -52,7 +52,7 @@ class NotiSendNotificationService(INotificationService):
         try:
             await self._post_message_with_retry(message)
         except Exception as e:
-            raise EmailSendError from e
+            raise SendEmailError from e
 
     @retry(
         stop=stop_after_attempt(settings.notisend.max_retries),

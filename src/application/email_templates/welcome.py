@@ -1,5 +1,4 @@
 WELCOME_EMAIL_SUBJECT = "Welcome to Cheatsheet App! 🎉"
-
 WELCOME_EMAIL_TEMPLATE = """Hello, {display_name}!
 
 Thank you for joining Cheatsheet App! Your account has been successfully created.

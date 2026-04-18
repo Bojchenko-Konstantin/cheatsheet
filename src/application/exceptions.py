@@ -86,5 +86,5 @@ class UserAuthenticationError(UserException):
     """Raised when user authentication fails due to invalid credentials."""
 
 
-class EmailSendError(NotificationException):
-    """Raised when email sending fails due to network or service issues."""
+class SendEmailError(NotificationException):
+    """Raised when email sending fails."""

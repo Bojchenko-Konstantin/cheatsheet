@@ -1,6 +1,5 @@
 from src.application.dto import WelcomeEmailData
 from src.application.email_template_service import EmailTemplateService
-from src.application.exceptions import EmailSendError
 from src.application.interfaces.notification_service import INotificationService
 
 
@@ -18,8 +17,4 @@ class NotificationUseCase:
     async def send_welcome_email(self, data: WelcomeEmailData) -> None:
         """Send welcome email to newly registered user."""
         email_message = self._template_service.create_welcome_email(data)
-
-        try:
-            await self._notification_service.send_email(email_message)
-        except EmailSendError:
-            raise
+        await self._notification_service.send_email(email_message)

@@ -85,7 +85,7 @@ class EmailMessage:
     text: str
     email_type: EmailType
 
-    def to_api_payload(self) -> dict:
+    def to_api_payload(self) -> dict[str, str]:
         return {
             "to": self.to,
             "subject": self.subject,
