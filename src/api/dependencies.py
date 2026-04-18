@@ -67,9 +67,8 @@ def get_notification_use_case(
 def get_auth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     user_service: IUserService = Depends(get_user_service),
-    notification_use_case: NotificationUseCase = Depends(get_notification_use_case),
 ) -> AuthUseCase:
-    return AuthUseCase(token_service, user_service, notification_use_case)
+    return AuthUseCase(token_service, user_service)
 
 
 async def get_current_user_required(

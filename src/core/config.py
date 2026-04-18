@@ -49,6 +49,13 @@ class NotiSendConfig(BaseModel):
     max_retries: int = 3
 
 
+class BrokerConfig(BaseModel):
+    host: str
+    port: int
+    user: str
+    password: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -59,6 +66,7 @@ class Settings(BaseSettings):
     logging: LoggingConfig = LoggingConfig()
     jwt: JWTConfig
     notisend: NotiSendConfig
+    broker: BrokerConfig
 
 
 settings = Settings()  # type: ignore

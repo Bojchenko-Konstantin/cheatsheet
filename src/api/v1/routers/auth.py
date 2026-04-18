@@ -1,9 +1,11 @@
+import contextlib
 import logging
 
 from fastapi import APIRouter, HTTPException, status
 
 from src.api.dependencies import (
     AuthUseCaseDep,
+    NotificationUseCaseDep,
     OAuth2FormDep,
 )
 from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
@@ -19,6 +21,7 @@ from src.application.exceptions import (
     UserInactiveError,
     UserNotFoundError,
 )
+from src.infrastructure.tasks import send_welcome_email
 
 router = APIRouter(tags=["Authentication"])
 
@@ -78,11 +81,24 @@ async def login(
 async def register(
     user_form: UserCreate,
     auth_use_case: AuthUseCaseDep,
+    notification_use_case: NotificationUseCaseDep,
 ):
     create_data = user_form.model_dump(exclude_unset=True)
 
     try:
         token_pair = await auth_use_case.register(create_data)
+
+        email = create_data.get("email")
+        user_name = create_data.get("username")
+
+        if email:
+            with contextlib.suppress(Exception):
+                await send_welcome_email.kiq(
+                    email=email,
+                    user_name=user_name,
+                    notification_use_case=notification_use_case,
+                )
+
     except DuplicateUserError as e:
         logger.debug(
             "User registration failed - username '%s' already exists.",
@@ -118,8 +134,7 @@ async def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
-    else:
-        return token_pair
+    return token_pair
 
 
 @router.post("/refresh")

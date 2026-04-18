@@ -1,31 +1,11 @@
 from typing import Any
 
 import httpx
-from tenacity import (
-    retry,
-    retry_if_exception,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from src.application.dto import EmailMessage
 from src.application.exceptions import SendEmailError
 from src.application.interfaces.notification_service import INotificationService
 from src.core.config import settings
-
-
-def _is_retryable_error(exception: BaseException) -> bool:
-    """
-    Predicate for the tenacity library. Determines whether a request should be retried.
-
-    Retry only for:
-    - Network issues (httpx.TimeoutException, httpx.NetworkError).
-    - Server errors (HTTP status 5xx).
-
-    Do not retry for client errors (4xx) as they indicate invalid data
-    (e.g., wrong API key) and retrying won't help.
-    """
-    return isinstance(exception, (httpx.TimeoutException, httpx.NetworkError))
 
 
 class NotiSendNotificationService(INotificationService):
@@ -54,12 +34,6 @@ class NotiSendNotificationService(INotificationService):
         except Exception as e:
             raise SendEmailError from e
 
-    @retry(
-        stop=stop_after_attempt(settings.notisend.max_retries),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception(_is_retryable_error),
-        reraise=True,  # Re-raise the original exception when retries are exhausted
-    )
     async def _post_message_with_retry(self, message: EmailMessage) -> None:
         """Make HTTP request to NotiSend API."""
         payload: dict[str, Any] = {
