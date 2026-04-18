@@ -3,10 +3,17 @@ from uuid import UUID
 
 import pytest
 
-from application.use_cases.notification import NotificationUseCase
-from src.application.dto import User, UserPayload, WelcomeEmailData
+from src.application.dto import (
+    EmailMessage,
+    EmailType,
+    User,
+    UserPayload,
+    WelcomeEmailData,
+)
 from src.application.interfaces import INotificationService, ITokenService, IUserService
+from src.application.interfaces.email_template_service import IEmailTemplateService
 from src.application.use_cases import AuthUseCase
+from src.application.use_cases.notification import NotificationUseCase
 
 
 class FakeNotificationService(INotificationService):
@@ -14,9 +21,19 @@ class FakeNotificationService(INotificationService):
         pass
 
 
+class FakeEmailTemplateService(IEmailTemplateService):
+    def generate_welcome_email(self, data) -> EmailMessage:
+        return EmailMessage(
+            to="receiver",
+            subject="client",
+            text="Welcome",
+            email_type=EmailType.WELCOME,
+        )
+
+
 class FakeNotificationUseCase(NotificationUseCase):
     def __init__(self):
-        super().__init__(FakeNotificationService())
+        super().__init__(FakeNotificationService(), FakeEmailTemplateService())
 
     async def send_welcome_email(self, data: WelcomeEmailData) -> None:
         pass
