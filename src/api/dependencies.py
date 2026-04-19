@@ -4,8 +4,7 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
-from src.application.interfaces import IUnitOfWork
-from src.application.interfaces.services import ITokenService, IUserService
+from src.application.interfaces import ITokenService, IUnitOfWork, IUserService
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.core.config import settings
