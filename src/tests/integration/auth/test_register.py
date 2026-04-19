@@ -124,6 +124,6 @@ def _create_user_from_db_row(db_row: Row) -> dict[str, Any]:
 
 def _mock_notification_use_case(mocker):
     mocker.patch(
-        "src.infrastructure.tasks.NotificationUseCase.send_welcome_email",
+        "src.infrastructure.background_tasks.tasks.NotificationUseCase.send_welcome_email",
         return_value=None,
     )

@@ -17,7 +17,7 @@ from src.application.exceptions import (
     UserInactiveError,
     UserNotFoundError,
 )
-from src.infrastructure.tasks import send_welcome_email
+from src.infrastructure.background_tasks import send_welcome_email
 
 router = APIRouter(tags=["Authentication"])
 
