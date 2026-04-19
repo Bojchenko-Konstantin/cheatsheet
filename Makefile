@@ -29,13 +29,13 @@ rabbit:
 worker:
 	@echo "=== Starting TaskIQ Worker (background) ==="
 	@-pkill -f "taskiq worker" 2>/dev/null
-	@ENV_FILE=$(ENV_PATH) taskiq worker src.infrastructure.broker:BROKER src.infrastructure.tasks --reload > /dev/null 2>&1 &
+	@ENV_FILE=$(ENV_PATH) taskiq worker src.infrastructure.background_tasks.broker:BROKER src.infrastructure.background_tasks.tasks --reload > /dev/null 2>&1 &
 	@echo "  ✓ Worker started in background"
 
 # Start TaskIQ worker (foreground)
 worker-fg:
 	@echo "=== Starting TaskIQ Worker ==="
-	ENV_FILE=$(ENV_PATH) taskiq worker src.infrastructure.broker:BROKER src.infrastructure.tasks
+	ENV_FILE=$(ENV_PATH) taskiq worker src.infrastructure.background_tasks.broker:BROKER src.infrastructure.background_tasks.tasks
 
 # Stop RabbitMQ and Worker
 stop:
