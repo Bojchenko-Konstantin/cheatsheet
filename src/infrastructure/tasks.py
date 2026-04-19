@@ -1,8 +1,8 @@
-from infrastructure.email_template_service import EmailTemplateService
-from infrastructure.notification_service import NotiSendNotificationService
 from src.application.dto import WelcomeEmailData
 from src.application.use_cases.notification import NotificationUseCase
 from src.infrastructure.broker import BROKER
+from src.infrastructure.email_template_service import EmailTemplateService
+from src.infrastructure.notification_service import NotiSendNotificationService
 
 
 @BROKER.task(retry_on_error=True)
