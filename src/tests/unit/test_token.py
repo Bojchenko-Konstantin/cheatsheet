@@ -11,7 +11,7 @@ from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
 from src.application.interfaces import ITokenRepo, IUnitOfWork
 from src.core.config import settings
 from src.infrastructure.hasher import HASHER
-from src.infrastructure.token_service import TokenService
+from src.infrastructure.services import TokenService
 
 
 class FakeTokenRepo(ITokenRepo):

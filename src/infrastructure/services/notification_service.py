@@ -4,7 +4,7 @@ import httpx
 
 from src.application.dto import EmailMessage
 from src.application.exceptions import SendEmailError
-from src.application.interfaces.notification_service import INotificationService
+from src.application.interfaces import INotificationService
 from src.core.config import settings
 
 

@@ -1,6 +1,8 @@
 from src.application.dto import WelcomeEmailData
-from src.application.interfaces.email_template_service import IEmailTemplateService
-from src.application.interfaces.notification_service import INotificationService
+from src.application.interfaces.services import (
+    IEmailTemplateService,
+    INotificationService,
+)
 
 
 class NotificationUseCase:

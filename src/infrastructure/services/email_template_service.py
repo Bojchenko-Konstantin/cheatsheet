@@ -3,7 +3,7 @@ from src.application.email_templates.welcome import (
     WELCOME_EMAIL_SUBJECT,
     WELCOME_EMAIL_TEMPLATE,
 )
-from src.application.interfaces.email_template_service import IEmailTemplateService
+from src.application.interfaces import IEmailTemplateService
 from src.core.config import settings
 
 

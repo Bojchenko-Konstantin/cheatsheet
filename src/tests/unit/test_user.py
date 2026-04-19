@@ -9,7 +9,7 @@ from src.application.interfaces import (
     IUserRepo,
 )
 from src.infrastructure.hasher import HASHER
-from src.infrastructure.user_service import UserService
+from src.infrastructure.services import UserService
 
 PASSWORD_HASH = HASHER.hash("password")
 

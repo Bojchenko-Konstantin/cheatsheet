@@ -6,10 +6,14 @@ __all__ = (
     "ITokenService",
     "IUserService",
     "INotificationService",
+    "IEmailTemplateService",
 )
 
-from .notification_service import INotificationService
 from .repositories import ICheatsheetRepo, ITokenRepo, IUserRepo
-from .token_service import ITokenService
+from .services import (
+    IEmailTemplateService,
+    INotificationService,
+    ITokenService,
+    IUserService,
+)
 from .unit_of_work import IUnitOfWork
-from .user_service import IUserService

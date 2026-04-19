@@ -5,14 +5,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
 from src.application.interfaces import IUnitOfWork
-from src.application.interfaces.token_service import ITokenService
-from src.application.interfaces.user_service import IUserService
+from src.application.interfaces.services import ITokenService, IUserService
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
-from src.infrastructure.token_service import TokenService
-from src.infrastructure.user_service import UserService
+from src.infrastructure.services import TokenService, UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=True)
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
