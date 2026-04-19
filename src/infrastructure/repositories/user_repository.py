@@ -30,16 +30,18 @@ class SQLAlchemyUserRepo(IUserRepo):
         self._session = session
 
     def _to_model(self, user: MutableMapping[str, Any]) -> UserModel:
-        user_name = user.pop("username")
+        user_copy = dict(user)
+
+        user_name = user_copy.pop("username")
         user_detail = dict(
-            user_id=user.pop("user_id", None),
-            first_name=user.pop("first_name"),
-            last_name=user.pop("last_name"),
-            profile_description=user.pop("profile_description"),
-            image_url=user.pop("image_url"),
+            user_id=user_copy.pop("user_id", None),
+            first_name=user_copy.pop("first_name"),
+            last_name=user_copy.pop("last_name"),
+            profile_description=user_copy.pop("profile_description", None),
+            image_url=user_copy.pop("image_url", None),
         )
 
-        model = UserModel(**user, user_name=user_name)
+        model = UserModel(**user_copy, user_name=user_name)
         model.detail = UserDetailModel(**user_detail)
         return model
 
