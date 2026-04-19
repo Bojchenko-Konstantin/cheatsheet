@@ -5,16 +5,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
 from src.application.interfaces import IUnitOfWork
-from src.application.interfaces.email_template_service import IEmailTemplateService
-from src.application.interfaces.notification_service import INotificationService
 from src.application.interfaces.token_service import ITokenService
 from src.application.interfaces.user_service import IUserService
-from src.application.use_cases import CheatsheetUseCase, NotificationUseCase
+from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
-from src.infrastructure.email_template_service import EmailTemplateService
-from src.infrastructure.notification_service import NotiSendNotificationService
 from src.infrastructure.token_service import TokenService
 from src.infrastructure.user_service import UserService
 
@@ -45,23 +41,6 @@ def get_token_service() -> TokenService:
 
 def get_user_service() -> UserService:
     return UserService()
-
-
-def get_notification_service() -> NotiSendNotificationService:
-    return NotiSendNotificationService()
-
-
-def get_email_template_service() -> EmailTemplateService:
-    return EmailTemplateService()
-
-
-def get_notification_use_case(
-    notification_service: INotificationService = Depends(get_notification_service),
-    template_service: IEmailTemplateService = Depends(get_email_template_service),
-) -> NotificationUseCase:
-    return NotificationUseCase(
-        notification_service=notification_service, template_service=template_service
-    )
 
 
 def get_auth_use_case(
@@ -112,9 +91,6 @@ OAuth2SchemeOptionalDep = Annotated[str | None, Depends(oauth2_scheme_optional)]
 
 CheatsheetUseCaseDep = Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)]
 AuthUseCaseDep = Annotated[AuthUseCase, Depends(get_auth_use_case)]
-NotificationUseCaseDep = Annotated[
-    NotificationUseCase, Depends(get_notification_use_case)
-]
 
 CurrentUserRequiredDep = Annotated[User, Depends(get_current_user_required)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]

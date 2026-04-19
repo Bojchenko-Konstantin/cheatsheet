@@ -13,16 +13,8 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from httpx import ASGITransport, AsyncClient
 
-from src.api.dependencies import get_notification_service
-from src.application.dto import EmailMessage
-from src.application.interfaces.notification_service import INotificationService
 from src.core.config import settings
 from src.main import router_auth, router_cheatsheet
-
-
-class FakeNotificationService(INotificationService):
-    async def send_email(self, message: EmailMessage):
-        pass
 
 
 class HealthcheckStatus(StrEnum):
@@ -55,10 +47,6 @@ DATABASE_ENV = DatabaseConfig(
 )
 
 
-def get_fake_notification_service() -> FakeNotificationService:
-    return FakeNotificationService()
-
-
 @asynccontextmanager
 async def empty_lifespan(app: FastAPI) -> AsyncGenerator:
     yield
@@ -72,7 +60,6 @@ def app() -> FastAPI:
     )
     app.include_router(router_cheatsheet)
     app.include_router(router_auth)
-    app.dependency_overrides[get_notification_service] = get_fake_notification_service
     return app
 
 

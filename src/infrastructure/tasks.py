@@ -1,13 +1,19 @@
+from infrastructure.email_template_service import EmailTemplateService
+from infrastructure.notification_service import NotiSendNotificationService
 from src.application.dto import WelcomeEmailData
 from src.application.use_cases.notification import NotificationUseCase
 from src.infrastructure.broker import BROKER
 
 
 @BROKER.task(retry_on_error=True)
-async def send_welcome_email(
-    email: str, user_name: str | None, notification_use_case: NotificationUseCase
-) -> None:
+async def send_welcome_email(email: str, user_name: str | None) -> None:
     """Send welcome email to new user. Failure doesn't affect registration."""
+    notification_service = NotiSendNotificationService()
+    email_template_service = EmailTemplateService()
+    notification_use_case = NotificationUseCase(
+        notification_service, email_template_service
+    )
+
     if not user_name:
         user_name = email.rsplit("@", 1)[0]
 

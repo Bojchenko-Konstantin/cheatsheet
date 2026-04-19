@@ -3,11 +3,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import (
-    AuthUseCaseDep,
-    NotificationUseCaseDep,
-    OAuth2FormDep,
-)
+from src.api.dependencies import AuthUseCaseDep, OAuth2FormDep
 from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
 from src.application.exceptions import (
     AccessTokenException,
@@ -81,7 +77,6 @@ async def login(
 async def register(
     user_form: UserCreate,
     auth_use_case: AuthUseCaseDep,
-    notification_use_case: NotificationUseCaseDep,
 ):
     create_data = user_form.model_dump(exclude_unset=True)
 
@@ -96,7 +91,6 @@ async def register(
                 await send_welcome_email.kiq(
                     email=email,
                     user_name=user_name,
-                    notification_use_case=notification_use_case,
                 )
 
     except DuplicateUserError as e:
