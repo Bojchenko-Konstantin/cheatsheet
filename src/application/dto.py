@@ -76,6 +76,8 @@ class RefreshTokenRecord:
 
 class EmailType(StrEnum):
     WELCOME = "welcome"
+    PASSWORD_RESET = "password_reset"
+    PASSWORD_CHANGED = "password_changed"
 
 
 @dataclass(slots=True)
@@ -97,6 +99,25 @@ class EmailMessage:
 class WelcomeEmailData:
     email: str
     user_name: str
+    first_name: str | None = None
+
+    def get_display_name(self) -> str:
+        return self.user_name
+
+
+@dataclass(slots=True)
+class PasswordResetTokenRecord:
+    user_id: UUID
+    hashed_token: str
+    expires_at: datetime
+    used: bool = False
+
+
+@dataclass(slots=True)
+class PasswordResetEmailData:
+    email: str
+    user_name: str
+    reset_url: str
     first_name: str | None = None
 
     def get_display_name(self) -> str:
