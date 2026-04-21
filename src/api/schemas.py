@@ -126,3 +126,23 @@ class LogoutRequest(Schema):
     user_id: UUID
     refresh_token: str
     fingerprint: str
+
+
+class PasswordResetRequest(Schema):
+    email: EmailStr
+
+
+class PasswordResetConfirm(Schema):
+    token: str
+    new_password: Annotated[str, Field(min_length=8, max_length=128)]
+    confirm_password: str
+
+    @model_validator(mode="after")
+    def check_passwords_match(self) -> Self:
+        if self.new_password != self.confirm_password:
+            raise ValueError("Passwords do not match")
+        return self
+
+
+class PasswordResetResponse(Schema):
+    message: str = "If the email exists, a password reset link has been sent."
