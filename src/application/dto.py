@@ -106,14 +106,6 @@ class WelcomeEmailData:
 
 
 @dataclass(slots=True)
-class PasswordResetTokenRecord:
-    user_id: UUID
-    hashed_token: str
-    expires_at: datetime
-    used: bool = False
-
-
-@dataclass(slots=True)
 class PasswordResetEmailData:
     email: str
     user_name: str
@@ -122,3 +114,10 @@ class PasswordResetEmailData:
 
     def get_display_name(self) -> str:
         return self.user_name
+
+
+@dataclass(slots=True)
+class PasswordResetTokenPayload:
+    user_id: UUID
+    email: str
+    exp: datetime
