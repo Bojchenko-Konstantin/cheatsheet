@@ -7,12 +7,14 @@ __all__ = (
     "IUserService",
     "INotificationService",
     "IEmailTemplateService",
+    "IPasswordResetService",
 )
 
 from .repositories import ICheatsheetRepo, ITokenRepo, IUserRepo
 from .services import (
     IEmailTemplateService,
     INotificationService,
+    IPasswordResetService,
     ITokenService,
     IUserService,
 )
