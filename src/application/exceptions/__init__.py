@@ -22,6 +22,9 @@ __all__ = (
     "UserNotFoundError",
     "NotificationException",
     "SendEmailError",
+    "PasswordResetTokenInvalidError",
+    "PasswordResetTokenExpiredError",
+    "PasswordResetException",
 )
 
 from .access_token import (
@@ -38,6 +41,11 @@ from .cheatsheet import (
     CheatsheetUpdateError,
 )
 from .notification import NotificationException, SendEmailError
+from .password_reset import (
+    PasswordResetException,
+    PasswordResetTokenExpiredError,
+    PasswordResetTokenInvalidError,
+)
 from .refresh_token import (
     RefreshTokenBlacklistAddError,
     RefreshTokenCompromisedError,
