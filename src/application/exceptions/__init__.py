@@ -25,6 +25,7 @@ __all__ = (
     "PasswordResetTokenInvalidError",
     "PasswordResetTokenExpiredError",
     "PasswordResetException",
+    "WeakPasswordError",
 )
 
 from .access_token import (
@@ -45,6 +46,7 @@ from .password_reset import (
     PasswordResetException,
     PasswordResetTokenExpiredError,
     PasswordResetTokenInvalidError,
+    WeakPasswordError,
 )
 from .refresh_token import (
     RefreshTokenBlacklistAddError,
