@@ -3,7 +3,7 @@ from collections.abc import MutableMapping
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -87,6 +87,28 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User(**model.user)
         return user
 
+    async def get_by_email(self, email: str) -> User:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.email,
+                UserModel.hashed_password,
+                UserModel.is_active,
+                UserModel.is_superuser,
+                UserModel.is_verified,
+            )
+        ).where(UserModel.email == email)
+        result = await self._session.execute(statement)
+        model = result.one_or_none()
+
+        if not model:
+            raise UserNotFoundError
+
+        user = User(**model.user)
+        return user
+
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
         social_network_id = create_data.pop("social_network_id")  # noqa: F841
@@ -109,3 +131,14 @@ class SQLAlchemyUserRepo(IUserRepo):
 
     async def update(self, update_data: dict[str, Any]):
         pass
+
+    async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.user_id == user_id)
+            .values(hashed_password=hashed_password)
+        )
+        result = await self._session.execute(stmt)
+
+        if result.rowcount == 0:
+            raise UserNotFoundError
