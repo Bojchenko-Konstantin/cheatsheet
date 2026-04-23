@@ -4,12 +4,17 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
-from src.application.interfaces import ITokenService, IUnitOfWork, IUserService
+from src.application.interfaces import (
+    IPasswordResetService,
+    ITokenService,
+    IUnitOfWork,
+    IUserService,
+)
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
-from src.infrastructure.services import TokenService, UserService
+from src.infrastructure.services import PasswordResetService, TokenService, UserService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=True)
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
@@ -40,11 +45,26 @@ def get_user_service() -> UserService:
     return UserService()
 
 
+def get_password_reset_service() -> IPasswordResetService:
+    return PasswordResetService(
+        private_key=settings.jwt.private_key,
+        public_key=settings.jwt.public_key,
+        algorithm=settings.jwt.algorithm,
+        token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
+        frontend_reset_url=settings.password_reset.frontend_url,
+    )
+
+
 def get_auth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     user_service: IUserService = Depends(get_user_service),
+    password_reset_service: IPasswordResetService = Depends(get_password_reset_service),
 ) -> AuthUseCase:
-    return AuthUseCase(token_service, user_service)
+    return AuthUseCase(
+        token_service=token_service,
+        user_service=user_service,
+        password_reset_service=password_reset_service,
+    )
 
 
 async def get_current_user_required(

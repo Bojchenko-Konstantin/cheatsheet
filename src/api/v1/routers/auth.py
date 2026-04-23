@@ -4,11 +4,21 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 
 from src.api.dependencies import AuthUseCaseDep, OAuth2FormDep
-from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
+from src.api.schemas import (
+    LogoutRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    TokenPair,
+    TokenVerification,
+    UserCreate,
+)
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
+    PasswordResetTokenExpiredError,
+    PasswordResetTokenInvalidError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     RefreshTokenRevokeError,
@@ -16,8 +26,13 @@ from src.application.exceptions import (
     UserCreationError,
     UserInactiveError,
     UserNotFoundError,
+    WeakPasswordError,
 )
 from src.infrastructure.background_tasks import send_welcome_email
+from src.infrastructure.background_tasks.tasks import (
+    send_password_changed_email,
+    send_password_reset_email,
+)
 
 router = APIRouter(tags=["Authentication"])
 
@@ -214,3 +229,59 @@ async def logout(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout due to a technical issue. Please try again later.",
         ) from e
+
+
+@router.post("/password-reset/request", response_model=PasswordResetResponse)
+async def request_password_reset(
+    request_data: PasswordResetRequest,
+    auth_use_case: AuthUseCaseDep,
+):
+    result = await auth_use_case.request_password_reset(request_data.email)
+
+    if result is not None:
+        with contextlib.suppress(Exception):
+            await send_password_reset_email.kiq(
+                email=result["email"],
+                user_name=result["user_name"],
+                reset_url=result["reset_url"],
+            )
+
+    return PasswordResetResponse()
+
+
+@router.post("/password-reset/confirm", response_model=PasswordResetResponse)
+async def confirm_password_reset(
+    confirm_data: PasswordResetConfirm,
+    auth_use_case: AuthUseCaseDep,
+):
+    try:
+        result = await auth_use_case.confirm_password_reset(
+            confirm_data.token,
+            confirm_data.new_password,
+        )
+
+        with contextlib.suppress(Exception):
+            await send_password_changed_email.kiq(
+                email=result["email"],
+                user_name=result["user_name"],
+            )
+
+    except PasswordResetTokenInvalidError as e:
+        logger.warning("Password reset attempt with invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid password reset token",
+        ) from e
+    except PasswordResetTokenExpiredError as e:
+        logger.warning("Password reset attempt with expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password reset token has expired. Please request a new one.",
+        ) from e
+    except WeakPasswordError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+    return PasswordResetResponse(message="Password has been successfully reset.")
