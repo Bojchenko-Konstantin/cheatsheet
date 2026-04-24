@@ -4,6 +4,7 @@ from uuid import UUID
 import pytest
 
 from src.application.dto import (
+    PasswordResetData,
     User,
     UserPayload,
 )
@@ -38,6 +39,9 @@ class FakeTokenService(ITokenService):
     async def revoke_refresh_token(
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
+        pass
+
+    async def revoke_all_user_tokens(self, user_id: UUID) -> None:
         pass
 
 
@@ -77,10 +81,25 @@ class FakeUserService(IUserService):
             is_verified=True,
         )
 
+    async def get_by_email(self, email: str) -> PasswordResetData | None:
+        return PasswordResetData(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+            user_name="test",
+            email=email,
+        )
+
+    def validate_password_strength(self, password: str) -> tuple[bool, str | None]:
+        return True, None
+
+    async def update_password(self, user_id: UUID, new_password: str) -> None:
+        pass
+
 
 @pytest.fixture
 def auth_use_case():
-    return AuthUseCase(FakeTokenService(), FakeUserService())
+    return AuthUseCase(
+        FakeTokenService(), FakeUserService(), token_expires_in_minutes=10
+    )
 
 
 @pytest.mark.asyncio
