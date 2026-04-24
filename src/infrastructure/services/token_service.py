@@ -129,6 +129,11 @@ class TokenService(ITokenService):
         except Exception as e:
             raise RefreshTokenRevokeError from e
 
+    async def revoke_all_user_tokens(self, user_id: UUID) -> None:
+        async with self._unit_of_work as uow:
+            await uow.token_repo.revoke_all_tokens_for_user(user_id)
+            await uow._commit()
+
     def _generate_access_token(self, payload: UserPayload) -> str:
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
             minutes=self._access_token_expires_in

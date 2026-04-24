@@ -33,3 +33,7 @@ class ITokenRepo(ABC):
         self, user_id: UUID, fingerprint: str, hashed_token: str
     ) -> None:
         pass
+
+    @abstractmethod
+    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+        pass

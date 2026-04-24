@@ -16,10 +16,10 @@ class AuthUseCase:
         self,
         token_service: ITokenService,
         user_service: IUserService,
+        token_expires_in_minutes: int,
         notification_service: INotificationService | None = None,
         template_service: IEmailTemplateService | None = None,
         password_reset_service: IPasswordResetService | None = None,
-        token_expires_in_minutes: int = 30,
     ):
         self._token_service = token_service
         self._user_service = user_service
@@ -104,6 +104,8 @@ class AuthUseCase:
         payload = self._password_reset_service.verify_reset_token(token)
 
         await self._user_service.update_password(payload.user_id, new_password)
+
+        await self._token_service.revoke_all_user_tokens(payload.user_id)
 
         user = await self._user_service.get_by_id(payload.user_id)
 

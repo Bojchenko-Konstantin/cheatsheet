@@ -132,6 +132,17 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         except RefreshTokenNotFoundError:
             raise
 
+    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+        stmt = (
+            update(RefreshTokenModel)
+            .where(
+                RefreshTokenModel.user_id == user_id,
+                RefreshTokenModel.status_id == TokenStatus.ACTIVE,
+            )
+            .values(status_id=TokenStatus.REVOKED)
+        )
+        await self._session.execute(stmt)
+
     async def _move_older_refresh_token_to_blacklist(
         self, user_id: UUID, fingerprint: str
     ) -> None:
