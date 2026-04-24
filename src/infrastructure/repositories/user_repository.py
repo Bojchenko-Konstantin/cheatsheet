@@ -7,7 +7,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 from src.application.exceptions import (
     DuplicateUserError,
     UserCreationError,
@@ -51,7 +51,6 @@ class SQLAlchemyUserRepo(IUserRepo):
                 "user",
                 UserModel.user_id,
                 UserModel.user_name,
-                UserModel.email,
                 UserModel.hashed_password,
                 UserModel.is_active,
                 UserModel.is_superuser,
@@ -73,7 +72,6 @@ class SQLAlchemyUserRepo(IUserRepo):
                 "user",
                 UserModel.user_id,
                 UserModel.user_name,
-                UserModel.email,
                 UserModel.hashed_password,
                 UserModel.is_active,
                 UserModel.is_superuser,
@@ -89,17 +87,13 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User(**model.user)
         return user
 
-    async def get_by_email(self, email: str) -> User:
+    async def get_by_email(self, email: str) -> PasswordResetData:
         statement = select(
             DictBundle(
                 "user",
                 UserModel.user_id,
                 UserModel.user_name,
                 UserModel.email,
-                UserModel.hashed_password,
-                UserModel.is_active,
-                UserModel.is_superuser,
-                UserModel.is_verified,
             )
         ).where(UserModel.email == email)
         result = await self._session.execute(statement)
@@ -108,7 +102,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         if not model:
             raise UserNotFoundError
 
-        user = User(**model.user)
+        user = PasswordResetData(**model.user)
         return user
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
