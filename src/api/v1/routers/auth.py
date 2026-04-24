@@ -28,6 +28,7 @@ from src.application.exceptions import (
     UserNotFoundError,
     WeakPasswordError,
 )
+from src.core.config import settings
 from src.infrastructure.background_tasks import send_welcome_email
 from src.infrastructure.background_tasks.tasks import (
     send_password_changed_email,
@@ -244,6 +245,7 @@ async def request_password_reset(
                 email=result["email"],
                 user_name=result["user_name"],
                 reset_url=result["reset_url"],
+                expires_in_minutes=settings.password_reset.token_expires_in_minutes,
             )
 
     return PasswordResetResponse()

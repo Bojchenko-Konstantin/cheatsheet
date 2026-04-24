@@ -64,6 +64,7 @@ def get_auth_use_case(
         token_service=token_service,
         user_service=user_service,
         password_reset_service=password_reset_service,
+        token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
     )
 
 

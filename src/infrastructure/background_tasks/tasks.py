@@ -28,7 +28,7 @@ async def send_welcome_email(email: str, user_name: str | None) -> None:
 
 @BROKER.task(retry_on_error=True)
 async def send_password_reset_email(
-    email: str, user_name: str, reset_url: str, expires_in_minutes: int = 30
+    email: str, user_name: str, reset_url: str, expires_in_minutes: int
 ) -> None:
     """Send password reset email with token link. Failure allows user to retry."""
     email_template_service = EmailTemplateService()
