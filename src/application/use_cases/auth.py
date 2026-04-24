@@ -103,7 +103,7 @@ class AuthUseCase:
 
         payload = self._password_reset_service.verify_reset_token(token)
 
-        await self._user_service.update_password(payload.user_id, new_password)
+        await self._user_service.reset_password(payload.user_id, new_password)
 
         await self._token_service.revoke_all_user_tokens(payload.user_id)
 
@@ -114,3 +114,8 @@ class AuthUseCase:
             "user_name": user.user_name,
             "email": payload.email,
         }
+
+    async def update_password(
+        self, user_id: UUID, old_password: str, new_password: str
+    ) -> None:
+        await self._user_service.update_password(user_id, old_password, new_password)

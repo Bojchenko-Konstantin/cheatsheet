@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pwdlib import PasswordHash
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 from src.application.exceptions import (
     UserAuthenticationError,
     UserInactiveError,
@@ -35,7 +35,7 @@ class UserService(IUserService):
             user = await uow.user_repo.get_by_id(user_id)
             return user
 
-    async def get_by_email(self, email: str) -> User | None:
+    async def get_by_email(self, email: str) -> PasswordResetData | None:
         try:
             async with self._unit_of_work.readonly() as uow:
                 user = await uow.user_repo.get_by_email(email)
@@ -65,7 +65,23 @@ class UserService(IUserService):
 
         return user
 
-    async def update_password(self, user_id: UUID, new_password: str) -> None:
+    async def update_password(
+        self, user_id: UUID, old_password: str, new_password: str
+    ) -> None:
+        is_valid, error = self._validate_password_strength(new_password)
+        if not is_valid:
+            raise WeakPasswordError(error)
+
+        user = await self.get_by_id(user_id)
+        if not self._verify_password(old_password, user.hashed_password):
+            raise UserAuthenticationError
+
+        new_hashed_password = self._create_hashed_password(new_password)
+
+        async with self._unit_of_work as uow:
+            await uow.user_repo.update_password(user_id, new_hashed_password)
+
+    async def reset_password(self, user_id: UUID, new_password: str) -> None:
         is_valid, error = self._validate_password_strength(new_password)
         if not is_valid:
             raise WeakPasswordError(error)
@@ -74,7 +90,6 @@ class UserService(IUserService):
 
         async with self._unit_of_work as uow:
             await uow.user_repo.update_password(user_id, new_hashed_password)
-            await uow._commit()
 
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return self._hasher.verify(plain_password, hashed_password)

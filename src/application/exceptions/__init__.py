@@ -26,6 +26,7 @@ __all__ = (
     "PasswordResetTokenExpiredError",
     "PasswordResetException",
     "WeakPasswordError",
+    "PasswordsNotMatchError",
 )
 
 from .access_token import (
@@ -58,6 +59,7 @@ from .refresh_token import (
 )
 from .user import (
     DuplicateUserError,
+    PasswordsNotMatchError,
     UserAuthenticationError,
     UserCreationError,
     UserException,

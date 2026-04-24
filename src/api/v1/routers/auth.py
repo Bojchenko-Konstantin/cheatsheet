@@ -3,12 +3,14 @@ import logging
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import AuthUseCaseDep, OAuth2FormDep
+from src.api.dependencies import AuthUseCaseDep, CurrentUserRequiredDep, OAuth2FormDep
 from src.api.schemas import (
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     PasswordResetResponse,
+    PasswordUpdate,
+    PasswordUpdateResponse,
     TokenPair,
     TokenVerification,
     UserCreate,
@@ -19,6 +21,7 @@ from src.application.exceptions import (
     DuplicateUserError,
     PasswordResetTokenExpiredError,
     PasswordResetTokenInvalidError,
+    PasswordsNotMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     RefreshTokenRevokeError,
@@ -232,6 +235,46 @@ async def logout(
         ) from e
 
 
+@router.put("/password", response_model=PasswordUpdateResponse)
+async def update_password(
+    password_data: PasswordUpdate,
+    current_user: CurrentUserRequiredDep,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Change password for authenticated user."""
+    try:
+        await auth_use_case.update_password(
+            user_id=current_user.user_id,
+            old_password=password_data.old_password,
+            new_password=password_data.new_password,
+        )
+    except PasswordsNotMatchError as e:
+        logger.exception(
+            "Password change failed for user %s: passwords do not match",
+            current_user.user_id,
+        )
+        raise HTTPException(status_code=400, detail="Passwords do not match.") from e
+    except UserAuthenticationError as e:
+        logger.exception(
+            "Password change failed for user %s: incorrect current password",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        ) from e
+    except WeakPasswordError as e:
+        logger.exception(
+            "Password change failed for user %s: weak new password",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    return PasswordUpdateResponse(message="Password has been successfully updated.")
+
+
 @router.post("/password-reset/request", response_model=PasswordResetResponse)
 async def request_password_reset(
     request_data: PasswordResetRequest,
@@ -248,7 +291,7 @@ async def request_password_reset(
                 expires_in_minutes=settings.password_reset.token_expires_in_minutes,
             )
 
-    return PasswordResetResponse()
+    return PasswordResetResponse(message="Password has been successfully reset.")
 
 
 @router.post("/password-reset/confirm", response_model=PasswordResetResponse)
@@ -267,20 +310,23 @@ async def confirm_password_reset(
                 email=result["email"],
                 user_name=result["user_name"],
             )
-
+    except PasswordsNotMatchError as e:
+        logger.exception("Password change failed: passwords do not match")
+        raise HTTPException(status_code=400, detail="Passwords do not match") from e
     except PasswordResetTokenInvalidError as e:
-        logger.warning("Password reset attempt with invalid token")
+        logger.exception("Password reset attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid password reset token",
         ) from e
     except PasswordResetTokenExpiredError as e:
-        logger.warning("Password reset attempt with expired token")
+        logger.exception("Password reset attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password reset token has expired. Please request a new one.",
         ) from e
     except WeakPasswordError as e:
+        logger.exception("Password change failed: weak new password")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),

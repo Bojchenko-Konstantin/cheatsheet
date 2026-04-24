@@ -27,5 +27,11 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def update_password(self, user_id: UUID, new_password: str) -> None:
+    async def update_password(
+        self, user_id: UUID, old_password: str, new_password: str
+    ) -> None:
+        pass
+
+    @abstractmethod
+    async def reset_password(self, user_id: UUID, new_password: str) -> None:
         pass
