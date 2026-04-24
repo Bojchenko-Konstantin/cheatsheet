@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 
 
 class IUserService(ABC):
@@ -15,7 +15,7 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def get_by_email(self, email: str) -> User | None:
+    async def get_by_email(self, email: str) -> PasswordResetData | None:
         pass
 
     @abstractmethod

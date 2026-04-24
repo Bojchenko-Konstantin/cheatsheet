@@ -19,7 +19,6 @@ class TokenStatus(IntEnum):
 class User:
     user_id: UUID
     user_name: str
-    email: str
     hashed_password: str
     is_active: bool
     is_superuser: bool
@@ -83,6 +82,8 @@ class EmailType(StrEnum):
 
 @dataclass(slots=True)
 class EmailMessage:
+    """Email ready for sending."""
+
     to: str
     subject: str
     text: str
@@ -98,6 +99,8 @@ class EmailMessage:
 
 @dataclass(slots=True)
 class WelcomeEmailData:
+    """Data for welcome email template."""
+
     email: str
     user_name: str
     first_name: str | None = None
@@ -108,6 +111,8 @@ class WelcomeEmailData:
 
 @dataclass(slots=True)
 class PasswordResetEmailData:
+    """Data for password reset email with token link."""
+
     email: str
     user_name: str
     reset_url: str
@@ -119,6 +124,17 @@ class PasswordResetEmailData:
 
 @dataclass(slots=True)
 class PasswordResetTokenPayload:
+    """Payload decoded from verified reset token."""
+
     user_id: UUID
     email: str
     exp: datetime
+
+
+@dataclass(slots=True)
+class PasswordResetData:
+    """User data returned after email lookup for reset."""
+
+    user_id: UUID
+    user_name: str
+    email: str
