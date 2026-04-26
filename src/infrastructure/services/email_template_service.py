@@ -3,10 +3,13 @@ from datetime import datetime
 from src.application.dto import (
     EmailMessage,
     EmailType,
+    EmailVerificationData,
     PasswordResetEmailData,
     WelcomeEmailData,
 )
 from src.application.email_templates import (
+    EMAIL_VERIFICATION_SUBJECT,
+    EMAIL_VERIFICATION_TEMPLATE,
     PASSWORD_CHANGED_EMAIL_SUBJECT,
     PASSWORD_CHANGED_EMAIL_TEMPLATE,
     PASSWORD_RESET_EMAIL_SUBJECT,
@@ -43,7 +46,7 @@ class EmailTemplateService(IEmailTemplateService):
         )
 
     def generate_password_reset_email(
-        self, data: PasswordResetEmailData, expires_in_minutes: int = 30
+        self, data: PasswordResetEmailData, expires_in_minutes: int
     ) -> EmailMessage:
         """Create password reset email."""
         display_name = data.get_display_name()
@@ -81,4 +84,24 @@ class EmailTemplateService(IEmailTemplateService):
             subject=PASSWORD_CHANGED_EMAIL_SUBJECT,
             text=text,
             email_type=EmailType.PASSWORD_CHANGED,
+        )
+
+    def generate_email_verification(
+        self, data: EmailVerificationData, expires_in_minutes: int
+    ) -> EmailMessage:
+        """Create email verification message with token link."""
+        display_name = data.get_display_name()
+
+        text = EMAIL_VERIFICATION_TEMPLATE.format(
+            display_name=display_name,
+            verification_url=data.verification_url,
+            expires_in_minutes=expires_in_minutes,
+            support_email=self._support_email,
+        )
+
+        return EmailMessage(
+            to=data.email,
+            subject=EMAIL_VERIFICATION_SUBJECT,
+            text=text,
+            email_type=EmailType.EMAIL_VERIFICATION,
         )
