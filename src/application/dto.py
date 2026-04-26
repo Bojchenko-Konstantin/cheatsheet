@@ -78,6 +78,7 @@ class EmailType(StrEnum):
     WELCOME = "welcome"
     PASSWORD_RESET = "password_reset"
     PASSWORD_CHANGED = "password_changed"
+    EMAIL_VERIFICATION = "email_verification"
 
 
 @dataclass(slots=True)
