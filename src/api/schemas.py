@@ -164,3 +164,15 @@ class PasswordUpdate(Schema):
 
 class PasswordUpdateResponse(Schema):
     message: str = "Password has been successfully changed."
+
+
+class EmailVerificationConfirm(Schema):
+    token: str
+
+
+class EmailVerificationResponse(Schema):
+    message: str = "Email has been successfully verified."
+
+
+class EmailVerificationSendResponse(Schema):
+    message: str = "If the email is not verified, a verification link has been sent."
