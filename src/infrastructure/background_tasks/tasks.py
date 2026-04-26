@@ -1,20 +1,18 @@
+from typing import Annotated
+
+from taskiq import Context, TaskiqDepends, async_shared_broker
+
 from src.application.dto import WelcomeEmailData
-from src.application.use_cases.notification import NotificationUseCase
-from src.infrastructure.background_tasks.broker import BROKER
-from src.infrastructure.services import (
-    EmailTemplateService,
-    NotiSendNotificationService,
-)
 
 
-@BROKER.task(retry_on_error=True)
-async def send_welcome_email(email: str, user_name: str | None) -> None:
+@async_shared_broker.task(retry_on_error=True)
+async def send_welcome_email(
+    email: str,
+    user_name: str | None,
+    context: Annotated[Context, TaskiqDepends()],
+) -> None:
     """Send welcome email to new user. Failure doesn't affect registration."""
-    notification_service = NotiSendNotificationService()
-    email_template_service = EmailTemplateService()
-    notification_use_case = NotificationUseCase(
-        notification_service, email_template_service
-    )
+    notification_use_case = context.state.notification_use_case
 
     if not user_name:
         user_name = email.rsplit("@", 1)[0]
