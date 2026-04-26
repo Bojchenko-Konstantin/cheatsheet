@@ -51,7 +51,9 @@ class NotiSendConfig(BaseModel):
 
 class BrokerConfig(BaseModel):
     host: str
+    vhost: str
     port: int
+    management_port: int
     user: str
     password: str
 
