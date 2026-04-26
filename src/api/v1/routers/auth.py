@@ -5,6 +5,9 @@ from fastapi import APIRouter, HTTPException, status
 
 from src.api.dependencies import AuthUseCaseDep, CurrentUserRequiredDep, OAuth2FormDep
 from src.api.schemas import (
+    EmailVerificationConfirm,
+    EmailVerificationResponse,
+    EmailVerificationSendResponse,
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -19,6 +22,9 @@ from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
+    EmailAlreadyVerifiedError,
+    EmailVerificationTokenExpiredError,
+    EmailVerificationTokenInvalidError,
     PasswordResetTokenExpiredError,
     PasswordResetTokenInvalidError,
     PasswordsNotMatchError,
@@ -32,10 +38,11 @@ from src.application.exceptions import (
     WeakPasswordError,
 )
 from src.core.config import settings
-from src.infrastructure.background_tasks import send_welcome_email
-from src.infrastructure.background_tasks.tasks import (
+from src.infrastructure.background_tasks import (
+    send_email_verification,
     send_password_changed_email,
     send_password_reset_email,
+    send_welcome_email,
 )
 
 router = APIRouter(tags=["Authentication"])
@@ -110,6 +117,18 @@ async def register(
                 await send_welcome_email.kiq(
                     email=email,
                     user_name=user_name,
+                )
+
+            with contextlib.suppress(Exception):
+                user = await auth_use_case.get_current_user(token_pair["access_token"])
+                verification_data = await auth_use_case.request_email_verification(
+                    user.user_id
+                )
+                await send_email_verification.kiq(
+                    email=verification_data["email"],
+                    user_name=verification_data["user_name"],
+                    verification_url=verification_data["verification_url"],
+                    expires_in_minutes=settings.email_verification.token_expires_in_minutes,
                 )
 
     except DuplicateUserError as e:
@@ -333,3 +352,85 @@ async def confirm_password_reset(
         ) from e
 
     return PasswordResetResponse(message="Password has been successfully reset.")
+
+
+@router.post(
+    "/email-verification",
+    response_model=EmailVerificationSendResponse,
+)
+async def send_verification_email(
+    current_user: CurrentUserRequiredDep,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Send email verification email to currently authenticated user."""
+    try:
+        verification_data = await auth_use_case.request_email_verification(
+            current_user.user_id
+        )
+
+        with contextlib.suppress(Exception):
+            await send_email_verification.kiq(
+                email=verification_data["email"],
+                user_name=verification_data["user_name"],
+                verification_url=verification_data["verification_url"],
+                expires_in_minutes=settings.email_verification.token_expires_in_minutes,
+            )
+    except EmailAlreadyVerifiedError as e:
+        logger.debug(
+            "User %s attempted to verify already verified email",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already verified.",
+        ) from e
+    except Exception as e:
+        logger.exception(
+            "Failed to send verification email for user %s",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email.",
+        ) from e
+
+    return EmailVerificationSendResponse(message="Verification email has been sent.")
+
+
+@router.post(
+    "/email-verification/confirm",
+    response_model=EmailVerificationResponse,
+)
+async def confirm_email_verification(
+    verification_request: EmailVerificationConfirm,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Confirm email verification using verification token."""
+    try:
+        await auth_use_case.confirm_email_verification(verification_request.token)
+    except EmailVerificationTokenInvalidError as e:
+        logger.debug("Email verification attempt with invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification token.",
+        ) from e
+    except EmailVerificationTokenExpiredError as e:
+        logger.debug("Email verification attempt with expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token has expired.",
+        ) from e
+    except EmailAlreadyVerifiedError as e:
+        logger.debug("Email verification attempt for already verified email")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already verified.",
+        ) from e
+    except Exception as e:
+        logger.exception("Unexpected error during email verification")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email verification failed.",
+        ) from e
+
+    return EmailVerificationResponse(message="Email has been successfully verified.")

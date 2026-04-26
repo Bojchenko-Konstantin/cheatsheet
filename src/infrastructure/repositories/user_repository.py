@@ -105,6 +105,17 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = PasswordResetData(**model.user)
         return user
 
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        """Get user email by user ID."""
+        statement = select(UserModel.email).where(UserModel.user_id == user_id)
+        result = await self._session.execute(statement)
+        email = result.scalar_one_or_none()
+
+        if not email:
+            raise UserNotFoundError
+
+        return email
+
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
         social_network_id = create_data.pop("social_network_id")  # noqa: F841
@@ -138,3 +149,12 @@ class SQLAlchemyUserRepo(IUserRepo):
 
         if result.rowcount == 0:
             raise UserNotFoundError
+
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
+        """Mark user's email as verified in database."""
+        statement = (
+            update(UserModel)
+            .where(UserModel.user_id == user_id)
+            .values(is_verified=True)
+        )
+        await self._session.execute(statement)

@@ -21,6 +21,10 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        pass
+
+    @abstractmethod
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         pass
 
@@ -44,4 +48,9 @@ class IUserService(ABC):
         Reset password without requiring old password.
         Used after successful password reset token verification.
         """
+        pass
+
+    @abstractmethod
+    async def verify_email(self, user_id: UUID) -> None:
+        """Mark user's email as verified."""
         pass

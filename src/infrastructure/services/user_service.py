@@ -6,6 +6,7 @@ from pwdlib import PasswordHash
 
 from src.application.dto import PasswordResetData, User, UserPayload
 from src.application.exceptions import (
+    EmailAlreadyVerifiedError,
     UserAuthenticationError,
     UserInactiveError,
     UserNotFoundError,
@@ -42,6 +43,10 @@ class UserService(IUserService):
                 return user
         except UserNotFoundError:
             return None
+
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        async with self._unit_of_work.readonly() as uow:
+            return await uow.user_repo.get_email_by_id(user_id)
 
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         async with self._unit_of_work as uow:
@@ -90,6 +95,16 @@ class UserService(IUserService):
 
         async with self._unit_of_work as uow:
             await uow.user_repo.update_password(user_id, new_hashed_password)
+
+    async def verify_email(self, user_id: UUID) -> None:
+        """Mark user's email as verified in database."""
+        async with self._unit_of_work as uow:
+            user = await uow.user_repo.get_by_id(user_id)
+
+            if user.is_verified:
+                raise EmailAlreadyVerifiedError
+
+            await uow.user_repo.mark_email_as_verified(user_id)
 
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return self._hasher.verify(plain_password, hashed_password)

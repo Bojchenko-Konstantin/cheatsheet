@@ -21,6 +21,10 @@ class IUserRepo(ABC):
         pass
 
     @abstractmethod
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        pass
+
+    @abstractmethod
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         pass
 
@@ -30,4 +34,8 @@ class IUserRepo(ABC):
 
     @abstractmethod
     async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        pass
+
+    @abstractmethod
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
         pass
