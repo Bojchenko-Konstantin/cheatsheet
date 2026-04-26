@@ -138,3 +138,25 @@ class PasswordResetData:
     user_id: UUID
     user_name: str
     email: str
+
+
+@dataclass(slots=True)
+class EmailVerificationTokenPayload:
+    """Payload decoded from verified email verification token."""
+
+    user_id: UUID
+    email: str
+    exp: datetime
+
+
+@dataclass(slots=True)
+class EmailVerificationData:
+    """Data for email verification email template."""
+
+    email: str
+    user_name: str
+    verification_url: str
+    first_name: str | None = None
+
+    def get_display_name(self) -> str:
+        return self.user_name
