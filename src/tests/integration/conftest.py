@@ -4,6 +4,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import StrEnum
+from smtplib import SMTP
+from typing import Any
 
 import docker
 import pytest
@@ -12,6 +14,10 @@ from docker.models.containers import Container
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from httpx import ASGITransport, AsyncClient
+from taskiq import (
+    InMemoryBroker,
+    async_shared_broker,
+)
 
 from src.core.config import settings
 from src.main import router_auth, router_cheatsheet
@@ -25,6 +31,16 @@ class HealthcheckStatus(StrEnum):
 
 class UnhealthyContainerError(Exception):
     pass
+
+
+class FakeNotificationUseCase:
+    async def send_welcome_email(self, data: Any) -> None:
+        with SMTP(host="localhost", port=1025) as client:
+            client.sendmail(
+                from_addr="sender@test.com",
+                to_addrs="user@example.com",
+                msg="Hello, test",
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,8 +63,19 @@ DATABASE_ENV = DatabaseConfig(
 )
 
 
+@pytest.fixture(autouse=True)
+async def broker():
+    test_broker = InMemoryBroker(await_inplace=True)
+    async_shared_broker.default_broker(test_broker)
+    test_broker.state.notification_use_case = FakeNotificationUseCase()
+
+    await test_broker.startup()
+    yield test_broker
+    await test_broker.shutdown()
+
+
 @asynccontextmanager
-async def empty_lifespan(app: FastAPI) -> AsyncGenerator:
+async def lifespan(app: FastAPI) -> AsyncGenerator:
     yield
 
 
@@ -56,7 +83,7 @@ async def empty_lifespan(app: FastAPI) -> AsyncGenerator:
 def app() -> FastAPI:
     app = FastAPI(
         default_response_class=ORJSONResponse,
-        lifespan=empty_lifespan,
+        lifespan=lifespan,
     )
     app.include_router(router_cheatsheet)
     app.include_router(router_auth)
@@ -74,16 +101,23 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 @pytest.fixture(scope="session", autouse=True)
 def test_environment_lifecycle(request) -> None:
     client = _create_docker_client()
+
     postgres_container = _setup_postgres_container(client)
+    smtp_container = _setup_smtp_container(client)
 
     _wait_for_container_healthcheck(postgres_container)
+    _wait_for_container_healthcheck(smtp_container)
+
     _run_database_migrations()
 
-    def remove_container():
+    def remove_containers():
         postgres_container.stop()
         postgres_container.remove()
 
-    request.addfinalizer(remove_container)
+        smtp_container.stop()
+        smtp_container.remove()
+
+    request.addfinalizer(remove_containers)
 
 
 def _create_docker_client() -> DockerClient:
@@ -124,6 +158,29 @@ def _setup_postgres_container(client: DockerClient) -> Container:
         ports={f"{DATABASE_ENV.internal_container_port}/tcp": DATABASE_ENV.port},
         tmpfs={"/var/lib/postgresql/data": "size=512m"},
         detach=True,
+    )
+    return container
+
+
+def _setup_smtp_container(client: DockerClient) -> Container:
+    container = client.containers.run(
+        image="mailhog/mailhog",
+        healthcheck={
+            "test": [
+                "CMD-SHELL",
+                "wget --no-verbose --tries=1 --spider http://localhost:8025/api/v2/messages",
+            ],
+            "interval": 5 * 10**9,
+            "retries": 5,
+            "timeout": 5 * 10**9,
+            "start_period": 5**10,
+        },
+        ports={
+            "1025": 1025,
+            "8025": 8025,
+        },
+        detach=True,
+        hostname="mailhog",
     )
     return container
 

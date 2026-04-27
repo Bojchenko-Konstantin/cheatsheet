@@ -9,19 +9,13 @@ from sqlalchemy.sql.elements import TextClause
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
-
-class FakeNotificationUseCase:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    async def send_welcome_email(self, data: Any):
-        pass
+MAILHOG = "http://localhost:8025"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_was_successful(
-    populate_db_for_multiple_users: None, async_client: AsyncClient, mocker
+    populate_db_for_multiple_users: None, async_client: AsyncClient
 ):
     # Arrange.
     data_for_register = {
@@ -45,23 +39,29 @@ async def test_register_was_successful(
         "profile_description": "string",
         "image_url": "string",
     }
-    _mock_notification_use_case(mocker)
 
     # Act.
     response = await async_client.post("/register", json=data_for_register)
-
     registered_user = await _get_user_from_db_by_username("test_register")
+
+    async with AsyncClient() as client:
+        email = await client.get(
+            f"{MAILHOG}/api/v2/search?kind=from&query=sender@test.com"
+        )
+
+    email_content = email.content.decode()
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert HASHER.verify("password", registered_user.pop("hashed_password"))
     assert registered_user == expected_result
+    assert "Hello, test" in email_content
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_fails_when_username_already_exists(
-    populate_db_for_multiple_users: None, async_client: AsyncClient, mocker
+    populate_db_for_multiple_users: None, async_client: AsyncClient
 ):
     data_for_register = {
         "username": "active_user",  # Already exists in the database
@@ -75,7 +75,6 @@ async def test_register_fails_when_username_already_exists(
         "password": "password",
         "password_confirmation": "password",
     }
-    _mock_notification_use_case(mocker)
 
     response = await async_client.post("/register", json=data_for_register)
 
@@ -119,11 +118,4 @@ def _create_user_from_db_row(db_row: Row) -> dict[str, Any]:
         profile_description=db_row.profile_description,
         image_url=db_row.image_url,
         hashed_password=db_row.hashed_password,
-    )
-
-
-def _mock_notification_use_case(mocker):
-    mocker.patch(
-        "src.infrastructure.background_tasks.tasks.NotificationUseCase.send_welcome_email",
-        return_value=None,
     )
