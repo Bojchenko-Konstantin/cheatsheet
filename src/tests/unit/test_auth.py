@@ -88,6 +88,9 @@ class FakeUserService(IUserService):
             email=email,
         )
 
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        return "test@example.com"
+
     def validate_password_strength(self, password: str) -> tuple[bool, str | None]:
         return True, None
 
@@ -97,6 +100,9 @@ class FakeUserService(IUserService):
         pass
 
     async def reset_password(self, user_id: UUID, new_password: str) -> None:
+        pass
+
+    async def verify_email(self, user_id: UUID) -> None:
         pass
 
 

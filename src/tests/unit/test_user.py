@@ -52,7 +52,13 @@ class FakeUserRepo(IUserRepo):
             email=email,
         )
 
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        return "test@example.com"
+
     async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        pass
+
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
         pass
 
 
