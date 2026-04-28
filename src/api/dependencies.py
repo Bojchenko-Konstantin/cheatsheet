@@ -17,6 +17,7 @@ from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.services import (
     EmailVerificationService,
+    JWTCoreService,
     PasswordResetService,
     TokenService,
     UserService,
@@ -37,6 +38,14 @@ def get_cheatsheet_use_case(
     return CheatsheetUseCase(unit_of_work=unit_of_work)
 
 
+def get_jwt_core_service() -> JWTCoreService:
+    return JWTCoreService(
+        private_key=settings.jwt.private_key,
+        public_key=settings.jwt.public_key,
+        algorithm=settings.jwt.algorithm,
+    )
+
+
 def get_token_service() -> TokenService:
     return TokenService(
         private_key=settings.jwt.private_key,
@@ -51,23 +60,23 @@ def get_user_service() -> UserService:
     return UserService()
 
 
-def get_password_reset_service() -> IPasswordResetService:
+def get_password_reset_service(
+    jwt_core: JWTCoreService = Depends(get_jwt_core_service),
+) -> IPasswordResetService:
     return PasswordResetService(
-        private_key=settings.jwt.private_key,
-        public_key=settings.jwt.public_key,
-        algorithm=settings.jwt.algorithm,
+        jwt_core=jwt_core,
         token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
         frontend_reset_url=settings.password_reset.frontend_url,
     )
 
 
-def get_email_verification_service() -> EmailVerificationService:
+def get_email_verification_service(
+    jwt_core: JWTCoreService = Depends(get_jwt_core_service),
+) -> IEmailVerificationService:
     return EmailVerificationService(
-        private_key=settings.jwt.private_key,
-        public_key=settings.jwt.public_key,
-        algorithm=settings.jwt.algorithm,
-        token_expires_in_minutes=settings.email_verification.token_expires_in_minutes,
-        frontend_verification_url=settings.email_verification.frontend_url,
+        jwt_core=jwt_core,
+        token_expires_in_hours=settings.email_verification.token_expires_in_minutes,
+        frontend_verify_url=settings.email_verification.frontend_url,
     )
 
 

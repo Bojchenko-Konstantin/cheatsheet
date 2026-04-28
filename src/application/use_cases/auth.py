@@ -153,7 +153,7 @@ class AuthUseCase:
         if not self._email_verification_service:
             raise RuntimeError("Email verification service not configured")
 
-        payload = self._email_verification_service.verify_verification_token(token)
+        payload = self._email_verification_service.verify_token(token)
 
         user = await self._user_service.get_by_id(payload.user_id)
 

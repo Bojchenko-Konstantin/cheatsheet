@@ -1,60 +1,46 @@
-import base64
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 import jwt
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import (
-    PrivateKeyTypes,
-    PublicKeyTypes,
-)
 
 from src.application.dto import EmailVerificationTokenPayload
 from src.application.exceptions import (
     EmailVerificationTokenExpiredError,
     EmailVerificationTokenInvalidError,
 )
-from src.application.interfaces.services.email_verification_service import (
-    IEmailVerificationService,
-)
+from src.application.interfaces import IEmailVerificationService
+from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 
 class EmailVerificationService(IEmailVerificationService):
     """Stateless implementation of email verification service using JWT tokens."""
 
+    _TOKEN_TYPE = "email_verification"
+    _REQUIRED_CLAIMS = ["exp", "sub", "email", "type"]
+
     def __init__(
         self,
-        private_key: str,
-        public_key: str,
-        algorithm: str,
-        token_expires_in_minutes: int,
-        frontend_verification_url: str,
+        jwt_core: JWTCoreService,
+        token_expires_in_hours: int = 24,
+        frontend_verify_url: str = "http://localhost:3000/verify-email",
     ):
-        self._private_key = private_key
-        self._public_key = public_key
-        self._algorithm = algorithm
-        self._token_expires_in_minutes = token_expires_in_minutes
-        self._frontend_verification_url = frontend_verification_url.rstrip("/")
+        """Initialize verification service."""
+        self._jwt_core = jwt_core
+        self._token_expires_in_hours = token_expires_in_hours
+        self._frontend_verify_url = frontend_verify_url.rstrip("/")
 
     def generate_verification_token(self, user_id: UUID, email: str) -> str:
-        """Generate a JWT token for email verification."""
-        now = datetime.now(tz=timezone.utc)
-        expiration_time = now + timedelta(minutes=self._token_expires_in_minutes)
-
+        """Generate a stateless JWT token for email verification."""
         payload = {
             "sub": str(user_id),
             "email": email,
-            "type": "email_verification",
-            "exp": expiration_time,
         }
 
-        private_key = self._get_appropriate_private_key_form()
-
         try:
-            token = jwt.encode(
+            token = self._jwt_core.generate_token(
                 payload=payload,
-                key=private_key,  # type: ignore
-                algorithm=self._algorithm,
+                token_type=self._TOKEN_TYPE,
+                expires_in_minutes=self._token_expires_in_hours * 60,
             )
         except jwt.PyJWTError as e:
             raise EmailVerificationTokenInvalidError from e
@@ -63,16 +49,13 @@ class EmailVerificationService(IEmailVerificationService):
 
         return token
 
-    def verify_verification_token(self, token: str) -> EmailVerificationTokenPayload:
+    def verify_token(self, token: str) -> EmailVerificationTokenPayload:
         """Verify and decode an email verification token."""
-        public_key = self._get_appropriate_public_key_form()
-
         try:
-            payload = jwt.decode(
-                jwt=token,
-                key=public_key,  # type: ignore
-                algorithms=[self._algorithm],
-                options={"require": ["exp", "sub", "email", "type"]},
+            payload = self._jwt_core.verify_token(
+                token=token,
+                expected_type=self._TOKEN_TYPE,
+                required_claims=self._REQUIRED_CLAIMS,
             )
         except jwt.ExpiredSignatureError as e:
             raise EmailVerificationTokenExpiredError from e
@@ -81,30 +64,19 @@ class EmailVerificationService(IEmailVerificationService):
         except Exception as e:
             raise EmailVerificationTokenInvalidError from e
 
-        if payload.get("type") != "email_verification":
-            raise EmailVerificationTokenInvalidError
-
         try:
             user_id = UUID(payload["sub"])
         except (ValueError, KeyError) as e:
             raise EmailVerificationTokenInvalidError from e
 
+        exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+
         return EmailVerificationTokenPayload(
             user_id=user_id,
             email=payload["email"],
-            exp=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+            exp=exp,
         )
 
     def get_verification_url(self, token: str) -> str:
-        """Build the full email verification URL with token."""
-        return f"{self._frontend_verification_url}?token={token}"
-
-    def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:
-        private_key_der = base64.b64decode(self._private_key)
-        private_key = serialization.load_der_private_key(private_key_der, password=None)
-        return private_key
-
-    def _get_appropriate_public_key_form(self) -> PublicKeyTypes:
-        public_key_der = base64.b64decode(self._public_key)
-        public_key = serialization.load_der_public_key(public_key_der)
-        return public_key
+        """Build the full verification URL with token."""
+        return f"{self._frontend_verify_url}?token={token}"

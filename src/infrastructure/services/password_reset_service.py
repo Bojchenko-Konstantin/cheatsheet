@@ -1,107 +1,71 @@
-import base64
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 import jwt
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import (
-    PrivateKeyTypes,
-    PublicKeyTypes,
-)
 
 from src.application.dto import PasswordResetTokenPayload
 from src.application.exceptions import (
     PasswordResetTokenExpiredError,
     PasswordResetTokenInvalidError,
 )
-from src.application.interfaces.services.password_reset_service import (
-    IPasswordResetService,
-)
+from src.application.interfaces.services import IPasswordResetService
+from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 
 class PasswordResetService(IPasswordResetService):
     """Stateless implementation of password reset service using JWT tokens."""
 
+    _TOKEN_TYPE = "password_reset"
+    _REQUIRED_CLAIMS = ["exp", "sub", "email", "type"]
+
     def __init__(
         self,
-        private_key: str,
-        public_key: str,
-        algorithm: str,
+        jwt_core: JWTCoreService,
         token_expires_in_minutes: int,
         frontend_reset_url: str,
     ):
-        self._private_key = private_key
-        self._public_key = public_key
-        self._algorithm = algorithm
+        self._jwt_core = jwt_core
         self._token_expires_in_minutes = token_expires_in_minutes
         self._frontend_reset_url = frontend_reset_url.rstrip("/")
 
     def generate_reset_token(self, user_id: UUID, email: str) -> str:
-        now = datetime.now(tz=timezone.utc)
-        expiration_time = now + timedelta(minutes=self._token_expires_in_minutes)
-
+        """Generate a stateless JWT token for password reset."""
         payload = {
             "sub": str(user_id),
             "email": email,
-            "type": "password_reset",  # Prevent access token use for password reset
-            "exp": expiration_time,
         }
 
-        private_key = self._get_appropriate_private_key_form()
-
         try:
-            token = jwt.encode(
+            return self._jwt_core.generate_token(
                 payload=payload,
-                key=private_key,  # type: ignore
-                algorithm=self._algorithm,
+                token_type=self._TOKEN_TYPE,
+                expires_in_minutes=self._token_expires_in_minutes,
             )
         except jwt.PyJWTError as e:
             raise PasswordResetTokenInvalidError from e
-        except Exception as e:
-            raise PasswordResetTokenInvalidError from e
-
-        return token
 
     def verify_reset_token(self, token: str) -> PasswordResetTokenPayload:
-        public_key = self._get_appropriate_public_key_form()
-
+        """Verify and decode a password reset token."""
         try:
-            payload = jwt.decode(
-                jwt=token,
-                key=public_key,  # type: ignore
-                algorithms=[self._algorithm],
-                options={"require": ["exp", "sub", "email", "type"]},
+            payload = self._jwt_core.verify_token(
+                token=token,
+                expected_type=self._TOKEN_TYPE,
+                required_claims=self._REQUIRED_CLAIMS,
             )
         except jwt.ExpiredSignatureError as e:
             raise PasswordResetTokenExpiredError from e
         except jwt.InvalidTokenError as e:
             raise PasswordResetTokenInvalidError from e
-        except Exception as e:
-            raise PasswordResetTokenInvalidError from e
 
-        if payload.get("type") != "password_reset":
-            raise PasswordResetTokenInvalidError
-
-        try:
-            user_id = UUID(payload["sub"])
-        except (ValueError, KeyError) as e:
-            raise PasswordResetTokenInvalidError from e
+        user_id = UUID(payload["sub"])
+        exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
 
         return PasswordResetTokenPayload(
             user_id=user_id,
             email=payload["email"],
-            exp=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+            exp=exp,
         )
 
     def get_reset_url(self, token: str) -> str:
+        """Build the full password reset URL with token."""
         return f"{self._frontend_reset_url}?token={token}"
-
-    def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:
-        private_key_der = base64.b64decode(self._private_key)
-        private_key = serialization.load_der_private_key(private_key_der, password=None)
-        return private_key
-
-    def _get_appropriate_public_key_form(self) -> PublicKeyTypes:
-        public_key_der = base64.b64decode(self._public_key)
-        public_key = serialization.load_der_public_key(public_key_der)
-        return public_key

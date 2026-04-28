@@ -13,7 +13,7 @@ class IEmailVerificationService(ABC):
         pass
 
     @abstractmethod
-    def verify_verification_token(self, token: str) -> EmailVerificationTokenPayload:
+    def verify_token(self, token: str) -> EmailVerificationTokenPayload:
         """Verify and decode an email verification token."""
         pass
 
