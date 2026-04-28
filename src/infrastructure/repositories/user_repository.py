@@ -3,11 +3,11 @@ from collections.abc import MutableMapping
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 from src.application.exceptions import (
     DuplicateUserError,
     UserCreationError,
@@ -87,6 +87,35 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User(**model.user)
         return user
 
+    async def get_by_email(self, email: str) -> PasswordResetData:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.email,
+            )
+        ).where(UserModel.email == email)
+        result = await self._session.execute(statement)
+        model = result.one_or_none()
+
+        if not model:
+            raise UserNotFoundError
+
+        user = PasswordResetData(**model.user)
+        return user
+
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        """Get user email by user ID."""
+        statement = select(UserModel.email).where(UserModel.user_id == user_id)
+        result = await self._session.execute(statement)
+        email = result.scalar_one_or_none()
+
+        if not email:
+            raise UserNotFoundError
+
+        return email
+
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         # TODO: add them to the user detail table
         social_network_id = create_data.pop("social_network_id")  # noqa: F841
@@ -109,3 +138,23 @@ class SQLAlchemyUserRepo(IUserRepo):
 
     async def update(self, update_data: dict[str, Any]):
         pass
+
+    async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.user_id == user_id)
+            .values(hashed_password=hashed_password)
+        )
+        result = await self._session.execute(stmt)
+
+        if result.rowcount == 0:
+            raise UserNotFoundError
+
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
+        """Mark user's email as verified in database."""
+        statement = (
+            update(UserModel)
+            .where(UserModel.user_id == user_id)
+            .values(is_verified=True)
+        )
+        await self._session.execute(statement)

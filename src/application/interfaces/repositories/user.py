@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 
 
 class IUserRepo(ABC):
@@ -17,9 +17,25 @@ class IUserRepo(ABC):
         pass
 
     @abstractmethod
+    async def get_by_email(self, email: str) -> PasswordResetData:
+        pass
+
+    @abstractmethod
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        pass
+
+    @abstractmethod
     async def create(self, create_data: dict[str, Any]) -> UserPayload:
         pass
 
     @abstractmethod
     async def update(self, update_data: dict[str, Any]):
+        pass
+
+    @abstractmethod
+    async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        pass
+
+    @abstractmethod
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
         pass

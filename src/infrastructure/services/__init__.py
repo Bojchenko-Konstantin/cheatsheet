@@ -3,9 +3,15 @@ __all__ = (
     "NotiSendNotificationService",
     "TokenService",
     "UserService",
+    "PasswordResetService",
+    "EmailVerificationService",
+    "JWTCoreService",
 )
 
 from .email_template_service import EmailTemplateService
+from .email_verification_service import EmailVerificationService
+from .jwt_core_service import JWTCoreService
 from .notification_service import NotiSendNotificationService
+from .password_reset_service import PasswordResetService
 from .token_service import TokenService
 from .user_service import UserService

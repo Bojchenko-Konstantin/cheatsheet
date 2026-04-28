@@ -4,12 +4,24 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
-from src.application.interfaces import ITokenService, IUnitOfWork, IUserService
+from src.application.interfaces import (
+    IEmailVerificationService,
+    IPasswordResetService,
+    ITokenService,
+    IUnitOfWork,
+    IUserService,
+)
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
-from src.infrastructure.services import TokenService, UserService
+from src.infrastructure.services import (
+    EmailVerificationService,
+    JWTCoreService,
+    PasswordResetService,
+    TokenService,
+    UserService,
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=True)
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
@@ -26,6 +38,14 @@ def get_cheatsheet_use_case(
     return CheatsheetUseCase(unit_of_work=unit_of_work)
 
 
+def get_jwt_core_service() -> JWTCoreService:
+    return JWTCoreService(
+        private_key=settings.jwt.private_key,
+        public_key=settings.jwt.public_key,
+        algorithm=settings.jwt.algorithm,
+    )
+
+
 def get_token_service() -> TokenService:
     return TokenService(
         private_key=settings.jwt.private_key,
@@ -40,11 +60,41 @@ def get_user_service() -> UserService:
     return UserService()
 
 
+def get_password_reset_service(
+    jwt_core: JWTCoreService = Depends(get_jwt_core_service),
+) -> IPasswordResetService:
+    return PasswordResetService(
+        jwt_core=jwt_core,
+        token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
+        frontend_reset_url=settings.password_reset.frontend_url,
+    )
+
+
+def get_email_verification_service(
+    jwt_core: JWTCoreService = Depends(get_jwt_core_service),
+) -> IEmailVerificationService:
+    return EmailVerificationService(
+        jwt_core=jwt_core,
+        token_expires_in_hours=settings.email_verification.token_expires_in_minutes,
+        frontend_verify_url=settings.email_verification.frontend_url,
+    )
+
+
 def get_auth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     user_service: IUserService = Depends(get_user_service),
+    password_reset_service: IPasswordResetService = Depends(get_password_reset_service),
+    email_verification_service: IEmailVerificationService = Depends(
+        get_email_verification_service
+    ),
 ) -> AuthUseCase:
-    return AuthUseCase(token_service, user_service)
+    return AuthUseCase(
+        token_service=token_service,
+        user_service=user_service,
+        password_reset_service=password_reset_service,
+        email_verification_service=email_verification_service,
+        token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
+    )
 
 
 async def get_current_user_required(

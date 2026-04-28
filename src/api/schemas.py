@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
 
+from src.application.exceptions import PasswordsNotMatchError
+
 type PositiveInt = Annotated[int, Field(ge=0)]
 type PositiveListInt = list[PositiveInt]
 type TagList = Annotated[PositiveListInt, Field(max_length=6)]
@@ -126,3 +128,51 @@ class LogoutRequest(Schema):
     user_id: UUID
     refresh_token: str
     fingerprint: str
+
+
+class PasswordResetRequest(Schema):
+    email: EmailStr
+
+
+class PasswordResetConfirm(Schema):
+    token: str
+    new_password: Annotated[str, Field(min_length=8, max_length=128)]
+    confirm_password: str
+
+    @model_validator(mode="after")
+    def check_passwords_match(self) -> Self:
+        if self.new_password != self.confirm_password:
+            raise PasswordsNotMatchError
+        return self
+
+
+class PasswordResetResponse(Schema):
+    message: str = "If the email exists, a password reset link has been sent."
+
+
+class PasswordUpdate(Schema):
+    old_password: str
+    new_password: Annotated[str, Field(min_length=8, max_length=128)]
+    confirm_password: str
+
+    @model_validator(mode="after")
+    def check_passwords_match(self) -> Self:
+        if self.new_password != self.confirm_password:
+            raise PasswordsNotMatchError
+        return self
+
+
+class PasswordUpdateResponse(Schema):
+    message: str = "Password has been successfully changed."
+
+
+class EmailVerificationConfirm(Schema):
+    token: str
+
+
+class EmailVerificationResponse(Schema):
+    message: str = "Email has been successfully verified."
+
+
+class EmailVerificationSendResponse(Schema):
+    message: str = "If the email is not verified, a verification link has been sent."

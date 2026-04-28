@@ -58,6 +58,16 @@ class BrokerConfig(BaseModel):
     password: str
 
 
+class PasswordResetConfig(BaseModel):
+    token_expires_in_minutes: int = 10
+    frontend_url: str = "http://localhost:3000/reset-password"
+
+
+class EmailVerificationConfig(BaseModel):
+    token_expires_in_minutes: int = 30
+    frontend_url: str = "http://localhost:3000/verify-email"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -69,6 +79,8 @@ class Settings(BaseSettings):
     jwt: JWTConfig
     notisend: NotiSendConfig
     broker: BrokerConfig
+    password_reset: PasswordResetConfig = PasswordResetConfig()
+    email_verification: EmailVerificationConfig = EmailVerificationConfig()
 
 
 settings = Settings()  # type: ignore

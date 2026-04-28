@@ -22,6 +22,15 @@ __all__ = (
     "UserNotFoundError",
     "NotificationException",
     "SendEmailError",
+    "PasswordResetTokenInvalidError",
+    "PasswordResetTokenExpiredError",
+    "PasswordResetException",
+    "WeakPasswordError",
+    "PasswordsNotMatchError",
+    "EmailVerificationTokenInvalidError",
+    "EmailVerificationTokenExpiredError",
+    "EmailVerificationException",
+    "EmailAlreadyVerifiedError",
 )
 
 from .access_token import (
@@ -37,7 +46,19 @@ from .cheatsheet import (
     CheatsheetNotFoundError,
     CheatsheetUpdateError,
 )
+from .email_verification import (
+    EmailAlreadyVerifiedError,
+    EmailVerificationException,
+    EmailVerificationTokenExpiredError,
+    EmailVerificationTokenInvalidError,
+)
 from .notification import NotificationException, SendEmailError
+from .password_reset import (
+    PasswordResetException,
+    PasswordResetTokenExpiredError,
+    PasswordResetTokenInvalidError,
+    WeakPasswordError,
+)
 from .refresh_token import (
     RefreshTokenBlacklistAddError,
     RefreshTokenCompromisedError,
@@ -48,6 +69,7 @@ from .refresh_token import (
 )
 from .user import (
     DuplicateUserError,
+    PasswordsNotMatchError,
     UserAuthenticationError,
     UserCreationError,
     UserException,

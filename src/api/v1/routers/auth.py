@@ -3,12 +3,31 @@ import logging
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import AuthUseCaseDep, OAuth2FormDep
-from src.api.schemas import LogoutRequest, TokenPair, TokenVerification, UserCreate
+from src.api.dependencies import AuthUseCaseDep, CurrentUserRequiredDep, OAuth2FormDep
+from src.api.schemas import (
+    EmailVerificationConfirm,
+    EmailVerificationResponse,
+    EmailVerificationSendResponse,
+    LogoutRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    PasswordResetResponse,
+    PasswordUpdate,
+    PasswordUpdateResponse,
+    TokenPair,
+    TokenVerification,
+    UserCreate,
+)
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
+    EmailAlreadyVerifiedError,
+    EmailVerificationTokenExpiredError,
+    EmailVerificationTokenInvalidError,
+    PasswordResetTokenExpiredError,
+    PasswordResetTokenInvalidError,
+    PasswordsNotMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     RefreshTokenRevokeError,
@@ -16,8 +35,15 @@ from src.application.exceptions import (
     UserCreationError,
     UserInactiveError,
     UserNotFoundError,
+    WeakPasswordError,
 )
-from src.infrastructure.background_tasks import send_welcome_email
+from src.core.config import settings
+from src.infrastructure.background_tasks import (
+    send_email_verification,
+    send_password_changed_email,
+    send_password_reset_email,
+    send_welcome_email,
+)
 
 router = APIRouter(tags=["Authentication"])
 
@@ -91,6 +117,18 @@ async def register(
                 await send_welcome_email.kiq(
                     email=email,
                     user_name=user_name,
+                )
+
+            with contextlib.suppress(Exception):
+                user = await auth_use_case.get_current_user(token_pair["access_token"])
+                verification_data = await auth_use_case.request_email_verification(
+                    user.user_id
+                )
+                await send_email_verification.kiq(
+                    email=verification_data["email"],
+                    user_name=verification_data["user_name"],
+                    verification_url=verification_data["verification_url"],
+                    expires_in_minutes=settings.email_verification.token_expires_in_minutes,
                 )
 
     except DuplicateUserError as e:
@@ -214,3 +252,185 @@ async def logout(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout due to a technical issue. Please try again later.",
         ) from e
+
+
+@router.put("/password", response_model=PasswordUpdateResponse)
+async def update_password(
+    password_data: PasswordUpdate,
+    current_user: CurrentUserRequiredDep,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Change password for authenticated user."""
+    try:
+        await auth_use_case.update_password(
+            user_id=current_user.user_id,
+            old_password=password_data.old_password,
+            new_password=password_data.new_password,
+        )
+    except PasswordsNotMatchError as e:
+        logger.exception(
+            "Password change failed for user %s: passwords do not match",
+            current_user.user_id,
+        )
+        raise HTTPException(status_code=400, detail="Passwords do not match.") from e
+    except UserAuthenticationError as e:
+        logger.exception(
+            "Password change failed for user %s: incorrect current password",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        ) from e
+    except WeakPasswordError as e:
+        logger.exception(
+            "Password change failed for user %s: weak new password",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    return PasswordUpdateResponse(message="Password has been successfully updated.")
+
+
+@router.post("/password-reset/request", response_model=PasswordResetResponse)
+async def request_password_reset(
+    request_data: PasswordResetRequest,
+    auth_use_case: AuthUseCaseDep,
+):
+    result = await auth_use_case.request_password_reset(request_data.email)
+
+    if result is not None:
+        with contextlib.suppress(Exception):
+            await send_password_reset_email.kiq(
+                email=result["email"],
+                user_name=result["user_name"],
+                reset_url=result["reset_url"],
+                expires_in_minutes=settings.password_reset.token_expires_in_minutes,
+            )
+
+    return PasswordResetResponse(message="Password has been successfully reset.")
+
+
+@router.post("/password-reset/confirm", response_model=PasswordResetResponse)
+async def confirm_password_reset(
+    confirm_data: PasswordResetConfirm,
+    auth_use_case: AuthUseCaseDep,
+):
+    try:
+        result = await auth_use_case.confirm_password_reset(
+            confirm_data.token,
+            confirm_data.new_password,
+        )
+
+        with contextlib.suppress(Exception):
+            await send_password_changed_email.kiq(
+                email=result["email"],
+                user_name=result["user_name"],
+            )
+    except PasswordsNotMatchError as e:
+        logger.exception("Password change failed: passwords do not match")
+        raise HTTPException(status_code=400, detail="Passwords do not match") from e
+    except PasswordResetTokenInvalidError as e:
+        logger.exception("Password reset attempt with invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid password reset token",
+        ) from e
+    except PasswordResetTokenExpiredError as e:
+        logger.exception("Password reset attempt with expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password reset token has expired. Please request a new one.",
+        ) from e
+    except WeakPasswordError as e:
+        logger.exception("Password change failed: weak new password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+    return PasswordResetResponse(message="Password has been successfully reset.")
+
+
+@router.post(
+    "/email-verification",
+    response_model=EmailVerificationSendResponse,
+)
+async def send_verification_email(
+    current_user: CurrentUserRequiredDep,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Send email verification email to currently authenticated user."""
+    try:
+        verification_data = await auth_use_case.request_email_verification(
+            current_user.user_id
+        )
+
+        with contextlib.suppress(Exception):
+            await send_email_verification.kiq(
+                email=verification_data["email"],
+                user_name=verification_data["user_name"],
+                verification_url=verification_data["verification_url"],
+                expires_in_minutes=settings.email_verification.token_expires_in_minutes,
+            )
+    except EmailAlreadyVerifiedError as e:
+        logger.debug(
+            "User %s attempted to verify already verified email",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already verified.",
+        ) from e
+    except Exception as e:
+        logger.exception(
+            "Failed to send verification email for user %s",
+            current_user.user_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email.",
+        ) from e
+
+    return EmailVerificationSendResponse(message="Verification email has been sent.")
+
+
+@router.post(
+    "/email-verification/confirm",
+    response_model=EmailVerificationResponse,
+)
+async def confirm_email_verification(
+    verification_request: EmailVerificationConfirm,
+    auth_use_case: AuthUseCaseDep,
+):
+    """Confirm email verification using verification token."""
+    try:
+        await auth_use_case.confirm_email_verification(verification_request.token)
+    except EmailVerificationTokenInvalidError as e:
+        logger.debug("Email verification attempt with invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification token.",
+        ) from e
+    except EmailVerificationTokenExpiredError as e:
+        logger.debug("Email verification attempt with expired token")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token has expired.",
+        ) from e
+    except EmailAlreadyVerifiedError as e:
+        logger.debug("Email verification attempt for already verified email")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already verified.",
+        ) from e
+    except Exception as e:
+        logger.exception("Unexpected error during email verification")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Email verification failed.",
+        ) from e
+
+    return EmailVerificationResponse(message="Email has been successfully verified.")

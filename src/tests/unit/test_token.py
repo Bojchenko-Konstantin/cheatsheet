@@ -44,6 +44,9 @@ class FakeTokenRepo(ITokenRepo):
     ) -> None:
         pass
 
+    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+        pass
+
 
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self):

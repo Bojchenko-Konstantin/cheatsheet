@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 
-from src.application.dto import User, UserPayload
+from src.application.dto import PasswordResetData, User, UserPayload
 from src.application.interfaces import (
     IUnitOfWork,
     IUserRepo,
@@ -43,6 +43,22 @@ class FakeUserRepo(IUserRepo):
         )
 
     async def update(self, update_data: dict[str, Any]) -> None:
+        pass
+
+    async def get_by_email(self, email: str) -> PasswordResetData:
+        return PasswordResetData(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+            user_name="test",
+            email=email,
+        )
+
+    async def get_email_by_id(self, user_id: UUID) -> str:
+        return "test@example.com"
+
+    async def update_password(self, user_id: UUID, hashed_password: str) -> None:
+        pass
+
+    async def mark_email_as_verified(self, user_id: UUID) -> None:
         pass
 
 

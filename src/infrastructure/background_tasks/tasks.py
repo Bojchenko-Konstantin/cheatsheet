@@ -2,7 +2,16 @@ from typing import Annotated
 
 from taskiq import Context, TaskiqDepends, async_shared_broker
 
-from src.application.dto import WelcomeEmailData
+from src.application.dto import (
+    EmailVerificationData,
+    PasswordResetEmailData,
+    WelcomeEmailData,
+)
+from src.infrastructure.background_tasks.broker import BROKER
+from src.infrastructure.services import (
+    EmailTemplateService,
+    NotiSendNotificationService,
+)
 
 
 @async_shared_broker.task(retry_on_error=True)
@@ -22,3 +31,61 @@ async def send_welcome_email(
         user_name=user_name,
     )
     await notification_use_case.send_welcome_email(welcome_data)
+
+
+@BROKER.task(retry_on_error=True)
+async def send_password_reset_email(
+    email: str, user_name: str, reset_url: str, expires_in_minutes: int
+) -> None:
+    """Send password reset email with token link. Failure allows user to retry."""
+    email_template_service = EmailTemplateService()
+    notification_service = NotiSendNotificationService()
+
+    email_data = PasswordResetEmailData(
+        email=email,
+        user_name=user_name,
+        reset_url=reset_url,
+    )
+
+    email_message = email_template_service.generate_password_reset_email(
+        email_data,
+        expires_in_minutes=expires_in_minutes,
+    )
+
+    await notification_service.send_email(email_message)
+
+
+@BROKER.task(retry_on_error=True)
+async def send_password_changed_email(email: str, user_name: str) -> None:
+    """Send password changed confirmation email."""
+    email_template_service = EmailTemplateService()
+    notification_service = NotiSendNotificationService()
+
+    email_message = email_template_service.generate_password_changed_email(
+        email=email,
+        user_name=user_name,
+    )
+
+    await notification_service.send_email(email_message)
+
+
+@BROKER.task(retry_on_error=True)
+async def send_email_verification(
+    email: str, user_name: str, verification_url: str, expires_in_minutes: int
+) -> None:
+    """Send email verification email with token link."""
+    email_template_service = EmailTemplateService()
+    notification_service = NotiSendNotificationService()
+
+    email_data = EmailVerificationData(
+        email=email,
+        user_name=user_name,
+        verification_url=verification_url,
+    )
+
+    email_message = email_template_service.generate_email_verification(
+        email_data,
+        expires_in_minutes=expires_in_minutes,
+    )
+
+    await notification_service.send_email(email_message)
