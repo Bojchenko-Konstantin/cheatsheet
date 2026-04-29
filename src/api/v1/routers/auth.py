@@ -114,7 +114,7 @@ async def register(
 
         if email:
             with contextlib.suppress(Exception):
-                await send_welcome_email.kiq(
+                await send_welcome_email.kiq(  # type: ignore[call-overload]
                     email=email,
                     user_name=user_name,
                 )
