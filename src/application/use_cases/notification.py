@@ -1,4 +1,8 @@
-from src.application.dto import WelcomeEmailData
+from src.application.dto import (
+    EmailVerificationData,
+    PasswordResetEmailData,
+    WelcomeEmailData,
+)
 from src.application.interfaces.services import (
     IEmailTemplateService,
     INotificationService,
@@ -19,4 +23,31 @@ class NotificationUseCase:
     async def send_welcome_email(self, data: WelcomeEmailData) -> None:
         """Send welcome email to newly registered user."""
         email_message = self._template_service.generate_welcome_email(data)
+        await self._notification_service.send_email(email_message)
+
+    async def send_password_reset_email(
+        self, data: PasswordResetEmailData, expires_in_minutes: int
+    ) -> None:
+        """Send password reset email with token link."""
+        email_message = self._template_service.generate_password_reset_email(
+            data, expires_in_minutes
+        )
+        await self._notification_service.send_email(email_message)
+
+    async def send_password_changed_email(
+        self, email: str, user_name: str, display_name: str | None = None
+    ) -> None:
+        """Send confirmation email after successful password change."""
+        email_message = self._template_service.generate_password_changed_email(
+            email, user_name, display_name
+        )
+        await self._notification_service.send_email(email_message)
+
+    async def send_email_verification(
+        self, data: EmailVerificationData, expires_in_minutes: int
+    ) -> None:
+        """Send email verification message with token link."""
+        email_message = self._template_service.generate_email_verification(
+            data, expires_in_minutes
+        )
         await self._notification_service.send_email(email_message)
