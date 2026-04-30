@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from src.domain.entities import Cheatsheet, Tag
+from src.domain.entities import Cheatsheet, CheatsheetStats, Tag
 
 
 def test_cheatsheet_partial_update_was_successful():
@@ -14,15 +14,14 @@ def test_cheatsheet_partial_update_was_successful():
         tags={Tag(1, "Python"), Tag(2, "Testing")},
         created_at=datetime.now(),
         updated_at=datetime.now(),
-        count_like=5,
-        count_view=10,
+        stats=CheatsheetStats(count_like=5, count_view=10),
     )
 
     update_fields = {
         "title": "Updated Title",
         "content": "Updated Content",
         "is_public": False,
-        "tags": [{"tag_id": 3, "tag_name": "Algorithms"}],
+        "tags": {Tag(3, "Algorithms")},
     }
 
     expected_result = Cheatsheet(
@@ -34,11 +33,10 @@ def test_cheatsheet_partial_update_was_successful():
         tags={Tag(3, "Algorithms")},
         created_at=original_cheatsheet.created_at,
         updated_at=original_cheatsheet.updated_at,
-        count_like=original_cheatsheet.count_like,
-        count_view=original_cheatsheet.count_view,
+        stats=CheatsheetStats(count_like=5, count_view=10),
     )
 
-    updated_cheatsheet = original_cheatsheet.update(update_fields)
+    updated_cheatsheet = original_cheatsheet.update(**update_fields)
 
     assert updated_cheatsheet == expected_result
 
@@ -63,7 +61,18 @@ def test_cheatsheet_creation_from_dict_was_successful():
     }
 
     expected_result = Cheatsheet(
-        **{**test_data, "tags": {Tag(**tag) for tag in raw_tags_data}}
+        cheatsheet_id=test_data["cheatsheet_id"],
+        user_id=test_data["user_id"],
+        title=test_data["title"],
+        content=test_data["content"],
+        is_public=test_data["is_public"],
+        tags={Tag(**tag) for tag in raw_tags_data},
+        created_at=test_data["created_at"],
+        updated_at=test_data["updated_at"],
+        stats=CheatsheetStats(
+            count_like=test_data["count_like"],
+            count_view=test_data["count_view"],
+        ),
     )
 
     created_cheatsheet = Cheatsheet.from_dict(test_data)
