@@ -11,11 +11,11 @@ from src.api.dependencies import (
 )
 from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
 from src.application.exceptions import (
-    CheatsheetAccessDeniedError,
     CheatsheetCreationError,
     CheatsheetNotFoundError,
     CheatsheetUpdateError,
 )
+from src.domain.exceptions import CheatsheetAccessDeniedError
 
 router = APIRouter(prefix="/cheatsheets", tags=["Cheatsheets"])
 

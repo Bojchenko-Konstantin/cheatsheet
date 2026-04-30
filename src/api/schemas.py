@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Self
+from typing import Annotated, Any, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
@@ -45,6 +45,30 @@ class CheatsheetRead(Schema):
     tags: list[Tag]
     count_like: PositiveInt
     count_view: PositiveInt
+
+    @model_validator(mode="before")
+    @classmethod
+    def flatten_stats(cls, data: Any) -> Any:
+        """Flatten CheatsheetStats into top-level count_like/count_view fields."""
+        if isinstance(data, dict):
+            stats = data.pop("stats", {})
+            if isinstance(stats, dict):
+                data["count_like"] = stats.get("count_like", 0)
+                data["count_view"] = stats.get("count_view", 0)
+            data.pop("user_id", None)
+        elif hasattr(data, "stats"):
+            data = {
+                "cheatsheet_id": data.cheatsheet_id,
+                "title": data.title,
+                "content": data.content,
+                "created_at": data.created_at,
+                "updated_at": data.updated_at,
+                "is_public": data.is_public,
+                "tags": data.tags,
+                "count_like": data.stats.count_like,
+                "count_view": data.stats.count_view,
+            }
+        return data
 
     @model_validator(mode="after")
     def sort_tags(self) -> Self:
