@@ -18,6 +18,7 @@ from src.api.schemas import (
     TokenVerification,
     UserCreate,
 )
+from src.application.dto.email import EmailVerificationData, PasswordResetEmailData
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
@@ -124,10 +125,13 @@ async def register(
                 verification_data = await auth_use_case.request_email_verification(
                     user.user_id
                 )
-                await send_email_verification.kiq(
+                email_data = EmailVerificationData(
                     email=verification_data["email"],
                     user_name=verification_data["user_name"],
                     verification_url=verification_data["verification_url"],
+                )
+                await send_email_verification.kiq(
+                    email_data,
                     expires_in_minutes=settings.email_verification.token_expires_in_minutes,
                 )
 
@@ -303,10 +307,13 @@ async def request_password_reset(
 
     if result is not None:
         with contextlib.suppress(Exception):
-            await send_password_reset_email.kiq(
+            email_data = PasswordResetEmailData(
                 email=result["email"],
                 user_name=result["user_name"],
                 reset_url=result["reset_url"],
+            )
+            await send_password_reset_email.kiq(
+                email_data,
                 expires_in_minutes=settings.password_reset.token_expires_in_minutes,
             )
 
@@ -369,10 +376,13 @@ async def send_verification_email(
         )
 
         with contextlib.suppress(Exception):
-            await send_email_verification.kiq(
+            email_data = EmailVerificationData(
                 email=verification_data["email"],
                 user_name=verification_data["user_name"],
                 verification_url=verification_data["verification_url"],
+            )
+            await send_email_verification.kiq(
+                email_data,
                 expires_in_minutes=settings.email_verification.token_expires_in_minutes,
             )
     except EmailAlreadyVerifiedError as e:

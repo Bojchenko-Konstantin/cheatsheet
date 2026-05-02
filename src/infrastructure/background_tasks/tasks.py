@@ -36,16 +36,11 @@ async def send_welcome_email(
 
 @BROKER.task(retry_on_error=True)
 async def send_password_reset_email(
-    email: str, user_name: str, reset_url: str, expires_in_minutes: int
+    email_data: PasswordResetEmailData, expires_in_minutes: int
 ) -> None:
     """Send password reset email with token link. Failure allows user to retry."""
     notification_use_case = _build_notification_use_case()
 
-    email_data = PasswordResetEmailData(
-        email=email,
-        user_name=user_name,
-        reset_url=reset_url,
-    )
     await notification_use_case.send_password_reset_email(
         email_data, expires_in_minutes
     )
@@ -60,16 +55,11 @@ async def send_password_changed_email(email: str, user_name: str) -> None:
 
 @BROKER.task(retry_on_error=True)
 async def send_email_verification(
-    email: str, user_name: str, verification_url: str, expires_in_minutes: int
+    email_data: EmailVerificationData, expires_in_minutes: int
 ) -> None:
     """Send email verification email with token link."""
     notification_use_case = _build_notification_use_case()
 
-    email_data = EmailVerificationData(
-        email=email,
-        user_name=user_name,
-        verification_url=verification_url,
-    )
     await notification_use_case.send_email_verification(email_data, expires_in_minutes)
 
 
