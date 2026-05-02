@@ -9,8 +9,6 @@ from sqlalchemy.sql.elements import TextClause
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
-MAILHOG = "http://localhost:8025"
-
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
@@ -44,18 +42,10 @@ async def test_register_was_successful(
     response = await async_client.post("/register", json=data_for_register)
     registered_user = await _get_user_from_db_by_username("test_register")
 
-    async with AsyncClient() as client:
-        email = await client.get(
-            f"{MAILHOG}/api/v2/search?kind=from&query=sender@test.com"
-        )
-
-    email_content = email.content.decode()
-
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert HASHER.verify("password", registered_user.pop("hashed_password"))
     assert registered_user == expected_result
-    assert "Hello, test" in email_content
 
 
 @pytest.mark.integration

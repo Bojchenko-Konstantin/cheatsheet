@@ -38,8 +38,16 @@ class FakeNotificationUseCase:
         with SMTP(host="localhost", port=1025) as client:
             client.sendmail(
                 from_addr="sender@test.com",
-                to_addrs="user@example.com",
+                to_addrs="test-email@example.com",
                 msg="Hello, test",
+            )
+
+    async def send_email_verification(self, data: Any) -> None:
+        with SMTP(host="localhost", port=1025) as client:
+            client.sendmail(
+                from_addr="sender@test.com",
+                to_addrs="test-email@example.com",
+                msg="Test email verification",
             )
 
 
