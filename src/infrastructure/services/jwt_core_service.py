@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 
 
 class JWTCoreService:
-    """Low-level JWT operations: encode, decode, key loading."""
+    """Handles generate and verify JWT operations."""
 
     def __init__(
         self,
@@ -46,8 +46,6 @@ class JWTCoreService:
                 key=private_key,  # type: ignore
                 algorithm=self._algorithm,
             )
-        except jwt.PyJWTError:
-            raise
         except Exception as e:
             raise jwt.PyJWTError from e
 
@@ -70,8 +68,6 @@ class JWTCoreService:
                 options={"require": required_claims},
             )
         except jwt.ExpiredSignatureError:
-            raise
-        except jwt.InvalidTokenError:
             raise
         except Exception as e:
             raise jwt.InvalidTokenError from e

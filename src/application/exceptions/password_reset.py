@@ -5,11 +5,11 @@ class PasswordResetException(ApplicationException):
     """Base exception for password reset errors."""
 
 
-class PasswordResetTokenInvalidError(PasswordResetException):
+class InvalidPasswordResetTokenError(PasswordResetException):
     """Raised when password reset token is invalid or malformed."""
 
 
-class PasswordResetTokenExpiredError(PasswordResetException):
+class ExpiredPasswordResetTokenError(PasswordResetException):
     """Raised when password reset token has expired."""
 
 

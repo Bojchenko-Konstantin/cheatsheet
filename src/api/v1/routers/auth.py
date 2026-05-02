@@ -18,26 +18,26 @@ from src.api.schemas import (
     TokenVerification,
     UserCreate,
 )
+from src.application.dto.email import EmailVerificationData, PasswordResetEmailData
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
     DuplicateUserError,
     EmailAlreadyVerifiedError,
-    EmailVerificationTokenExpiredError,
-    EmailVerificationTokenInvalidError,
-    PasswordResetTokenExpiredError,
-    PasswordResetTokenInvalidError,
+    ExpiredEmailVerificationTokenError,
+    ExpiredPasswordResetTokenError,
+    InvalidEmailVerificationTokenError,
+    InvalidPasswordResetTokenError,
     PasswordsNotMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
-    RefreshTokenRevokeError,
+    RevokeRefreshTokenError,
     UserAuthenticationError,
     UserCreationError,
     UserInactiveError,
     UserNotFoundError,
     WeakPasswordError,
 )
-from src.core.config import settings
 from src.infrastructure.background_tasks import (
     send_email_verification,
     send_password_changed_email,
@@ -124,12 +124,12 @@ async def register(
                 verification_data = await auth_use_case.request_email_verification(
                     user.user_id
                 )
-                await send_email_verification.kiq(
+                email_data = EmailVerificationData(
                     email=verification_data["email"],
                     user_name=verification_data["user_name"],
                     verification_url=verification_data["verification_url"],
-                    expires_in_minutes=settings.email_verification.token_expires_in_minutes,
                 )
+                await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
 
     except DuplicateUserError as e:
         logger.debug(
@@ -242,7 +242,7 @@ async def logout(
             "Refresh token not found for user %s during logout", logout_request.user_id
         )
         return None
-    except RefreshTokenRevokeError as e:
+    except RevokeRefreshTokenError as e:
         logger.exception(
             "Failed to revoke refresh token for user %s: %s",
             logout_request.user_id,
@@ -303,12 +303,12 @@ async def request_password_reset(
 
     if result is not None:
         with contextlib.suppress(Exception):
-            await send_password_reset_email.kiq(
+            email_data = PasswordResetEmailData(
                 email=result["email"],
                 user_name=result["user_name"],
                 reset_url=result["reset_url"],
-                expires_in_minutes=settings.password_reset.token_expires_in_minutes,
             )
+            await send_password_reset_email.kiq(email_data)  # type: ignore[call-overload]
 
     return PasswordResetResponse(message="Password has been successfully reset.")
 
@@ -325,20 +325,20 @@ async def confirm_password_reset(
         )
 
         with contextlib.suppress(Exception):
-            await send_password_changed_email.kiq(
+            await send_password_changed_email.kiq(  # type: ignore[call-overload]
                 email=result["email"],
                 user_name=result["user_name"],
             )
     except PasswordsNotMatchError as e:
         logger.exception("Password change failed: passwords do not match")
         raise HTTPException(status_code=400, detail="Passwords do not match") from e
-    except PasswordResetTokenInvalidError as e:
+    except InvalidPasswordResetTokenError as e:
         logger.exception("Password reset attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid password reset token",
         ) from e
-    except PasswordResetTokenExpiredError as e:
+    except ExpiredPasswordResetTokenError as e:
         logger.exception("Password reset attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -369,12 +369,12 @@ async def send_verification_email(
         )
 
         with contextlib.suppress(Exception):
-            await send_email_verification.kiq(
+            email_data = EmailVerificationData(
                 email=verification_data["email"],
                 user_name=verification_data["user_name"],
                 verification_url=verification_data["verification_url"],
-                expires_in_minutes=settings.email_verification.token_expires_in_minutes,
             )
+            await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
     except EmailAlreadyVerifiedError as e:
         logger.debug(
             "User %s attempted to verify already verified email",
@@ -408,13 +408,13 @@ async def confirm_email_verification(
     """Confirm email verification using verification token."""
     try:
         await auth_use_case.confirm_email_verification(verification_request.token)
-    except EmailVerificationTokenInvalidError as e:
+    except InvalidEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification token.",
         ) from e
-    except EmailVerificationTokenExpiredError as e:
+    except ExpiredEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

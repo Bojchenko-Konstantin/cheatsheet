@@ -8,10 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto import RefreshTokenRecord, TokenStatus
 from src.application.exceptions import (
-    RefreshTokenBlacklistAddError,
-    RefreshTokenCompromisedMarkError,
+    AddRefreshTokenToBlacklistError,
+    MarkRefreshTokenAsCompromisedError,
     RefreshTokenNotFoundError,
-    RefreshTokenRevokeError,
+    RevokeRefreshTokenError,
 )
 from src.application.interfaces.repositories import ITokenRepo
 from src.infrastructure.database.models import (
@@ -128,7 +128,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             )
             self._session.add(blacklisted_model)
         except IntegrityError as e:
-            raise RefreshTokenRevokeError from e
+            raise RevokeRefreshTokenError from e
         except RefreshTokenNotFoundError:
             raise
 
@@ -190,7 +190,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
                 self._session.add_all(blacklisted_models)
         except Exception as e:
             logger.error("Failed to move refresh token to blacklist")
-            raise RefreshTokenBlacklistAddError from e
+            raise AddRefreshTokenToBlacklistError from e
 
     async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
         time_revealed = datetime.now(timezone.utc)
@@ -254,4 +254,4 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             await self._session.execute(update_statement)
         except Exception as e:
             logger.error("Failed to mark tokens as compromised")
-            raise RefreshTokenCompromisedMarkError from e
+            raise MarkRefreshTokenAsCompromisedError from e

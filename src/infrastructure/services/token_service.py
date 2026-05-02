@@ -18,7 +18,7 @@ from src.application.exceptions import (
     AccessTokenGenerationError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
-    RefreshTokenRevokeError,
+    RevokeRefreshTokenError,
     UserNotFoundError,
 )
 from src.application.interfaces import ITokenService, IUnitOfWork
@@ -124,10 +124,10 @@ class TokenService(ITokenService):
                     fingerprint=fingerprint,
                     hashed_token=token_record.hashed_token,
                 )
-        except RefreshTokenRevokeError:
+        except RevokeRefreshTokenError:
             raise
         except Exception as e:
-            raise RefreshTokenRevokeError from e
+            raise RevokeRefreshTokenError from e
 
     async def revoke_all_user_tokens(self, user_id: UUID) -> None:
         async with self._unit_of_work as uow:
