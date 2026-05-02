@@ -38,7 +38,6 @@ from src.application.exceptions import (
     UserNotFoundError,
     WeakPasswordError,
 )
-from src.core.config import settings
 from src.infrastructure.background_tasks import (
     send_email_verification,
     send_password_changed_email,
@@ -132,7 +131,6 @@ async def register(
                 )
                 await send_email_verification.kiq(
                     email_data,
-                    expires_in_minutes=settings.email_verification.token_expires_in_minutes,
                 )
 
     except DuplicateUserError as e:
@@ -312,10 +310,7 @@ async def request_password_reset(
                 user_name=result["user_name"],
                 reset_url=result["reset_url"],
             )
-            await send_password_reset_email.kiq(
-                email_data,
-                expires_in_minutes=settings.password_reset.token_expires_in_minutes,
-            )
+            await send_password_reset_email.kiq(email_data)
 
     return PasswordResetResponse(message="Password has been successfully reset.")
 
@@ -381,10 +376,7 @@ async def send_verification_email(
                 user_name=verification_data["user_name"],
                 verification_url=verification_data["verification_url"],
             )
-            await send_email_verification.kiq(
-                email_data,
-                expires_in_minutes=settings.email_verification.token_expires_in_minutes,
-            )
+            await send_email_verification.kiq(email_data)
     except EmailAlreadyVerifiedError as e:
         logger.debug(
             "User %s attempted to verify already verified email",

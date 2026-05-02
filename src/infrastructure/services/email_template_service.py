@@ -27,6 +27,9 @@ class EmailTemplateService(IEmailTemplateService):
     def __init__(self) -> None:
         self._app_name = "Cheatsheet App"
         self._support_email = settings.notisend.from_email
+        self._expires_in_minutes = (
+            settings.email_verification.token_expires_in_minutes,
+        )
 
     def generate_welcome_email(self, data: WelcomeEmailData) -> EmailMessage:
         """Create welcome email for new users."""
@@ -46,7 +49,7 @@ class EmailTemplateService(IEmailTemplateService):
         )
 
     def generate_password_reset_email(
-        self, data: PasswordResetEmailData, expires_in_minutes: int
+        self, data: PasswordResetEmailData
     ) -> EmailMessage:
         """Create password reset email."""
         display_name = data.get_display_name()
@@ -54,7 +57,7 @@ class EmailTemplateService(IEmailTemplateService):
         text = PASSWORD_RESET_EMAIL_TEMPLATE.format(
             display_name=display_name,
             reset_url=data.reset_url,
-            expires_in_minutes=expires_in_minutes,
+            expires_in_minutes=self._expires_in_minutes,
             support_email=self._support_email,
         )
 
@@ -86,16 +89,14 @@ class EmailTemplateService(IEmailTemplateService):
             email_type=EmailType.PASSWORD_CHANGED,
         )
 
-    def generate_email_verification(
-        self, data: EmailVerificationData, expires_in_minutes: int
-    ) -> EmailMessage:
+    def generate_email_verification(self, data: EmailVerificationData) -> EmailMessage:
         """Create email verification message with token link."""
         display_name = data.get_display_name()
 
         text = EMAIL_VERIFICATION_TEMPLATE.format(
             display_name=display_name,
             verification_url=data.verification_url,
-            expires_in_minutes=expires_in_minutes,
+            expires_in_minutes=self._expires_in_minutes,
             support_email=self._support_email,
         )
 

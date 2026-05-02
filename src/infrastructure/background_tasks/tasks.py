@@ -7,12 +7,6 @@ from src.application.dto import (
     PasswordResetEmailData,
     WelcomeEmailData,
 )
-from src.application.use_cases import NotificationUseCase
-from src.infrastructure.background_tasks.broker import BROKER
-from src.infrastructure.services import (
-    EmailTemplateService,
-    NotiSendNotificationService,
-)
 
 
 @async_shared_broker.task(retry_on_error=True)
@@ -34,37 +28,32 @@ async def send_welcome_email(
     await notification_use_case.send_welcome_email(welcome_data)
 
 
-@BROKER.task(retry_on_error=True)
+@async_shared_broker.task(retry_on_error=True)
 async def send_password_reset_email(
-    email_data: PasswordResetEmailData, expires_in_minutes: int
+    email_data: PasswordResetEmailData,
+    context: Annotated[Context, TaskiqDepends()],
 ) -> None:
     """Send password reset email with token link. Failure allows user to retry."""
-    notification_use_case = _build_notification_use_case()
-
-    await notification_use_case.send_password_reset_email(
-        email_data, expires_in_minutes
-    )
+    notification_use_case = context.state.notification_use_case
+    await notification_use_case.send_password_reset_email(email_data)
 
 
-@BROKER.task(retry_on_error=True)
-async def send_password_changed_email(email: str, user_name: str) -> None:
+@async_shared_broker.task(retry_on_error=True)
+async def send_password_changed_email(
+    email: str,
+    user_name: str,
+    context: Annotated[Context, TaskiqDepends()],
+) -> None:
     """Send password changed confirmation email."""
-    notification_use_case = _build_notification_use_case()
+    notification_use_case = context.state.notification_use_case
     await notification_use_case.send_password_changed_email(email, user_name)
 
 
-@BROKER.task(retry_on_error=True)
+@async_shared_broker.task(retry_on_error=True)
 async def send_email_verification(
-    email_data: EmailVerificationData, expires_in_minutes: int
+    email_data: EmailVerificationData,
+    context: Annotated[Context, TaskiqDepends()],
 ) -> None:
     """Send email verification email with token link."""
-    notification_use_case = _build_notification_use_case()
-
-    await notification_use_case.send_email_verification(email_data, expires_in_minutes)
-
-
-def _build_notification_use_case() -> NotificationUseCase:
-    """Factory for NotificationUseCase with production dependencies."""
-    notification_service = NotiSendNotificationService()
-    email_template_service = EmailTemplateService()
-    return NotificationUseCase(notification_service, email_template_service)
+    notification_use_case = context.state.notification_use_case
+    await notification_use_case.send_email_verification(email_data)

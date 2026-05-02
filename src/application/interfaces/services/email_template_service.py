@@ -18,7 +18,7 @@ class IEmailTemplateService(ABC):
 
     @abstractmethod
     def generate_password_reset_email(
-        self, data: PasswordResetEmailData, expires_in_minutes: int
+        self, data: PasswordResetEmailData
     ) -> EmailMessage:
         """Generate password reset email with token link."""
         pass
@@ -30,8 +30,6 @@ class IEmailTemplateService(ABC):
         """Generate confirmation email after successful password reset."""
 
     @abstractmethod
-    def generate_email_verification(
-        self, data: EmailVerificationData, expires_in_minutes: int
-    ) -> EmailMessage:
+    def generate_email_verification(self, data: EmailVerificationData) -> EmailMessage:
         """Generate email verification message with token link."""
         pass
