@@ -25,8 +25,8 @@ from src.application.exceptions import (
     EmailAlreadyVerifiedError,
     EmailVerificationTokenExpiredError,
     EmailVerificationTokenInvalidError,
-    PasswordResetTokenExpiredError,
-    PasswordResetTokenInvalidError,
+    ExpiredPasswordResetTokenError,
+    InvalidPasswordResetTokenError,
     PasswordsNotMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
@@ -332,13 +332,13 @@ async def confirm_password_reset(
     except PasswordsNotMatchError as e:
         logger.exception("Password change failed: passwords do not match")
         raise HTTPException(status_code=400, detail="Passwords do not match") from e
-    except PasswordResetTokenInvalidError as e:
+    except InvalidPasswordResetTokenError as e:
         logger.exception("Password reset attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid password reset token",
         ) from e
-    except PasswordResetTokenExpiredError as e:
+    except ExpiredPasswordResetTokenError as e:
         logger.exception("Password reset attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -3,11 +3,11 @@ from uuid import UUID
 
 import jwt
 
-from src.application.dto import PasswordResetTokenPayload
-from src.application.exceptions import (
-    PasswordResetTokenExpiredError,
-    PasswordResetTokenInvalidError,
+from application.exceptions import (
+    ExpiredPasswordResetTokenError,
+    InvalidPasswordResetTokenError,
 )
+from src.application.dto import PasswordResetTokenPayload
 from src.application.interfaces.services import IPasswordResetService
 from src.infrastructure.services.jwt_core_service import JWTCoreService
 
@@ -42,7 +42,7 @@ class PasswordResetService(IPasswordResetService):
                 expires_in_minutes=self._token_expires_in_minutes,
             )
         except jwt.PyJWTError as e:
-            raise PasswordResetTokenInvalidError from e
+            raise InvalidPasswordResetTokenError from e
 
     def verify_reset_token(self, token: str) -> PasswordResetTokenPayload:
         """Verify and decode a password reset token."""
@@ -53,9 +53,9 @@ class PasswordResetService(IPasswordResetService):
                 required_claims=self._REQUIRED_CLAIMS,
             )
         except jwt.ExpiredSignatureError as e:
-            raise PasswordResetTokenExpiredError from e
+            raise ExpiredPasswordResetTokenError from e
         except jwt.InvalidTokenError as e:
-            raise PasswordResetTokenInvalidError from e
+            raise InvalidPasswordResetTokenError from e
 
         user_id = UUID(payload["sub"])
         exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)

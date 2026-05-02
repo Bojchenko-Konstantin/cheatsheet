@@ -22,8 +22,8 @@ __all__ = (
     "UserNotFoundError",
     "NotificationException",
     "SendEmailError",
-    "PasswordResetTokenInvalidError",
-    "PasswordResetTokenExpiredError",
+    "InvalidPasswordResetTokenError",
+    "ExpiredPasswordResetTokenError",
     "PasswordResetException",
     "WeakPasswordError",
     "PasswordsNotMatchError",
@@ -54,9 +54,9 @@ from .email_verification import (
 )
 from .notification import NotificationException, SendEmailError
 from .password_reset import (
+    ExpiredPasswordResetTokenError,
+    InvalidPasswordResetTokenError,
     PasswordResetException,
-    PasswordResetTokenExpiredError,
-    PasswordResetTokenInvalidError,
     WeakPasswordError,
 )
 from .refresh_token import (
