@@ -42,8 +42,6 @@ class EmailVerificationService(IEmailVerificationService):
                 token_type=self._TOKEN_TYPE,
                 expires_in_minutes=self._token_expires_in_hours * 60,
             )
-        except jwt.PyJWTError as e:
-            raise EmailVerificationTokenInvalidError from e
         except Exception as e:
             raise EmailVerificationTokenInvalidError from e
 
@@ -59,8 +57,6 @@ class EmailVerificationService(IEmailVerificationService):
             )
         except jwt.ExpiredSignatureError as e:
             raise EmailVerificationTokenExpiredError from e
-        except jwt.InvalidTokenError as e:
-            raise EmailVerificationTokenInvalidError from e
         except Exception as e:
             raise EmailVerificationTokenInvalidError from e
 
