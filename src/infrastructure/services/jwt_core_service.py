@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 
 
 class JWTCoreService:
-    """Low-level JWT operations: encode, decode, key loading."""
+    """Handles generate and verify JWT operations."""
 
     def __init__(
         self,
