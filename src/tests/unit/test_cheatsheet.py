@@ -6,7 +6,7 @@ import pytest
 
 from application.interfaces import ICheatsheetRepo, IUnitOfWork
 from application.use_cases import CheatsheetUseCase
-from domain.entities import Cheatsheet, Tag
+from domain.entities import Cheatsheet, CheatsheetStats, Tag
 
 
 class FakeCheatsheetRepo(ICheatsheetRepo):
@@ -20,8 +20,7 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
             updated_at=datetime(2025, 1, 1),
             is_public=True,
             tags={Tag(1, "Tag_1")},
-            count_like=10,
-            count_view=10,
+            stats=CheatsheetStats(count_like=10, count_view=10),
         )
 
     async def create(self, create_data: dict[str, Any]) -> Cheatsheet:
@@ -74,8 +73,7 @@ async def test_get_cheatsheet_by_id_was_successful():
         updated_at=datetime(2025, 1, 1),
         is_public=True,
         tags={Tag(1, "Tag_1")},
-        count_like=10,
-        count_view=10,
+        stats=CheatsheetStats(count_like=10, count_view=10),
     )
 
     cheatsheet = await sut.get_by_id(existing_id)
@@ -111,8 +109,7 @@ async def test_create_cheatsheet_was_successful():
         content="content",
         is_public=True,
         tags={Tag(1, "Python"), Tag(2, "Testing")},
-        count_like=0,
-        count_view=0,
+        stats=CheatsheetStats(count_like=0, count_view=0),
         **generated_fields,
     )
 
@@ -137,8 +134,7 @@ async def test_cheatsheet_was_updated_and_timestamps_preserved():
         tags={Tag(3, "Updated_Tag"), Tag(4, "New_Tag")},
         created_at=datetime(2025, 1, 1),
         updated_at=datetime(2025, 1, 2),
-        count_like=0,
-        count_view=0,
+        stats=CheatsheetStats(count_like=0, count_view=0),
     )
 
     update_data = dict(
@@ -173,8 +169,7 @@ async def test_tag_conversion_from_dict_to_objects_was_successful():
         tags={Tag(1, "Python"), Tag(2, "Testing")},
         created_at=datetime(2025, 1, 1),
         updated_at=datetime(2025, 1, 2),
-        count_like=0,
-        count_view=0,
+        stats=CheatsheetStats(count_like=0, count_view=0),
     )
 
     update_data = dict(

@@ -2,20 +2,16 @@ from src.application.exceptions.base import ApplicationException
 
 
 class CheatsheetException(ApplicationException):
-    """Base exception class for cheatsheet-related errors."""
+    """Base exception for cheatsheet infrastructure errors."""
 
 
 class CheatsheetNotFoundError(CheatsheetException):
-    """Raised when cheatsheet is not found by its ID."""
+    """Raised when a cheatsheet is not found in storage."""
 
 
 class CheatsheetCreationError(CheatsheetException):
-    """Raised when cheatsheet creation fails."""
+    """Raised when persisting a new cheatsheet fails."""
 
 
 class CheatsheetUpdateError(CheatsheetException):
-    """Raised when cheatsheet update fails."""
-
-
-class CheatsheetAccessDeniedError(CheatsheetException):
-    """Raised when user does not have permission to access a cheatsheet."""
+    """Raised when persisting an update fails."""

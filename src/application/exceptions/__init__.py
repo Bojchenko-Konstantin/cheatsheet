@@ -4,7 +4,6 @@ __all__ = (
     "CheatsheetNotFoundError",
     "CheatsheetException",
     "CheatsheetCreationError",
-    "CheatsheetAccessDeniedError",
     "AccessTokenGenerationError",
     "AccessTokenExpiredError",
     "AccessTokenException",
@@ -40,7 +39,6 @@ from .access_token import (
 )
 from .base import ApplicationException
 from .cheatsheet import (
-    CheatsheetAccessDeniedError,
     CheatsheetCreationError,
     CheatsheetException,
     CheatsheetNotFoundError,

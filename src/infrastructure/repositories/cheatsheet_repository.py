@@ -149,9 +149,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         try:
             [result] = await self._session.execute(update_statement)
         except Exception as e:
-            raise CheatsheetUpdateError(
-                f"Failed to update cheatsheet {update_data['cheatsheet_id']}."
-            ) from e
+            raise CheatsheetUpdateError from e
 
         updated_cheatsheet = self._get_new_cheatsheet(
             result, current_stats, update_data
@@ -192,9 +190,7 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         try:
             await self._session.execute(delete_tags_statement)
         except Exception as e:
-            raise CheatsheetUpdateError(
-                f"Failed to clear old tags for cheatsheet {cheatsheet.cheatsheet_id}."
-            ) from e
+            raise CheatsheetUpdateError from e
 
     async def _insert_new_tags(self, cheatsheet: Cheatsheet) -> None:
         tag_ids = [tag.tag_id for tag in cheatsheet.tags]
@@ -207,6 +203,4 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         try:
             await self._session.execute(insert_tags_statement)
         except Exception as e:
-            raise CheatsheetUpdateError(
-                f"Tags insertion failed for cheatsheet {cheatsheet.cheatsheet_id}."
-            ) from e
+            raise CheatsheetUpdateError from e
