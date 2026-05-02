@@ -3,11 +3,11 @@ from uuid import UUID
 
 import jwt
 
-from application.exceptions import (
+from src.application.dto import PasswordResetTokenPayload
+from src.application.exceptions import (
     ExpiredPasswordResetTokenError,
     InvalidPasswordResetTokenError,
 )
-from src.application.dto import PasswordResetTokenPayload
 from src.application.interfaces.services import IPasswordResetService
 from src.infrastructure.services.jwt_core_service import JWTCoreService
 
