@@ -27,8 +27,8 @@ __all__ = (
     "PasswordResetException",
     "WeakPasswordError",
     "PasswordsNotMatchError",
-    "EmailVerificationTokenInvalidError",
-    "EmailVerificationTokenExpiredError",
+    "InvalidEmailVerificationTokenError",
+    "ExpiredEmailVerificationTokenError",
     "EmailVerificationException",
     "EmailAlreadyVerifiedError",
 )
@@ -49,8 +49,8 @@ from .cheatsheet import (
 from .email_verification import (
     EmailAlreadyVerifiedError,
     EmailVerificationException,
-    EmailVerificationTokenExpiredError,
-    EmailVerificationTokenInvalidError,
+    ExpiredEmailVerificationTokenError,
+    InvalidEmailVerificationTokenError,
 )
 from .notification import NotificationException, SendEmailError
 from .password_reset import (

@@ -23,9 +23,9 @@ from src.application.exceptions import (
     AccessTokenExpiredError,
     DuplicateUserError,
     EmailAlreadyVerifiedError,
-    EmailVerificationTokenExpiredError,
-    EmailVerificationTokenInvalidError,
+    ExpiredEmailVerificationTokenError,
     ExpiredPasswordResetTokenError,
+    InvalidEmailVerificationTokenError,
     InvalidPasswordResetTokenError,
     PasswordsNotMatchError,
     RefreshTokenCompromisedError,
@@ -408,13 +408,13 @@ async def confirm_email_verification(
     """Confirm email verification using verification token."""
     try:
         await auth_use_case.confirm_email_verification(verification_request.token)
-    except EmailVerificationTokenInvalidError as e:
+    except InvalidEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification token.",
         ) from e
-    except EmailVerificationTokenExpiredError as e:
+    except ExpiredEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

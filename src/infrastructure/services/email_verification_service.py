@@ -5,8 +5,8 @@ import jwt
 
 from src.application.dto import EmailVerificationTokenPayload
 from src.application.exceptions import (
-    EmailVerificationTokenExpiredError,
-    EmailVerificationTokenInvalidError,
+    ExpiredEmailVerificationTokenError,
+    InvalidEmailVerificationTokenError,
 )
 from src.application.interfaces import IEmailVerificationService
 from src.infrastructure.services.jwt_core_service import JWTCoreService
@@ -43,7 +43,7 @@ class EmailVerificationService(IEmailVerificationService):
                 expires_in_minutes=self._token_expires_in_hours * 60,
             )
         except Exception as e:
-            raise EmailVerificationTokenInvalidError from e
+            raise InvalidEmailVerificationTokenError from e
 
         return token
 
@@ -56,14 +56,14 @@ class EmailVerificationService(IEmailVerificationService):
                 required_claims=self._REQUIRED_CLAIMS,
             )
         except jwt.ExpiredSignatureError as e:
-            raise EmailVerificationTokenExpiredError from e
+            raise ExpiredEmailVerificationTokenError from e
         except Exception as e:
-            raise EmailVerificationTokenInvalidError from e
+            raise InvalidEmailVerificationTokenError from e
 
         try:
             user_id = UUID(payload["sub"])
         except (ValueError, KeyError) as e:
-            raise EmailVerificationTokenInvalidError from e
+            raise InvalidEmailVerificationTokenError from e
 
         exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
 

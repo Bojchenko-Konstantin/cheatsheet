@@ -5,11 +5,11 @@ class EmailVerificationException(ApplicationException):
     """Base exception for email verification errors."""
 
 
-class EmailVerificationTokenInvalidError(EmailVerificationException):
+class InvalidEmailVerificationTokenError(EmailVerificationException):
     """Raised when email verification token is invalid."""
 
 
-class EmailVerificationTokenExpiredError(EmailVerificationException):
+class ExpiredEmailVerificationTokenError(EmailVerificationException):
     """Raised when email verification token has expired."""
 
 
