@@ -8,12 +8,12 @@ __all__ = (
     "AccessTokenGenerationError",
     "AccessTokenExpiredError",
     "AccessTokenException",
-    "RefreshTokenBlacklistAddError",
+    "AddRefreshTokenToBlacklistError",
     "RefreshTokenCompromisedError",
-    "RefreshTokenCompromisedMarkError",
+    "MarkRefreshTokenAsCompromisedError",
     "RefreshTokenException",
     "RefreshTokenNotFoundError",
-    "RefreshTokenRevokeError",
+    "RevokeRefreshTokenError",
     "DuplicateUserError",
     "UserAuthenticationError",
     "UserCreationError",
@@ -60,12 +60,12 @@ from .password_reset import (
     WeakPasswordError,
 )
 from .refresh_token import (
-    RefreshTokenBlacklistAddError,
+    AddRefreshTokenToBlacklistError,
+    MarkRefreshTokenAsCompromisedError,
     RefreshTokenCompromisedError,
-    RefreshTokenCompromisedMarkError,
     RefreshTokenException,
     RefreshTokenNotFoundError,
-    RefreshTokenRevokeError,
+    RevokeRefreshTokenError,
 )
 from .user import (
     DuplicateUserError,

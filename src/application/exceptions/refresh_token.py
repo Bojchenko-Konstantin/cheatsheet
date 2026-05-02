@@ -9,15 +9,15 @@ class RefreshTokenNotFoundError(RefreshTokenException):
     """Raised when refresh token is not found."""
 
 
-class RefreshTokenBlacklistAddError(RefreshTokenException):
+class AddRefreshTokenToBlacklistError(RefreshTokenException):
     """Raised when refresh token is not move to blacklist."""
 
 
-class RefreshTokenCompromisedMarkError(RefreshTokenException):
+class MarkRefreshTokenAsCompromisedError(RefreshTokenException):
     """Raised when refresh token fails to be marked as compromised."""
 
 
-class RefreshTokenRevokeError(RefreshTokenException):
+class RevokeRefreshTokenError(RefreshTokenException):
     """Raised when refresh token revocation fails."""
 
 

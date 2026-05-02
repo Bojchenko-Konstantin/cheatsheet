@@ -31,7 +31,7 @@ from src.application.exceptions import (
     PasswordsNotMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
-    RefreshTokenRevokeError,
+    RevokeRefreshTokenError,
     UserAuthenticationError,
     UserCreationError,
     UserInactiveError,
@@ -129,9 +129,7 @@ async def register(
                     user_name=verification_data["user_name"],
                     verification_url=verification_data["verification_url"],
                 )
-                await send_email_verification.kiq(
-                    email_data,
-                )
+                await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
 
     except DuplicateUserError as e:
         logger.debug(
@@ -244,7 +242,7 @@ async def logout(
             "Refresh token not found for user %s during logout", logout_request.user_id
         )
         return None
-    except RefreshTokenRevokeError as e:
+    except RevokeRefreshTokenError as e:
         logger.exception(
             "Failed to revoke refresh token for user %s: %s",
             logout_request.user_id,
@@ -310,7 +308,7 @@ async def request_password_reset(
                 user_name=result["user_name"],
                 reset_url=result["reset_url"],
             )
-            await send_password_reset_email.kiq(email_data)
+            await send_password_reset_email.kiq(email_data)  # type: ignore[call-overload]
 
     return PasswordResetResponse(message="Password has been successfully reset.")
 
@@ -327,7 +325,7 @@ async def confirm_password_reset(
         )
 
         with contextlib.suppress(Exception):
-            await send_password_changed_email.kiq(
+            await send_password_changed_email.kiq(  # type: ignore[call-overload]
                 email=result["email"],
                 user_name=result["user_name"],
             )
@@ -376,7 +374,7 @@ async def send_verification_email(
                 user_name=verification_data["user_name"],
                 verification_url=verification_data["verification_url"],
             )
-            await send_email_verification.kiq(email_data)
+            await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
     except EmailAlreadyVerifiedError as e:
         logger.debug(
             "User %s attempted to verify already verified email",
