@@ -166,13 +166,13 @@ def test_ensure_owned_by_for_non_owner_was_denied():
     cheatsheet = _make_cheatsheet(is_public=True)
 
     with pytest.raises(CheatsheetModificationDeniedError):
-        cheatsheet.ensure_owned_by(STRANGER_ID)
+        cheatsheet.ensure_is_owner(STRANGER_ID)
 
 
 def test_ensure_owned_by_for_owner_was_successful():
     cheatsheet = _make_cheatsheet(is_public=True)
 
-    cheatsheet.ensure_owned_by(OWNER_ID)
+    cheatsheet.ensure_is_owner(OWNER_ID)
 
 
 def test_cheatsheet_stats_creation_with_negative_like_count_was_denied():

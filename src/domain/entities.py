@@ -43,9 +43,7 @@ class CheatsheetStats:
     count_view: int = 0
 
     def __post_init__(self) -> None:
-        if self.count_like < 0:
-            raise NegativeStatsError
-        if self.count_view < 0:
+        if self.count_like < 0 or self.count_view < 0:
             raise NegativeStatsError
 
     def add_like(self) -> "CheatsheetStats":
@@ -113,7 +111,7 @@ class Cheatsheet:
         """Check whether a user can view this cheatsheet."""
         return self.is_public or (user_id is not None and self.user_id == user_id)
 
-    def is_owned_by(self, user_id: UUID) -> bool:
+    def is_owner(self, user_id: UUID) -> bool:
         """Check whether the given user is the owner."""
         return self.user_id == user_id
 
@@ -122,9 +120,9 @@ class Cheatsheet:
         if not self.is_accessible_by(user_id):
             raise CheatsheetAccessDeniedError
 
-    def ensure_owned_by(self, user_id: UUID) -> None:
+    def ensure_is_owner(self, user_id: UUID) -> None:
         """Raise an error if the user does not own this cheatsheet."""
-        if not self.is_owned_by(user_id):
+        if not self.is_owner(user_id):
             raise CheatsheetModificationDeniedError
 
     def update(
