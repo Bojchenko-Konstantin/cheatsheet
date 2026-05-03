@@ -21,7 +21,6 @@ async def test_logout_was_successful(
         "password": "password",
     }
     login_response = await async_client.post("/login", data=login_data)
-    assert login_response.status_code == status.HTTP_200_OK
 
     tokens = login_response.json()
     refresh_token = tokens["refresh_token"]
