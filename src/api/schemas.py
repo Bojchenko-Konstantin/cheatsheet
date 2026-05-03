@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, model_validator
 
-from src.application.exceptions import PasswordsNotMatchError
+from src.application.exceptions import PasswordsDontMatchError
 
 type PositiveInt = Annotated[int, Field(ge=0)]
 type PositiveListInt = list[PositiveInt]
@@ -166,7 +166,7 @@ class PasswordResetConfirm(Schema):
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
         if self.new_password != self.confirm_password:
-            raise PasswordsNotMatchError
+            raise PasswordsDontMatchError
         return self
 
 
@@ -182,7 +182,7 @@ class PasswordUpdate(Schema):
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
         if self.new_password != self.confirm_password:
-            raise PasswordsNotMatchError
+            raise PasswordsDontMatchError
         return self
 
 
