@@ -45,6 +45,14 @@ async def _populate_users_for_auth_test(session: AsyncSession) -> None:
             "email": "test@random.mail",
             "hashed_password": password,
         },
+        {
+            "user_name": "test_password_update",
+            "is_verified": True,
+            "is_active": True,
+            "is_superuser": False,
+            "email": "update-password@test",
+            "hashed_password": password,
+        },
     ]
 
     for user in users_to_create:
