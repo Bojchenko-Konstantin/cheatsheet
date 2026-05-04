@@ -75,7 +75,7 @@ def get_email_verification_service(
 ) -> IEmailVerificationService:
     return EmailVerificationService(
         jwt_core=jwt_core,
-        token_expires_in_hours=settings.email_verification.token_expires_in_minutes,
+        token_expires_in_hours=settings.email_verification.token_expires_in_hours,
         frontend_verify_url=settings.email_verification.frontend_url,
     )
 
@@ -93,7 +93,6 @@ def get_auth_use_case(
         user_service=user_service,
         password_reset_service=password_reset_service,
         email_verification_service=email_verification_service,
-        token_expires_in_minutes=settings.password_reset.token_expires_in_minutes,
     )
 
 

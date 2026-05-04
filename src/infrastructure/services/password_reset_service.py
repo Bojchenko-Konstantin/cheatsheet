@@ -21,8 +21,8 @@ class PasswordResetService(IPasswordResetService):
     def __init__(
         self,
         jwt_core: JWTCoreService,
-        token_expires_in_minutes: int,
         frontend_reset_url: str,
+        token_expires_in_minutes: int,
     ):
         self._jwt_core = jwt_core
         self._token_expires_in_minutes = token_expires_in_minutes

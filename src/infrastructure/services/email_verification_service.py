@@ -21,7 +21,7 @@ class EmailVerificationService(IEmailVerificationService):
     def __init__(
         self,
         jwt_core: JWTCoreService,
-        token_expires_in_hours: int = 24,
+        token_expires_in_hours: int,
         frontend_verify_url: str = "http://localhost:3000/verify-email",
     ):
         """Initialize verification service."""

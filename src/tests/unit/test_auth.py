@@ -108,9 +108,7 @@ class FakeUserService(IUserService):
 
 @pytest.fixture
 def auth_use_case():
-    return AuthUseCase(
-        FakeTokenService(), FakeUserService(), token_expires_in_minutes=10
-    )
+    return AuthUseCase(FakeTokenService(), FakeUserService())
 
 
 @pytest.mark.asyncio

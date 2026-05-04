@@ -40,7 +40,7 @@ class JWTConfig(BaseModel):
     public_key: str
 
 
-class NotiSendConfig(BaseModel):
+class NotificationConfig(BaseModel):
     api_url: str
     api_key: str
     from_email: str
@@ -63,8 +63,12 @@ class PasswordResetConfig(BaseModel):
     frontend_url: str = "http://localhost:3000/reset-password"
 
 
-class EmailVerificationConfig(BaseModel):
+class EmailTemplateConfig(BaseModel):
     token_expires_in_minutes: int = 30
+
+
+class EmailVerificationConfig(BaseModel):
+    token_expires_in_hours: int = 24
     frontend_url: str = "http://localhost:3000/verify-email"
 
 
@@ -77,9 +81,10 @@ class Settings(BaseSettings):
     database: DatabaseConfig
     logging: LoggingConfig = LoggingConfig()
     jwt: JWTConfig
-    notisend: NotiSendConfig
+    notification: NotificationConfig
     broker: BrokerConfig
     password_reset: PasswordResetConfig = PasswordResetConfig()
+    email_template: EmailTemplateConfig = EmailTemplateConfig()
     email_verification: EmailVerificationConfig = EmailVerificationConfig()
 
 

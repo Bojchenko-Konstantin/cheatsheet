@@ -26,10 +26,8 @@ class EmailTemplateService(IEmailTemplateService):
 
     def __init__(self) -> None:
         self._app_name = "Cheatsheet App"
-        self._support_email = settings.notisend.from_email
-        self._expires_in_minutes = (
-            settings.email_verification.token_expires_in_minutes,
-        )
+        self._support_email = settings.notification.from_email
+        self._expires_in_minutes = settings.email_template.token_expires_in_minutes
 
     def generate_welcome_email(self, data: WelcomeEmailData) -> EmailMessage:
         """Create welcome email for new users."""

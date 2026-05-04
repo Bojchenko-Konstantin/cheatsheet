@@ -12,12 +12,12 @@ class NotiSendNotificationService(INotificationService):
     """Implementation of notification service using NotiSend REST API."""
 
     def __init__(self) -> None:
-        self._api_url: str = settings.notisend.api_url.rstrip("/")
-        self._api_key: str = settings.notisend.api_key
-        self._from_email: str = settings.notisend.from_email
-        self._from_name: str | None = settings.notisend.from_name
-        self._timeout: int = settings.notisend.timeout
-        self._max_retries: int = settings.notisend.max_retries
+        self._api_url: str = settings.notification.api_url.rstrip("/")
+        self._api_key: str = settings.notification.api_key
+        self._from_email: str = settings.notification.from_email
+        self._from_name: str | None = settings.notification.from_name
+        self._timeout: int = settings.notification.timeout
+        self._max_retries: int = settings.notification.max_retries
 
         self._send_endpoint: str = f"{self._api_url}/email/messages"
 
