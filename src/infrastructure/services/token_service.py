@@ -1,13 +1,7 @@
-import base64
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import jwt
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import (
-    PrivateKeyTypes,
-    PublicKeyTypes,
-)
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
@@ -24,8 +18,7 @@ from src.application.exceptions import (
 from src.application.interfaces import ITokenService, IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.hasher import HASHER
-
-# TODO: Use JWTCoreService in TokenService.
+from src.infrastructure.services import JWTCoreService
 
 
 class TokenService(ITokenService):
@@ -33,18 +26,14 @@ class TokenService(ITokenService):
 
     def __init__(
         self,
-        private_key: str,
-        public_key: str,
-        algorithm: str,
+        jwt_core: JWTCoreService,
         access_token_expires_in: int,
         refresh_token_expires_in: int,
         unit_of_work: IUnitOfWork = SQLAlchemyUnitOfWork(),
         hasher: PasswordHash = HASHER,
     ):
+        self._jwt_core = jwt_core
         self._unit_of_work = unit_of_work
-        self._private_key = private_key
-        self._public_key = public_key
-        self._algorithm = algorithm
         self._access_token_expires_in = access_token_expires_in
         self._refresh_token_expires_in = refresh_token_expires_in
         self._hasher = hasher
@@ -61,14 +50,11 @@ class TokenService(ITokenService):
         return str(uuid7())
 
     async def verify_access_token(self, access_token: str) -> UserPayload:
-        public_key = self._get_appropriate_public_key_form()
-
         try:
-            payload = jwt.decode(
-                jwt=access_token,
-                key=public_key,  # type: ignore
-                algorithms=[self._algorithm],
-                options={"require": ["exp"]},
+            payload = self._jwt_core.verify_token(
+                token=access_token,
+                expected_type="access",
+                required_claims=["exp"],
             )
         except jwt.ExpiredSignatureError as e:
             raise AccessTokenExpiredError from e
@@ -77,7 +63,12 @@ class TokenService(ITokenService):
         except Exception as e:
             raise AccessTokenException from e
 
-        user_payload = UserPayload.create(**payload)
+        user_data = {
+            key: value
+            for key, value in payload.items()
+            if key in ["user_id", "is_superuser", "exp"]
+        }
+        user_payload = UserPayload.create(**user_data)
 
         return user_payload
 
@@ -137,19 +128,14 @@ class TokenService(ITokenService):
             await uow._commit()
 
     def _generate_access_token(self, payload: UserPayload) -> str:
-        expiration_time = datetime.now(tz=timezone.utc) + timedelta(
-            minutes=self._access_token_expires_in
-        )
-        payload.exp = expiration_time
-        user_payload = payload.to_payload()
-
-        private_key = self._get_appropriate_private_key_form()
-
         try:
-            access_token = jwt.encode(
-                payload=user_payload,
-                key=private_key,  # type: ignore
-                algorithm=self._algorithm,
+            access_token = self._jwt_core.generate_token(
+                payload={
+                    "user_id": str(payload.user_id),
+                    "is_superuser": payload.is_superuser,
+                },
+                token_type="access",
+                expires_in_minutes=self._access_token_expires_in,
             )
         except jwt.PyJWTError as e:
             raise AccessTokenGenerationError from e
@@ -181,16 +167,6 @@ class TokenService(ITokenService):
 
         async with self._unit_of_work as uow:
             await uow.token_repo.save(token_record)
-
-    def _get_appropriate_private_key_form(self) -> PrivateKeyTypes:
-        private_key_der = base64.b64decode(self._private_key)
-        private_key = serialization.load_der_private_key(private_key_der, password=None)
-        return private_key
-
-    def _get_appropriate_public_key_form(self) -> PublicKeyTypes:
-        public_key_der = base64.b64decode(self._public_key)
-        public_key = serialization.load_der_public_key(public_key_der)
-        return public_key
 
     async def _verify_token_was_not_compromised(
         self,

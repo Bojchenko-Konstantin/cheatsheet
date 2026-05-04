@@ -3,7 +3,13 @@ import logging
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.api.dependencies import AuthUseCaseDep, CurrentUserRequiredDep, OAuth2FormDep
+from src.api.dependencies import (
+    AuthUseCaseDep,
+    CurrentUserRequiredDep,
+    OAuth2FormDep,
+    PasswordUseCaseDep,
+    VerificationUseCaseDep,
+)
 from src.api.schemas import (
     EmailVerificationConfirm,
     EmailVerificationResponse,
@@ -102,6 +108,7 @@ async def login(
 async def register(
     user_form: UserCreate,
     auth_use_case: AuthUseCaseDep,
+    verification_use_case: VerificationUseCaseDep,
 ):
     create_data = user_form.model_dump(exclude_unset=True)
 
@@ -119,8 +126,8 @@ async def register(
                 )
             with contextlib.suppress(Exception):
                 user = await auth_use_case.get_current_user(token_pair["access_token"])
-                verification_data = await auth_use_case.request_email_verification(
-                    user.user_id
+                verification_data = (
+                    await verification_use_case.request_email_verification(user.user_id)
                 )
                 email_data = EmailVerificationData(
                     email=verification_data["email"],
@@ -258,11 +265,11 @@ async def logout(
 async def update_password(
     password_data: PasswordUpdate,
     current_user: CurrentUserRequiredDep,
-    auth_use_case: AuthUseCaseDep,
+    password_use_case: PasswordUseCaseDep,
 ):
     """Change password for authenticated user."""
     try:
-        await auth_use_case.update_password(
+        await password_use_case.update_password(
             user_id=current_user.user_id,
             old_password=password_data.old_password,
             new_password=password_data.new_password,
@@ -296,9 +303,9 @@ async def update_password(
 @router.post("/password-reset/request", response_model=PasswordResetResponse)
 async def request_password_reset(
     request_data: PasswordResetRequest,
-    auth_use_case: AuthUseCaseDep,
+    password_use_case: PasswordUseCaseDep,
 ):
-    result = await auth_use_case.request_password_reset(request_data.email)
+    result = await password_use_case.request_password_reset(request_data.email)
 
     if result is not None:
         with contextlib.suppress(Exception):
@@ -315,10 +322,10 @@ async def request_password_reset(
 @router.post("/password-reset/confirm", response_model=PasswordResetResponse)
 async def confirm_password_reset(
     confirm_data: PasswordResetConfirm,
-    auth_use_case: AuthUseCaseDep,
+    password_use_case: PasswordUseCaseDep,
 ):
     try:
-        result = await auth_use_case.confirm_password_reset(
+        result = await password_use_case.confirm_password_reset(
             confirm_data.token,
             confirm_data.new_password,
         )
@@ -360,11 +367,11 @@ async def confirm_password_reset(
 )
 async def send_verification_email(
     current_user: CurrentUserRequiredDep,
-    auth_use_case: AuthUseCaseDep,
+    verification_use_case: VerificationUseCaseDep,
 ):
     """Send email verification email to currently authenticated user."""
     try:
-        verification_data = await auth_use_case.request_email_verification(
+        verification_data = await verification_use_case.request_email_verification(
             current_user.user_id
         )
 
@@ -403,11 +410,13 @@ async def send_verification_email(
 )
 async def confirm_email_verification(
     verification_request: EmailVerificationConfirm,
-    auth_use_case: AuthUseCaseDep,
+    verification_use_case: VerificationUseCaseDep,
 ):
     """Confirm email verification using verification token."""
     try:
-        await auth_use_case.confirm_email_verification(verification_request.token)
+        await verification_use_case.confirm_email_verification(
+            verification_request.token
+        )
     except InvalidEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with invalid token")
         raise HTTPException(

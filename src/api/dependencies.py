@@ -5,14 +5,16 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
 from src.application.interfaces import (
-    IEmailVerificationService,
     IPasswordResetService,
     ITokenService,
     IUnitOfWork,
     IUserService,
+    IVerificationService,
 )
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
+from src.application.use_cases.password import PasswordUseCase
+from src.application.use_cases.verification import VerificationUseCase
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.services import (
@@ -46,11 +48,11 @@ def get_jwt_core_service() -> JWTCoreService:
     )
 
 
-def get_token_service() -> TokenService:
+def get_token_service(
+    jwt_core: JWTCoreService = Depends(get_jwt_core_service),
+) -> TokenService:
     return TokenService(
-        private_key=settings.jwt.private_key,
-        public_key=settings.jwt.public_key,
-        algorithm=settings.jwt.algorithm,
+        jwt_core=jwt_core,
         access_token_expires_in=settings.jwt.access_token_expires_in,
         refresh_token_expires_in=settings.jwt.refresh_token_expires_in,
     )
@@ -72,7 +74,7 @@ def get_password_reset_service(
 
 def get_email_verification_service(
     jwt_core: JWTCoreService = Depends(get_jwt_core_service),
-) -> IEmailVerificationService:
+) -> IVerificationService:
     return EmailVerificationService(
         jwt_core=jwt_core,
         token_expires_in_hours=settings.email_verification.token_expires_in_hours,
@@ -83,15 +85,33 @@ def get_email_verification_service(
 def get_auth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     user_service: IUserService = Depends(get_user_service),
-    password_reset_service: IPasswordResetService = Depends(get_password_reset_service),
-    email_verification_service: IEmailVerificationService = Depends(
-        get_email_verification_service
-    ),
 ) -> AuthUseCase:
     return AuthUseCase(
         token_service=token_service,
         user_service=user_service,
+    )
+
+
+def get_password_use_case(
+    user_service: IUserService = Depends(get_user_service),
+    password_reset_service: IPasswordResetService = Depends(get_password_reset_service),
+    token_service: ITokenService = Depends(get_token_service),
+) -> PasswordUseCase:
+    return PasswordUseCase(
+        user_service=user_service,
         password_reset_service=password_reset_service,
+        token_service=token_service,
+    )
+
+
+def get_verification_use_case(
+    user_service: IUserService = Depends(get_user_service),
+    email_verification_service: IVerificationService = Depends(
+        get_email_verification_service
+    ),
+) -> VerificationUseCase:
+    return VerificationUseCase(
+        user_service=user_service,
         email_verification_service=email_verification_service,
     )
 
@@ -137,6 +157,11 @@ OAuth2SchemeOptionalDep = Annotated[str | None, Depends(oauth2_scheme_optional)]
 
 CheatsheetUseCaseDep = Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)]
 AuthUseCaseDep = Annotated[AuthUseCase, Depends(get_auth_use_case)]
+PasswordUseCaseDep = Annotated[PasswordUseCase, Depends(get_password_use_case)]
+VerificationUseCaseDep = Annotated[
+    VerificationUseCase, Depends(get_verification_use_case)
+]
+
 
 CurrentUserRequiredDep = Annotated[User, Depends(get_current_user_required)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]

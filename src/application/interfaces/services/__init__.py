@@ -4,12 +4,12 @@ __all__ = (
     "ITokenService",
     "INotificationService",
     "IPasswordResetService",
-    "IEmailVerificationService",
+    "IVerificationService",
 )
 
 from .email_template_service import IEmailTemplateService
-from .email_verification_service import IEmailVerificationService
 from .notification_service import INotificationService
 from .password_reset_service import IPasswordResetService
 from .token_service import ITokenService
 from .user_service import IUserService
+from .verification_service import IVerificationService

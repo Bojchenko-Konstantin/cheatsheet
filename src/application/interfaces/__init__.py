@@ -8,16 +8,16 @@ __all__ = (
     "INotificationService",
     "IEmailTemplateService",
     "IPasswordResetService",
-    "IEmailVerificationService",
+    "IVerificationService",
 )
 
 from .repositories import ICheatsheetRepo, ITokenRepo, IUserRepo
 from .services import (
     IEmailTemplateService,
-    IEmailVerificationService,
     INotificationService,
     IPasswordResetService,
     ITokenService,
     IUserService,
+    IVerificationService,
 )
 from .unit_of_work import IUnitOfWork

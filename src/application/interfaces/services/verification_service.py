@@ -4,7 +4,7 @@ from uuid import UUID
 from src.application.dto import EmailVerificationTokenPayload
 
 
-class IEmailVerificationService(ABC):
+class IVerificationService(ABC):
     """Handles email verification token generation and verification."""
 
     @abstractmethod

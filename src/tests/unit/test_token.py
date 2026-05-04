@@ -12,6 +12,7 @@ from src.application.interfaces import ITokenRepo, IUnitOfWork
 from src.core.config import settings
 from src.infrastructure.hasher import HASHER
 from src.infrastructure.services import TokenService
+from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 
 class FakeTokenRepo(ITokenRepo):
@@ -69,14 +70,21 @@ class FakeUnitOfWork(IUnitOfWork):
 
 
 @pytest.fixture
-def token_service():
-    return TokenService(
-        unit_of_work=FakeUnitOfWork(),
+def jwt_core_service():
+    return JWTCoreService(
         private_key=settings.jwt.private_key,
         public_key=settings.jwt.public_key,
         algorithm=settings.jwt.algorithm,
+    )
+
+
+@pytest.fixture
+def token_service(jwt_core_service):
+    return TokenService(
+        jwt_core=jwt_core_service,
         access_token_expires_in=settings.jwt.access_token_expires_in,
         refresh_token_expires_in=settings.jwt.refresh_token_expires_in,
+        unit_of_work=FakeUnitOfWork(),
         hasher=HASHER,
     )
 
@@ -108,19 +116,34 @@ async def test_generate_tokens_was_successful(token_service: TokenService):
 @pytest.mark.asyncio
 async def test_verify_access_token_was_successful(token_service: TokenService):
     sut = token_service
+
+    jwt_core = JWTCoreService(
+        private_key=settings.jwt.private_key,
+        public_key=settings.jwt.public_key,
+        algorithm=settings.jwt.algorithm,
+    )
+
+    access_token = jwt_core.generate_token(
+        payload={
+            "user_id": "019b4a71-173e-7f64-a840-9e8b042658cd",
+            "is_superuser": False,
+        },
+        token_type="access",
+        expires_in_minutes=10,
+    )
+
+    public_key_der = base64.b64decode(settings.jwt.public_key)
+    public_key = serialization.load_der_public_key(public_key_der)
+    decoded = jwt.decode(
+        jwt=access_token,
+        key=public_key,  # type: ignore[arg-type]
+        algorithms=[settings.jwt.algorithm],
+    )
+
     expected_payload = UserPayload(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         is_superuser=False,
-        # Expiration time must be greater than (now - leeway).
-        exp=datetime(7049, 1, 1, tzinfo=timezone.utc),
-    )
-    access_token = (
-        "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
-        "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
-        "jY0LWE4NDAtOWU4YjA0MjY1OGNkIiwiaXNfc3VwZX"
-        "J1c2VyIjpmYWxzZSwiZXhwIjoxNjAyNzc3ODg4MDB9."
-        "Quu1rKO3N8UGfwhv-6Hf-0mf-OPRq0-8VWC9avgIVuU"
-        "6PWpigmaRo3GuHYalglzUCV07y4cBNlZmbBJXGHT6Dw"
+        exp=datetime.fromtimestamp(decoded["exp"], tz=timezone.utc),
     )
 
     payload = await sut.verify_access_token(access_token)

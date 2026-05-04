@@ -8,11 +8,11 @@ from src.application.exceptions import (
     ExpiredEmailVerificationTokenError,
     InvalidEmailVerificationTokenError,
 )
-from src.application.interfaces import IEmailVerificationService
+from src.application.interfaces import IVerificationService
 from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 
-class EmailVerificationService(IEmailVerificationService):
+class EmailVerificationService(IVerificationService):
     """Stateless implementation of email verification service using JWT tokens."""
 
     _TOKEN_TYPE = "email_verification"
@@ -24,7 +24,6 @@ class EmailVerificationService(IEmailVerificationService):
         token_expires_in_hours: int,
         frontend_verify_url: str = "http://localhost:3000/verify-email",
     ):
-        """Initialize verification service."""
         self._jwt_core = jwt_core
         self._token_expires_in_hours = token_expires_in_hours
         self._frontend_verify_url = frontend_verify_url.rstrip("/")
