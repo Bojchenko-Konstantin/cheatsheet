@@ -224,6 +224,8 @@ async def logout(
     auth_use_case: AuthUseCaseDep,
 ):
     try:
+        # TODO: remove refresh_token from logout method and
+        # remove all tokens for required device.
         await auth_use_case.logout(
             user_id=logout_request.user_id,
             refresh_token=logout_request.refresh_token,
