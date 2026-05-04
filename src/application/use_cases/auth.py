@@ -18,7 +18,6 @@ class AuthUseCase:
         self,
         token_service: ITokenService,
         user_service: IUserService,
-        token_expires_in_minutes: int,
         notification_service: INotificationService | None = None,
         template_service: IEmailTemplateService | None = None,
         password_reset_service: IPasswordResetService | None = None,
@@ -30,7 +29,6 @@ class AuthUseCase:
         self._template_service = template_service
         self._password_reset_service = password_reset_service
         self._email_verification_service = email_verification_service
-        self._token_expires_in_minutes = token_expires_in_minutes
 
     async def authenticate(self, user_name: str, password: str) -> dict[str, str]:
         user = await self._user_service.authenticate_user(user_name, password)
