@@ -4,9 +4,7 @@ from uuid import UUID
 from src.application.dto import User, UserPayload
 from src.application.exceptions import EmailAlreadyVerifiedError
 from src.application.interfaces import (
-    IEmailTemplateService,
     IEmailVerificationService,
-    INotificationService,
     IPasswordResetService,
     ITokenService,
     IUserService,
@@ -18,15 +16,11 @@ class AuthUseCase:
         self,
         token_service: ITokenService,
         user_service: IUserService,
-        notification_service: INotificationService | None = None,
-        template_service: IEmailTemplateService | None = None,
         password_reset_service: IPasswordResetService | None = None,
         email_verification_service: IEmailVerificationService | None = None,
     ):
         self._token_service = token_service
         self._user_service = user_service
-        self._notification_service = notification_service
-        self._template_service = template_service
         self._password_reset_service = password_reset_service
         self._email_verification_service = email_verification_service
 
