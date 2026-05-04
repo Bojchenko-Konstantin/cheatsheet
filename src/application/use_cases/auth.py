@@ -10,6 +10,9 @@ from src.application.interfaces import (
     IUserService,
 )
 
+# TODO: extract use cases from AuthUseCase (PasswordUseCase, VerificationUseCase
+# (remove Email and make from "IVerificationService" more general.))
+
 
 class AuthUseCase:
     def __init__(

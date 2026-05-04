@@ -25,6 +25,8 @@ from src.application.interfaces import ITokenService, IUnitOfWork
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.hasher import HASHER
 
+# TODO: Use JWTCoreService in TokenService.
+
 
 class TokenService(ITokenService):
     """Handles all operations with access (JWT) and refresh (UUIDv7) tokens."""
