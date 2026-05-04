@@ -25,7 +25,6 @@ __all__ = (
     "ExpiredPasswordResetTokenError",
     "PasswordResetException",
     "WeakPasswordError",
-    "PasswordsDontMatchError",
     "InvalidEmailVerificationTokenError",
     "ExpiredEmailVerificationTokenError",
     "EmailVerificationException",
@@ -67,7 +66,6 @@ from .refresh_token import (
 )
 from .user import (
     DuplicateUserError,
-    PasswordsDontMatchError,
     UserAuthenticationError,
     UserCreationError,
     UserException,

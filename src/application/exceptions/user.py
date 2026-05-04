@@ -23,7 +23,3 @@ class UserInactiveError(UserException):
 
 class UserAuthenticationError(UserException):
     """Raised when user authentication fails due to invalid credentials."""
-
-
-class PasswordsDontMatchError(UserException):
-    """Raised when password and confirmation password don't match."""

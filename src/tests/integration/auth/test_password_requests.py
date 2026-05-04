@@ -3,7 +3,6 @@ from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import text
 
-from src.application.exceptions.user import PasswordsDontMatchError
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
@@ -90,8 +89,11 @@ async def test_passwords_did_not_match_and_update_was_unsuccessful(
     }
 
     # Act.
-    with pytest.raises(PasswordsDontMatchError):
-        await async_client.put("/password", json=data_for_password_change)
+    response = await async_client.put("/password", json=data_for_password_change)
+
+    # Assert.
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert "Passwords do not match" in response.text
 
 
 @pytest.mark.integration

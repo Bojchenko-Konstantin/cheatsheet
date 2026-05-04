@@ -28,7 +28,6 @@ from src.application.exceptions import (
     ExpiredPasswordResetTokenError,
     InvalidEmailVerificationTokenError,
     InvalidPasswordResetTokenError,
-    PasswordsDontMatchError,
     RefreshTokenCompromisedError,
     RefreshTokenNotFoundError,
     RevokeRefreshTokenError,
@@ -267,12 +266,6 @@ async def update_password(
             old_password=password_data.old_password,
             new_password=password_data.new_password,
         )
-    except PasswordsDontMatchError as e:
-        logger.exception(
-            "Password change failed for user %s: passwords do not match",
-            current_user.user_id,
-        )
-        raise HTTPException(status_code=400, detail="Passwords do not match.") from e
     except UserAuthenticationError as e:
         logger.exception(
             "Password change failed for user %s: incorrect current password",
@@ -329,9 +322,6 @@ async def confirm_password_reset(
                 email=result["email"],
                 user_name=result["user_name"],
             )
-    except PasswordsDontMatchError as e:
-        logger.exception("Password change failed: passwords do not match")
-        raise HTTPException(status_code=400, detail="Passwords do not match") from e
     except InvalidPasswordResetTokenError as e:
         logger.exception("Password reset attempt with invalid token")
         raise HTTPException(
