@@ -64,7 +64,7 @@ async def test_weak_password_update_was_unsuccessful(
 
     # Assert.
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Password must contain at least one digit" in response.text
+    assert "Your password is weak." in response.text
 
 
 @pytest.mark.integration
