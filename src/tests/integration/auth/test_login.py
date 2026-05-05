@@ -7,6 +7,7 @@ from sqlalchemy import Row, TextClause, text
 
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
+from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -17,7 +18,7 @@ async def test_login_was_successful(
 ):
     data_for_login = {
         "username": "active_user",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
 
     response = await async_client.post("/login", data=data_for_login)
@@ -36,7 +37,7 @@ async def test_login_was_unsuccessful_with_nonexistent_username(
 ):
     data_for_login = {
         "username": "random",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
 
     response = await async_client.post("/login", data=data_for_login)
@@ -52,7 +53,7 @@ async def test_login_with_incorrect_password_was_unsuccessful(
 ):
     data_for_login = {
         "username": "active_user",
-        "password": "incorrect_password",
+        "password": "Incorrect_p@ssw0rd",
     }
 
     response = await async_client.post("/login", data=data_for_login)
@@ -71,7 +72,7 @@ async def test_login_by_inactive_user_was_unsuccessful(
 ):
     data_for_login = {
         "username": "inactive_user",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
 
     response = await async_client.post("/login", data=data_for_login)

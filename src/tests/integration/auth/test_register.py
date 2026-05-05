@@ -8,6 +8,7 @@ from sqlalchemy.sql.elements import TextClause
 
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
+from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -25,8 +26,8 @@ async def test_register_was_successful(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": "password",
-        "password_confirmation": "password",
+        "password": TEST_PASSWORD,
+        "password_confirmation": TEST_PASSWORD,
     }
 
     expected_result = {
@@ -44,7 +45,7 @@ async def test_register_was_successful(
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
-    assert HASHER.verify("password", registered_user.pop("hashed_password"))
+    assert HASHER.verify(TEST_PASSWORD, registered_user.pop("hashed_password"))
     assert registered_user == expected_result
 
 
@@ -62,8 +63,8 @@ async def test_register_fails_when_username_already_exists(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": "password",
-        "password_confirmation": "password",
+        "password": TEST_PASSWORD,
+        "password_confirmation": TEST_PASSWORD,
     }
 
     response = await async_client.post("/register", json=data_for_register)

@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
+from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -15,7 +16,7 @@ async def test_password_update_was_successful(
     # Arrange.
     login_data = {
         "username": "test_password_update",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -24,7 +25,7 @@ async def test_password_update_was_successful(
 
     expected_password = "New_password123%"
     data_for_password_change = {
-        "old_password": "password",
+        "old_password": TEST_PASSWORD,
         "new_password": "New_password123%",
         "confirm_password": "New_password123%",
     }
@@ -46,7 +47,7 @@ async def test_weak_password_update_was_unsuccessful(
     # Arrange.
     login_data = {
         "username": "test_password_update",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -54,7 +55,7 @@ async def test_weak_password_update_was_unsuccessful(
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
-        "old_password": "password",
+        "old_password": TEST_PASSWORD,
         "new_password": "weak_password",
         "confirm_password": "weak_password",
     }
@@ -63,7 +64,7 @@ async def test_weak_password_update_was_unsuccessful(
     response = await async_client.put("/password", json=data_for_password_change)
 
     # Assert.
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "Your password is weak." in response.text
 
 
@@ -75,7 +76,7 @@ async def test_passwords_did_not_match_and_update_was_unsuccessful(
     # Arrange.
     login_data = {
         "username": "test_password_update",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -83,7 +84,7 @@ async def test_passwords_did_not_match_and_update_was_unsuccessful(
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
-        "old_password": "password",
+        "old_password": TEST_PASSWORD,
         "new_password": "ranDom_password123!",
         "confirm_password": "wRong_password123!",
     }
@@ -104,7 +105,7 @@ async def test_incorrect_current_password_update_was_unsuccessful(
     # Arrange.
     login_data = {
         "username": "test_password_update",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -112,9 +113,9 @@ async def test_incorrect_current_password_update_was_unsuccessful(
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
-        "old_password": "wrong_password",
-        "new_password": "New_password123!",
-        "confirm_password": "New_password123!",
+        "old_password": "Wr0ngP@ssw0rd",
+        "new_password": "NewP@ssword2",
+        "confirm_password": "NewP@ssword2",
     }
 
     # Act.

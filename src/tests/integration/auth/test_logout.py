@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
+from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -18,7 +19,7 @@ async def test_logout_was_successful(
     # Arrange.
     login_data = {
         "username": "active_user",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
     login_response = await async_client.post("/login", data=login_data)
 

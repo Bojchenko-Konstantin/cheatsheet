@@ -11,7 +11,3 @@ class InvalidPasswordResetTokenError(PasswordResetException):
 
 class ExpiredPasswordResetTokenError(PasswordResetException):
     """Raised when password reset token has expired."""
-
-
-class WeakPasswordError(PasswordResetException):
-    """Raised when new password doesn't meet strength requirements."""

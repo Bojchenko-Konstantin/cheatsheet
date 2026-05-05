@@ -41,7 +41,6 @@ from src.application.exceptions import (
     UserCreationError,
     UserInactiveError,
     UserNotFoundError,
-    WeakPasswordError,
 )
 from src.infrastructure.background_tasks import (
     send_email_verification,
@@ -283,20 +282,6 @@ async def update_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
         ) from e
-    # TODO: remove WeakPasswordError and move this logic to Pydantic model.
-    except WeakPasswordError as e:
-        logger.exception(
-            "Password change failed for user %s: weak new password",
-            current_user.user_id,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                "Your password is weak. It must be greater than 8 symbols "
-                "and contain at least 1 digit, 1 punctuation symbol "
-                "and 1 capital letter"
-            ),
-        ) from e
     return PasswordUpdateResponse(message="Password has been successfully updated.")
 
 
@@ -346,16 +331,6 @@ async def confirm_password_reset(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password reset token has expired. Please request a new one.",
-        ) from e
-    except WeakPasswordError as e:
-        logger.exception("Password change failed: weak new password")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                "Your password is weak. It must be greater than 8 symbols "
-                "and contain at least 1 digit, 1 punctuation symbol "
-                "and 1 capital letter"
-            ),
         ) from e
 
     return PasswordResetResponse(message="Password has been successfully reset.")

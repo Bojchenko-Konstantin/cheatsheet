@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Annotated, Any, Self
 from uuid import UUID
@@ -112,6 +113,11 @@ class UserCreate(UserBase):
     password_confirmation: str
 
     @model_validator(mode="after")
+    def validate_password_strength(self) -> Self:
+        _validate_password_strength(self.password)
+        return self
+
+    @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
         if self.password != self.password_confirmation:
             raise ValueError("Passwords do not match")
@@ -162,6 +168,11 @@ class PasswordResetConfirm(Schema):
     confirm_password: str
 
     @model_validator(mode="after")
+    def validate_password_strength(self) -> Self:
+        _validate_password_strength(self.new_password)
+        return self
+
+    @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
         if self.new_password != self.confirm_password:
             raise ValueError("Passwords do not match")
@@ -176,6 +187,11 @@ class PasswordUpdate(Schema):
     old_password: str
     new_password: Annotated[str, Field(min_length=8, max_length=128)]
     confirm_password: str
+
+    @model_validator(mode="after")
+    def validate_password_strength(self) -> Self:
+        _validate_password_strength(self.new_password)
+        return self
 
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
@@ -198,3 +214,22 @@ class EmailVerificationResponse(Schema):
 
 class EmailVerificationSendResponse(Schema):
     message: str = "If the email is not verified, a verification link has been sent."
+
+
+def _validate_password_strength(password: str) -> None:
+    """Validate password strength requirements."""
+    is_password_valid = all(
+        [
+            len(password) > 8,  # greater than 8 symbols
+            re.search(r"\d", password),  # at least 1 digit
+            re.search(r"[A-Z]", password),  # at least 1 capital letter
+            re.search(r"[^\w\s]", password),  # at least 1 punctuation symbol
+        ]
+    )
+
+    if not is_password_valid:
+        raise ValueError(
+            "Your password is weak. It must be greater than 8 symbols "
+            "and contain at least 1 digit, 1 punctuation symbol "
+            "and 1 capital letter."
+        )

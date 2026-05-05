@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
+TEST_PASSWORD = "Passw0rd%"
+
 
 @pytest_asyncio.fixture
 async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
@@ -19,7 +21,7 @@ async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
 
 
 async def _populate_users_for_auth_test(session: AsyncSession) -> None:
-    password = HASHER.hash("password")
+    password = HASHER.hash(TEST_PASSWORD)
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
                               is_superuser, email, hashed_password)

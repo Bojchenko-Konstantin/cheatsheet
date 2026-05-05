@@ -24,7 +24,6 @@ __all__ = (
     "InvalidPasswordResetTokenError",
     "ExpiredPasswordResetTokenError",
     "PasswordResetException",
-    "WeakPasswordError",
     "InvalidEmailVerificationTokenError",
     "ExpiredEmailVerificationTokenError",
     "EmailVerificationException",
@@ -54,7 +53,6 @@ from .password_reset import (
     ExpiredPasswordResetTokenError,
     InvalidPasswordResetTokenError,
     PasswordResetException,
-    WeakPasswordError,
 )
 from .refresh_token import (
     AddRefreshTokenToBlacklistError,

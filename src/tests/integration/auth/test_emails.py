@@ -3,6 +3,8 @@ import json
 import pytest
 from httpx import AsyncClient
 
+from src.tests.integration.auth.conftest import TEST_PASSWORD
+
 MAILHOG = "http://localhost:8025"
 
 
@@ -21,8 +23,8 @@ async def test_emails_were_sent_successfully_when_register(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": "password",
-        "password_confirmation": "password",
+        "password": TEST_PASSWORD,
+        "password_confirmation": TEST_PASSWORD,
     }
 
     # Act.

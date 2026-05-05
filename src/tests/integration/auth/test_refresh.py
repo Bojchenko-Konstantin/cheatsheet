@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
 
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
+from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -18,7 +19,7 @@ async def test_refresh_token_was_successful(
     # Arrange.
     data_for_login = {
         "username": "active_user",
-        "password": "password",
+        "password": TEST_PASSWORD,
     }
 
     user_data = await _get_user_from_db_by_username("active_user")

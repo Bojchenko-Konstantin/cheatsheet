@@ -1,4 +1,3 @@
-import re
 from typing import Any
 from uuid import UUID
 
@@ -10,7 +9,6 @@ from src.application.exceptions import (
     UserAuthenticationError,
     UserInactiveError,
     UserNotFoundError,
-    WeakPasswordError,
 )
 from src.application.interfaces import IUnitOfWork, IUserService
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
@@ -73,10 +71,6 @@ class UserService(IUserService):
     async def update_password(
         self, user_id: UUID, old_password: str, new_password: str
     ) -> None:
-        is_valid, error = self._validate_password_strength(new_password)
-        if not is_valid:
-            raise WeakPasswordError(error)
-
         user = await self.get_by_id(user_id)
         if not self._verify_password(old_password, user.hashed_password):
             raise UserAuthenticationError
@@ -87,10 +81,6 @@ class UserService(IUserService):
             await uow.user_repo.update_password(user_id, new_hashed_password)
 
     async def reset_password(self, user_id: UUID, new_password: str) -> None:
-        is_valid, error = self._validate_password_strength(new_password)
-        if not is_valid:
-            raise WeakPasswordError(error)
-
         new_hashed_password = self._create_hashed_password(new_password)
 
         async with self._unit_of_work as uow:
@@ -111,18 +101,3 @@ class UserService(IUserService):
 
     def _create_hashed_password(self, plain_password: str) -> str:
         return self._hasher.hash(plain_password)
-
-    def _validate_password_strength(self, password: str) -> tuple[bool, str | None]:
-        if len(password) < 8:
-            return False, "Password must be at least 8 characters long"
-
-        if len(password) > 128:
-            return False, "Password must not exceed 128 characters"
-
-        if not re.search(r"[A-Za-z]", password):
-            return False, "Password must contain at least one letter"
-
-        if not re.search(r"\d", password):
-            return False, "Password must contain at least one digit"
-
-        return True, None
