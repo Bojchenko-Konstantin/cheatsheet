@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
@@ -130,6 +130,19 @@ async def get_current_user_required(
     return user
 
 
+async def get_current_verified_user(
+    current_user: Annotated[User, Depends(get_current_user_required)],
+) -> User:
+    """Dependency for endpoints that require verified email."""
+    if not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. "
+            "Please verify your email to access this feature.",
+        )
+    return current_user
+
+
 async def get_current_user_optional(
     access_token: Annotated[str | None, Depends(oauth2_scheme_optional)],
     auth_use_case: Annotated[AuthUseCase, Depends(get_auth_use_case)],
@@ -164,4 +177,5 @@ VerificationUseCaseDep = Annotated[
 
 
 CurrentUserRequiredDep = Annotated[User, Depends(get_current_user_required)]
+CurrentVerifiedUserDep = Annotated[User, Depends(get_current_verified_user)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]

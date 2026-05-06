@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from src.api.dependencies import (
     AuthUseCaseDep,
     CurrentUserRequiredDep,
+    CurrentVerifiedUserDep,
     OAuth2FormDep,
     PasswordUseCaseDep,
     VerificationUseCaseDep,
@@ -263,7 +264,7 @@ async def logout(
 @router.put("/password", response_model=PasswordUpdateResponse)
 async def update_password(
     password_data: PasswordUpdate,
-    current_user: CurrentUserRequiredDep,
+    current_user: CurrentVerifiedUserDep,
     password_use_case: PasswordUseCaseDep,
 ):
     """Change password for authenticated user."""

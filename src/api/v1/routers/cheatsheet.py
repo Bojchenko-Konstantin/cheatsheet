@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from src.api.dependencies import (
     CheatsheetUseCaseDep,
     CurrentUserOptionalDep,
-    CurrentUserRequiredDep,
+    CurrentVerifiedUserDep,
 )
 from src.api.schemas import CheatsheetCreate, CheatsheetRead, CheatsheetUpdate
 from src.application.exceptions import (
@@ -51,7 +51,7 @@ async def get_cheatsheet_by_id(
 async def create_cheatsheet(
     cheatsheet_data: CheatsheetCreate,
     cheatsheet_use_case: CheatsheetUseCaseDep,
-    current_user: CurrentUserRequiredDep,
+    current_user: CurrentVerifiedUserDep,
 ):
     create_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
     create_data["user_id"] = current_user.user_id
@@ -76,7 +76,7 @@ async def update_cheatsheet(
     cheatsheet_id: UUID,
     cheatsheet_data: CheatsheetUpdate,
     cheatsheet_use_case: CheatsheetUseCaseDep,
-    current_user: CurrentUserRequiredDep,
+    current_user: CurrentVerifiedUserDep,
 ):
     update_data: dict[str, Any] = cheatsheet_data.model_dump(exclude_unset=True)
     update_data["cheatsheet_id"] = cheatsheet_id

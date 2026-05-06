@@ -21,6 +21,17 @@ async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
 
 
 async def _populate_users_for_auth_test(session: AsyncSession) -> None:
+    tag_query = text(
+        """INSERT INTO md_tag(tag_name)
+           VALUES (:tag_name)
+           ON CONFLICT (tag_name) DO NOTHING"""
+    )
+
+    tags_to_create = ["python", "javascript"]
+
+    for tag in tags_to_create:
+        await session.execute(tag_query, {"tag_name": tag})
+
     password = HASHER.hash(TEST_PASSWORD)
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
@@ -53,6 +64,14 @@ async def _populate_users_for_auth_test(session: AsyncSession) -> None:
             "is_active": True,
             "is_superuser": False,
             "email": "update-password@test",
+            "hashed_password": password,
+        },
+        {
+            "user_name": "unverified_user",
+            "is_verified": False,
+            "is_active": True,
+            "is_superuser": False,
+            "email": "unverified@test.mail",
             "hashed_password": password,
         },
     ]
