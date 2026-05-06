@@ -19,6 +19,7 @@ __all__ = (
     "UserException",
     "UserInactiveError",
     "UserNotFoundError",
+    "UserNotVerifiedError",
     "NotificationException",
     "SendEmailError",
     "InvalidPasswordResetTokenError",
@@ -69,4 +70,5 @@ from .user import (
     UserException,
     UserInactiveError,
     UserNotFoundError,
+    UserNotVerifiedError,
 )

@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
+from src.application.exceptions import UserNotVerifiedError
 from src.application.interfaces import (
     IPasswordResetService,
     ITokenService,
@@ -135,11 +136,7 @@ async def get_current_verified_user(
 ) -> User:
     """Dependency for endpoints that require verified email."""
     if not current_user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email not verified. "
-            "Please verify your email to access this feature.",
-        )
+        raise UserNotVerifiedError
     return current_user
 
 

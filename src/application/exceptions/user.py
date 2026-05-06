@@ -23,3 +23,7 @@ class UserInactiveError(UserException):
 
 class UserAuthenticationError(UserException):
     """Raised when user authentication fails due to invalid credentials."""
+
+
+class UserNotVerifiedError(UserException):
+    """Raised when user tries to perform action requiring verified email."""

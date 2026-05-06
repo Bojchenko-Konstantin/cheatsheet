@@ -19,6 +19,9 @@ from taskiq import (
     async_shared_broker,
 )
 
+from src.api.exception_handlers import email_not_verified_handler
+from src.api.middleware.unhandled_error_middleware import UnhandledExceptionMiddleware
+from src.application.exceptions import UserNotVerifiedError
 from src.core.config import settings
 from src.main import router_auth, router_cheatsheet
 
@@ -95,6 +98,8 @@ def app() -> FastAPI:
     )
     app.include_router(router_cheatsheet)
     app.include_router(router_auth)
+    app.add_middleware(UnhandledExceptionMiddleware)
+    app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # type: ignore[arg-type]
     return app
 
 
