@@ -14,6 +14,7 @@ TEST_PASSWORD = "Passw0rd%"
 async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
     session = DEFAULT_SESSION_FACTORY()
     await _populate_users_for_auth_test(session)
+    await _populate_tags(session)
 
     yield
 
@@ -21,17 +22,6 @@ async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
 
 
 async def _populate_users_for_auth_test(session: AsyncSession) -> None:
-    tag_query = text(
-        """INSERT INTO md_tag(tag_name)
-           VALUES (:tag_name)
-           ON CONFLICT (tag_name) DO NOTHING"""
-    )
-
-    tags_to_create = ["python", "javascript"]
-
-    for tag in tags_to_create:
-        await session.execute(tag_query, {"tag_name": tag})
-
     password = HASHER.hash(TEST_PASSWORD)
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
@@ -79,6 +69,21 @@ async def _populate_users_for_auth_test(session: AsyncSession) -> None:
     for user in users_to_create:
         result = await session.execute(query, user)
         result.scalar_one()
+
+    await session.commit()
+
+
+async def _populate_tags(session: AsyncSession) -> None:
+    tag_query = text(
+        """INSERT INTO md_tag(tag_name)
+           VALUES (:tag_name)
+           ON CONFLICT (tag_name) DO NOTHING"""
+    )
+
+    tags_to_create = ["python", "javascript"]
+
+    for tag in tags_to_create:
+        await session.execute(tag_query, {"tag_name": tag})
 
     await session.commit()
 
