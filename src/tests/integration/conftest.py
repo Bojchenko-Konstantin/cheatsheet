@@ -9,16 +9,19 @@ from typing import Any
 
 import docker
 import pytest
+import pytest_asyncio
 from docker import DockerClient
 from docker.models.containers import Container
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 from taskiq import (
     InMemoryBroker,
     async_shared_broker,
 )
 
+from infrastructure.database.database import DEFAULT_SESSION_FACTORY
 from src.api.exception_handlers import email_not_verified_handler
 from src.api.middleware.unhandled_error_middleware import UnhandledExceptionMiddleware
 from src.application.exceptions import UserNotVerifiedError
@@ -74,43 +77,6 @@ DATABASE_ENV = DatabaseConfig(
 )
 
 
-@pytest.fixture(autouse=True)
-async def broker():
-    test_broker = InMemoryBroker(await_inplace=True)
-    async_shared_broker.default_broker(test_broker)
-    test_broker.state.notification_use_case = FakeNotificationUseCase()
-
-    await test_broker.startup()
-    yield test_broker
-    await test_broker.shutdown()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator:
-    yield
-
-
-@pytest.fixture
-def app() -> FastAPI:
-    app = FastAPI(
-        default_response_class=ORJSONResponse,
-        lifespan=lifespan,
-    )
-    app.include_router(router_cheatsheet)
-    app.include_router(router_auth)
-    app.add_middleware(UnhandledExceptionMiddleware)
-    app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # type: ignore[arg-type]
-    return app
-
-
-@pytest.fixture
-async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
-    transport = ASGITransport(app=app)
-
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
-
-
 @pytest.fixture(scope="session", autouse=True)
 def test_environment_lifecycle(request) -> None:
     client = _create_docker_client()
@@ -131,6 +97,48 @@ def test_environment_lifecycle(request) -> None:
         smtp_container.remove()
 
     request.addfinalizer(remove_containers)
+
+
+@pytest_asyncio.fixture
+async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def broker():
+    test_broker = InMemoryBroker(await_inplace=True)
+    async_shared_broker.default_broker(test_broker)
+    test_broker.state.notification_use_case = FakeNotificationUseCase()
+
+    await test_broker.startup()
+    yield test_broker
+    await test_broker.shutdown()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def session() -> AsyncGenerator[AsyncSession]:
+    yield DEFAULT_SESSION_FACTORY()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    yield
+
+
+@pytest.fixture
+def app() -> FastAPI:
+    app = FastAPI(
+        default_response_class=ORJSONResponse,
+        lifespan=lifespan,
+    )
+    app.include_router(router_cheatsheet)
+    app.include_router(router_auth)
+    app.add_middleware(UnhandledExceptionMiddleware)
+    app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # type: ignore[arg-type]
+    return app
 
 
 def _create_docker_client() -> DockerClient:

@@ -3,15 +3,13 @@ import json
 import pytest
 from httpx import AsyncClient
 
-from src.tests.integration.auth.conftest import TEST_PASSWORD
-
 MAILHOG = "http://localhost:8025"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_emails_were_sent_successfully_when_register(
-    populate_db_for_multiple_users: None, async_client: AsyncClient
+    populate_db_for_multiple_users: None, async_client: AsyncClient, test_password: str
 ):
     # Arrange.
     data_for_register = {
@@ -23,8 +21,8 @@ async def test_emails_were_sent_successfully_when_register(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": TEST_PASSWORD,
-        "password_confirmation": TEST_PASSWORD,
+        "password": test_password,
+        "password_confirmation": test_password,
     }
 
     # Act.

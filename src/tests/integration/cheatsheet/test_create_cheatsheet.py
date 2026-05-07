@@ -4,11 +4,11 @@ import pytest
 from fastapi import FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy import Row, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import TextClause
 
 from src.api.dependencies import get_current_user_required
 from src.application.dto import User
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 
 
@@ -17,6 +17,7 @@ from src.tests.integration.cheatsheet.conftest import CheatsheetTestRecord
 async def test_created_cheatsheet_was_persisted_to_database(
     populate_db_for_single_cheatsheet: CheatsheetTestRecord,
     async_client: AsyncClient,
+    session: AsyncSession,
     app: FastAPI,
 ):
     # Arrange.
@@ -47,15 +48,17 @@ async def test_created_cheatsheet_was_persisted_to_database(
     response = await async_client.post("/cheatsheets/", json=data_for_new_cheatsheet)
     response_data = response.json()
 
-    expected_result = await _get_cheatsheet_from_db_by_title("Test Cheatsheet")
+    expected_result = await _get_cheatsheet_from_db_by_title("Test Cheatsheet", session)
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
     assert response_data == expected_result
 
 
-async def _get_cheatsheet_from_db_by_title(title: str) -> dict[str, Any]:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_cheatsheet_from_db_by_title(
+    title: str, session: AsyncSession
+) -> dict[str, Any]:
+    async with session:
         query = _build_cheatsheet_query()
         result = await session.execute(query, {"title": title})
         db_row = result.one()

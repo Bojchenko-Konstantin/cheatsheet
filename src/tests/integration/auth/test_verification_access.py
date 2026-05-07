@@ -2,9 +2,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
-
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-from src.tests.integration.auth.conftest import TEST_PASSWORD
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.integration
@@ -12,11 +10,12 @@ from src.tests.integration.auth.conftest import TEST_PASSWORD
 async def test_create_cheatsheet_by_unverified_user_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -43,11 +42,12 @@ async def test_create_cheatsheet_by_unverified_user_was_unsuccessful(
 async def test_update_cheatsheet_by_unverified_user_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -77,11 +77,12 @@ async def test_update_cheatsheet_by_unverified_user_was_unsuccessful(
 async def test_update_password_by_unverified_user_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -89,7 +90,7 @@ async def test_update_password_by_unverified_user_was_unsuccessful(
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     password_update_data = {
-        "old_password": TEST_PASSWORD,
+        "old_password": test_password,
         "new_password": "NewP@ssw0rd!",
         "confirm_password": "NewP@ssw0rd!",
     }
@@ -107,11 +108,12 @@ async def test_update_password_by_unverified_user_was_unsuccessful(
 async def test_login_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
 
     # Act.
@@ -129,16 +131,18 @@ async def test_login_by_unverified_user_was_successful(
 async def test_refresh_token_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     tokens = login_response.json()
 
-    user_id = await _get_user_id_from_db_by_username("unverified_user")
+    user_id = await _get_user_id_from_db_by_username("unverified_user", session)
 
     refresh_data = {
         "refresh_token": tokens["refresh_token"],
@@ -158,16 +162,18 @@ async def test_refresh_token_by_unverified_user_was_successful(
 async def test_logout_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     tokens = login_response.json()
 
-    user_id = await _get_user_id_from_db_by_username("unverified_user")
+    user_id = await _get_user_id_from_db_by_username("unverified_user", session)
 
     logout_data = {
         "user_id": user_id,
@@ -187,11 +193,12 @@ async def test_logout_by_unverified_user_was_successful(
 async def test_get_public_cheatsheet_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange
     login_data = {
         "username": "active_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -210,7 +217,7 @@ async def test_get_public_cheatsheet_by_unverified_user_was_successful(
 
     login_data = {
         "username": "unverified_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     unverified_token = login_response.json()["access_token"]
@@ -229,11 +236,12 @@ async def test_get_public_cheatsheet_by_unverified_user_was_successful(
 async def test_create_cheatsheet_by_verified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "active_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -275,8 +283,8 @@ async def test_create_cheatsheet_by_guest_was_unsuccessful(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-async def _get_user_id_from_db_by_username(username: str) -> str:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_user_id_from_db_by_username(username: str, session: AsyncSession) -> str:
+    async with session:
         query = _build_user_id_query()
         result = await session.execute(query, {"user_name": username})
         db_row = result.one()

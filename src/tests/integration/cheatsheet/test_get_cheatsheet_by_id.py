@@ -5,16 +5,19 @@ import pytest
 from fastapi import FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_user_optional
 from src.application.dto import User
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_cheatsheet_by_id_was_successful(
-    populate_db_for_single_cheatsheet, async_client: AsyncClient, app: FastAPI
+    populate_db_for_single_cheatsheet,
+    async_client: AsyncClient,
+    session: AsyncSession,
+    app: FastAPI,
 ):
     # Arrange.
     cheatsheet_id, user_id, _ = populate_db_for_single_cheatsheet
@@ -33,7 +36,7 @@ async def test_get_cheatsheet_by_id_was_successful(
 
     app.dependency_overrides[get_current_user_optional] = override_get_current_user
 
-    expected_result = await _get_cheatsheet_from_db_by_id(cheatsheet_id)
+    expected_result = await _get_cheatsheet_from_db_by_id(cheatsheet_id, session)
 
     # Act.
     response = await async_client.get(f"/cheatsheets/{str(cheatsheet_id)}")
@@ -78,8 +81,10 @@ async def test_get_cheatsheet_fails_when_id_does_not_exist(
     )
 
 
-async def _get_cheatsheet_from_db_by_id(cheatsheet_id: UUID) -> dict[str, Any]:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_cheatsheet_from_db_by_id(
+    cheatsheet_id: UUID, session: AsyncSession
+) -> dict[str, Any]:
+    async with session:
         query = _build_cheatsheet_query()
         result = await session.execute(query, {"cheatsheet_id": cheatsheet_id})
         db_row = result.one()

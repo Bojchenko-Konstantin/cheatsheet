@@ -6,16 +6,15 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-
 type CheatsheetTestRecord = tuple[UUID, UUID, list[dict]]
 
 START_INDEX: int = 1
 
 
 @pytest_asyncio.fixture
-async def populate_db_for_single_cheatsheet() -> AsyncGenerator[CheatsheetTestRecord]:
-    session = DEFAULT_SESSION_FACTORY()
+async def populate_db_for_single_cheatsheet(
+    session: AsyncSession,
+) -> AsyncGenerator[CheatsheetTestRecord]:
     cheatsheet_quantity = 1 + START_INDEX
     tag_quantity = 3 + START_INDEX
 

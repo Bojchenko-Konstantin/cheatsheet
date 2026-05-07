@@ -4,10 +4,9 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
-from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
@@ -15,18 +14,20 @@ from src.tests.integration.auth.conftest import TEST_PASSWORD
 async def test_logout_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
+    test_password: str,
 ):
     # Arrange.
     login_data = {
         "username": "active_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
     login_response = await async_client.post("/login", data=login_data)
 
     tokens = login_response.json()
     refresh_token = tokens["refresh_token"]
 
-    user = await _get_user_from_db_by_username("active_user")
+    user = await _get_user_from_db_by_username("active_user", session)
 
     logout_data = {
         "user_id": str(user["user_id"]),
@@ -37,8 +38,12 @@ async def test_logout_was_successful(
     # Act.
     response = await async_client.post("/logout", json=logout_data)
 
-    active_token = await _get_refresh_token_from_db(refresh_token, user["user_id"])
-    revoked_token = await _get_blacklisted_token_from_db(refresh_token, user["user_id"])
+    active_token = await _get_refresh_token_from_db(
+        refresh_token, user["user_id"], session
+    )
+    revoked_token = await _get_blacklisted_token_from_db(
+        refresh_token, user["user_id"], session
+    )
 
     # Assert.
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -72,8 +77,9 @@ async def test_logout_with_nonexistent_user_was_unsuccessful(
 async def test_logout_with_invalid_refresh_token_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
 ):
-    user = await _get_user_from_db_by_username("active_user")
+    user = await _get_user_from_db_by_username("active_user", session)
 
     logout_data = {
         "user_id": str(user["user_id"]),
@@ -86,8 +92,10 @@ async def test_logout_with_invalid_refresh_token_was_successful(
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_user_from_db_by_username(
+    username: str, session: AsyncSession
+) -> dict[str, Any]:
+    async with session:
         query = text(
             """
             SELECT user_id, user_name, hashed_password, is_active
@@ -107,9 +115,9 @@ async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
 
 
 async def _get_refresh_token_from_db(
-    refresh_token: str, user_id: str
+    refresh_token: str, user_id: str, session: AsyncSession
 ) -> dict[str, Any] | None:
-    async with DEFAULT_SESSION_FACTORY() as session:
+    async with session:
         query = text(
             """
             SELECT user_id, hashed_token, hashed_fingerprint, status_id
@@ -132,9 +140,9 @@ async def _get_refresh_token_from_db(
 
 
 async def _get_blacklisted_token_from_db(
-    refresh_token: str, user_id: str
+    refresh_token: str, user_id: str, session: AsyncSession
 ) -> dict[str, Any] | None:
-    async with DEFAULT_SESSION_FACTORY() as session:
+    async with session:
         query = text(
             """
             SELECT user_id, hashed_token, hashed_fingerprint, status_id, revoked_at

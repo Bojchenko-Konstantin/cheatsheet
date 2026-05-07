@@ -4,17 +4,19 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import Row, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import TextClause
 
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
-from src.tests.integration.auth.conftest import TEST_PASSWORD
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_was_successful(
-    populate_db_for_multiple_users: None, async_client: AsyncClient
+    populate_db_for_multiple_users: None,
+    async_client: AsyncClient,
+    session: AsyncSession,
+    test_password: str,
 ):
     # Arrange.
     data_for_register = {
@@ -26,8 +28,8 @@ async def test_register_was_successful(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": TEST_PASSWORD,
-        "password_confirmation": TEST_PASSWORD,
+        "password": test_password,
+        "password_confirmation": test_password,
     }
 
     expected_result = {
@@ -41,18 +43,18 @@ async def test_register_was_successful(
 
     # Act.
     response = await async_client.post("/register", json=data_for_register)
-    registered_user = await _get_user_from_db_by_username("test_register")
+    registered_user = await _get_user_from_db_by_username("test_register", session)
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
-    assert HASHER.verify(TEST_PASSWORD, registered_user.pop("hashed_password"))
+    assert HASHER.verify(test_password, registered_user.pop("hashed_password"))
     assert registered_user == expected_result
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_fails_when_username_already_exists(
-    populate_db_for_multiple_users: None, async_client: AsyncClient
+    populate_db_for_multiple_users: None, async_client: AsyncClient, test_password: str
 ):
     data_for_register = {
         "username": "active_user",  # Already exists in the database
@@ -63,8 +65,8 @@ async def test_register_fails_when_username_already_exists(
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": TEST_PASSWORD,
-        "password_confirmation": TEST_PASSWORD,
+        "password": test_password,
+        "password_confirmation": test_password,
     }
 
     response = await async_client.post("/register", json=data_for_register)
@@ -72,8 +74,10 @@ async def test_register_fails_when_username_already_exists(
     assert response.status_code == status.HTTP_409_CONFLICT
 
 
-async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_user_from_db_by_username(
+    username: str, session: AsyncSession
+) -> dict[str, Any]:
+    async with session:
         query = _build_user_query()
         result = await session.execute(query, {"user_name": username})
         db_row = result.one()

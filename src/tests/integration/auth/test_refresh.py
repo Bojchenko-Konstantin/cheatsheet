@@ -5,9 +5,7 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
-
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
-from src.tests.integration.auth.conftest import TEST_PASSWORD
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.integration
@@ -15,14 +13,16 @@ from src.tests.integration.auth.conftest import TEST_PASSWORD
 async def test_refresh_token_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
+    test_password: str,
 ):
     # Arrange.
     data_for_login = {
         "username": "active_user",
-        "password": TEST_PASSWORD,
+        "password": test_password,
     }
 
-    user_data = await _get_user_from_db_by_username("active_user")
+    user_data = await _get_user_from_db_by_username("active_user", session)
     user_id = user_data["user_id"]
 
     login_response = await async_client.post("/login", data=data_for_login)
@@ -57,9 +57,10 @@ async def test_refresh_token_was_successful(
 async def test_refresh_token_was_not_found_when_token_does_not_exist(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
+    session: AsyncSession,
 ):
     # Arrange.
-    user_data = await _get_user_from_db_by_username("active_user")
+    user_data = await _get_user_from_db_by_username("active_user", session)
     user_id = user_data["user_id"]
 
     refresh_request_data = {
@@ -77,8 +78,10 @@ async def test_refresh_token_was_not_found_when_token_does_not_exist(
     assert response_data["detail"] == "Failed to authorize"
 
 
-async def _get_user_from_db_by_username(username: str) -> dict[str, Any]:
-    async with DEFAULT_SESSION_FACTORY() as session:
+async def _get_user_from_db_by_username(
+    username: str, session: AsyncSession
+) -> dict[str, Any]:
+    async with session:
         query = _build_user_query()
         result = await session.execute(query, {"user_name": username})
         db_row = result.one()

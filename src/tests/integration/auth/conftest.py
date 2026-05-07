@@ -1,19 +1,23 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
+import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.hasher import HASHER
 
-TEST_PASSWORD = "Passw0rd%"
+
+@pytest.fixture(scope="session")
+def test_password() -> Generator[str]:
+    yield "Passw0rd%"
 
 
 @pytest_asyncio.fixture
-async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
-    session = DEFAULT_SESSION_FACTORY()
-    await _populate_users_for_auth_test(session)
+async def populate_db_for_multiple_users(
+    session: AsyncSession, test_password: str
+) -> AsyncGenerator[None]:
+    await _populate_users_for_auth_test(session, test_password)
     await _populate_tags(session)
 
     yield
@@ -21,8 +25,10 @@ async def populate_db_for_multiple_users() -> AsyncGenerator[None]:
     await _truncate_all_tables(session)
 
 
-async def _populate_users_for_auth_test(session: AsyncSession) -> None:
-    password = HASHER.hash(TEST_PASSWORD)
+async def _populate_users_for_auth_test(
+    session: AsyncSession, test_password: str
+) -> None:
+    password = HASHER.hash(test_password)
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
                               is_superuser, email, hashed_password)
