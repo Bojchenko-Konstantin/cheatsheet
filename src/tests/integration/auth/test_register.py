@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import TextClause
 
 from src.infrastructure.hasher import HASHER
+from tests.integration.auth.models import DBUserData
+
+TEST_REGISTER = DBUserData(name="test_register")
 
 
 @pytest.mark.integration
@@ -16,25 +19,24 @@ async def test_register_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    test_password: str,
 ):
     # Arrange.
     data_for_register = {
-        "username": "test_register",
-        "email": "user@example.com",
+        "username": TEST_REGISTER.name,
+        "email": TEST_REGISTER.email,
         "first_name": "string",
         "last_name": "string",
         "profile_description": "string",
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": test_password,
-        "password_confirmation": test_password,
+        "password": TEST_REGISTER.password,
+        "password_confirmation": TEST_REGISTER.password,
     }
 
     expected_result = {
-        "user_name": "test_register",
-        "email": "user@example.com",
+        "user_name": TEST_REGISTER.name,
+        "email": TEST_REGISTER.email,
         "first_name": "string",
         "last_name": "string",
         "profile_description": "string",
@@ -43,30 +45,32 @@ async def test_register_was_successful(
 
     # Act.
     response = await async_client.post("/register", json=data_for_register)
-    registered_user = await _get_user_from_db_by_username("test_register", session)
+    registered_user = await _get_user_from_db_by_username(TEST_REGISTER.name, session)
 
     # Assert.
     assert response.status_code == status.HTTP_201_CREATED
-    assert HASHER.verify(test_password, registered_user.pop("hashed_password"))
+    assert HASHER.verify(TEST_REGISTER.password, registered_user.pop("hashed_password"))
     assert registered_user == expected_result
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_register_fails_when_username_already_exists(
-    populate_db_for_multiple_users: None, async_client: AsyncClient, test_password: str
+    populate_db_for_multiple_users: None,
+    async_client: AsyncClient,
+    active_user: DBUserData,
 ):
     data_for_register = {
-        "username": "active_user",  # Already exists in the database
-        "email": "user@example.com",
+        "username": active_user.name,  # Already exists in the database
+        "email": active_user.email,
         "first_name": "string",
         "last_name": "string",
         "profile_description": "string",
         "image_url": "string",
         "social_network_id": [0],
         "network_url": ["string"],
-        "password": test_password,
-        "password_confirmation": test_password,
+        "password": active_user.password,
+        "password_confirmation": active_user.password,
     }
 
     response = await async_client.post("/register", json=data_for_register)

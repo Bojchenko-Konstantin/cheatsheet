@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.hasher import HASHER
+from tests.integration.auth.models import DBUserData
 
 
 @pytest.mark.integration
@@ -13,12 +14,14 @@ async def test_password_update_was_successful(
     async_client: AsyncClient,
     populate_db_for_multiple_users: None,
     session: AsyncSession,
-    test_password: str,
+    update_password_user: DBUserData,
 ):
     # Arrange.
+    current_password = update_password_user.password
+    new_password = "New_password123%"
     login_data = {
-        "username": "test_password_update",
-        "password": test_password,
+        "username": update_password_user.name,
+        "password": current_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -27,9 +30,9 @@ async def test_password_update_was_successful(
 
     expected_password = "New_password123%"
     data_for_password_change = {
-        "old_password": test_password,
-        "new_password": "New_password123%",
-        "confirm_password": "New_password123%",
+        "old_password": update_password_user.password,
+        "new_password": new_password,
+        "confirm_password": new_password,
     }
 
     # Act.
@@ -46,12 +49,16 @@ async def test_password_update_was_successful(
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_weak_password_update_was_unsuccessful(
-    async_client: AsyncClient, populate_db_for_multiple_users: None, test_password: str
+    async_client: AsyncClient,
+    populate_db_for_multiple_users: None,
+    update_password_user: DBUserData,
 ):
     # Arrange.
+    current_password = update_password_user.password
+    weak_password = "weak_password"
     login_data = {
-        "username": "test_password_update",
-        "password": test_password,
+        "username": update_password_user.name,
+        "password": current_password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -59,9 +66,9 @@ async def test_weak_password_update_was_unsuccessful(
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
-        "old_password": test_password,
-        "new_password": "weak_password",
-        "confirm_password": "weak_password",
+        "old_password": current_password,
+        "new_password": weak_password,
+        "confirm_password": weak_password,
     }
 
     # Act.
@@ -75,22 +82,22 @@ async def test_weak_password_update_was_unsuccessful(
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_passwords_did_not_match_and_update_was_unsuccessful(
-    async_client: AsyncClient, populate_db_for_multiple_users: None, test_password: str
+    async_client: AsyncClient,
+    populate_db_for_multiple_users: None,
+    update_password_user: DBUserData,
 ):
     # Arrange.
-    login_data = {
-        "username": "test_password_update",
-        "password": test_password,
-    }
+    current_password = update_password_user.password
+    login_data = {"username": "test_password_update", "password": current_password}
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
 
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
-        "old_password": test_password,
-        "new_password": "ranDom_password123!",
-        "confirm_password": "wRong_password123!",
+        "old_password": current_password,
+        "new_password": "fIrst_password123!",
+        "confirm_password": "sEcond_password123!",
     }
 
     # Act.
@@ -104,12 +111,15 @@ async def test_passwords_did_not_match_and_update_was_unsuccessful(
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_incorrect_current_password_update_was_unsuccessful(
-    async_client: AsyncClient, populate_db_for_multiple_users: None, test_password: str
+    async_client: AsyncClient,
+    populate_db_for_multiple_users: None,
+    update_password_user: DBUserData,
 ):
     # Arrange.
+    new_password = "NewP@ssword2"
     login_data = {
-        "username": "test_password_update",
-        "password": test_password,
+        "username": update_password_user.name,
+        "password": update_password_user.password,
     }
     login_response = await async_client.post("/login", data=login_data)
     access_token = login_response.json()["access_token"]
@@ -118,8 +128,8 @@ async def test_incorrect_current_password_update_was_unsuccessful(
 
     data_for_password_change = {
         "old_password": "Wr0ngP@ssw0rd",
-        "new_password": "NewP@ssword2",
-        "confirm_password": "NewP@ssword2",
+        "new_password": new_password,
+        "confirm_password": new_password,
     }
 
     # Act.

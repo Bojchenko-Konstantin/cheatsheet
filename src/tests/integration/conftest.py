@@ -1,6 +1,6 @@
 import subprocess
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import StrEnum
@@ -39,12 +39,15 @@ class UnhealthyContainerError(Exception):
     pass
 
 
+EMAIL_RECEIVER = "test-email@test.com"
+
+
 class FakeNotificationUseCase:
     async def send_welcome_email(self, data: Any) -> None:
         with SMTP(host="localhost", port=1025) as client:
             client.sendmail(
                 from_addr="sender@test.com",
-                to_addrs="test-email@example.com",
+                to_addrs=EMAIL_RECEIVER,
                 msg="Hello, test",
             )
 
@@ -52,7 +55,7 @@ class FakeNotificationUseCase:
         with SMTP(host="localhost", port=1025) as client:
             client.sendmail(
                 from_addr="sender@test.com",
-                to_addrs="test-email@example.com",
+                to_addrs=EMAIL_RECEIVER,
                 msg="Test email verification",
             )
 
@@ -75,6 +78,11 @@ DATABASE_ENV = DatabaseConfig(
     password=settings.database.db_password,
     internal_container_port="5432",
 )
+
+
+@pytest.fixture(scope="session")
+def email_receiver() -> Generator[str]:
+    yield EMAIL_RECEIVER
 
 
 @pytest.fixture(scope="session", autouse=True)

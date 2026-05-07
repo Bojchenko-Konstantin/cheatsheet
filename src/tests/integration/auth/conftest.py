@@ -5,19 +5,81 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.hasher import HASHER
+from tests.integration.auth.models import DBUserData
 
 
 @pytest.fixture(scope="session")
-def test_password() -> Generator[str]:
-    yield "Passw0rd%"
+def active_user() -> Generator[DBUserData]:
+    yield DBUserData(name="active_user")
+
+
+@pytest.fixture(scope="session")
+def inactive_user() -> Generator[DBUserData]:
+    yield DBUserData(name="inactive_user", is_active=False)
+
+
+@pytest.fixture(scope="session")
+def unverified_user() -> Generator[DBUserData]:
+    yield DBUserData(
+        name="unverified_user",
+        is_verified=False,
+    )
+
+
+@pytest.fixture(scope="session")
+def nonexistent_user() -> Generator[DBUserData]:
+    yield DBUserData(
+        name="nonexistent_user",
+        is_verified=False,
+    )
+
+
+@pytest.fixture(scope="session")
+def update_password_user() -> Generator[DBUserData]:
+    yield DBUserData(name="test_password_update", email="test_email.test")
+
+
+@pytest.fixture(scope="session")
+def data_to_login_active_user(active_user: DBUserData) -> Generator[dict[str, str]]:
+    yield {
+        "username": active_user.name,
+        "password": active_user.password,
+    }
+
+
+@pytest.fixture(scope="session")
+def data_to_login_nonexistent_user(
+    nonexistent_user: DBUserData,
+) -> Generator[dict[str, str]]:
+    yield {
+        "username": nonexistent_user.name,
+        "password": nonexistent_user.password,
+    }
+
+
+@pytest.fixture(scope="session")
+def data_to_login_inactive_user(inactive_user: DBUserData) -> Generator[dict[str, str]]:
+    yield {
+        "username": inactive_user.name,
+        "password": inactive_user.password,
+    }
 
 
 @pytest_asyncio.fixture
 async def populate_db_for_multiple_users(
-    session: AsyncSession, test_password: str
+    session: AsyncSession,
+    active_user: DBUserData,
+    inactive_user: DBUserData,
+    unverified_user: DBUserData,
+    update_password_user: DBUserData,
 ) -> AsyncGenerator[None]:
-    await _populate_users_for_auth_test(session, test_password)
+    await _populate_users_for_auth_test(
+        session,
+        active_user,
+        inactive_user,
+        unverified_user,
+        update_password_user,
+    )
     await _populate_tags(session)
 
     yield
@@ -26,9 +88,12 @@ async def populate_db_for_multiple_users(
 
 
 async def _populate_users_for_auth_test(
-    session: AsyncSession, test_password: str
+    session: AsyncSession,
+    active_user: DBUserData,
+    inactive_user: DBUserData,
+    unverified_user: DBUserData,
+    update_password_user: DBUserData,
 ) -> None:
-    password = HASHER.hash(test_password)
     query = text(
         """INSERT INTO "user"(user_name, is_verified, is_active,
                               is_superuser, email, hashed_password)
@@ -39,36 +104,36 @@ async def _populate_users_for_auth_test(
 
     users_to_create = [
         {
-            "user_name": "active_user",
-            "is_verified": True,
-            "is_active": True,
-            "is_superuser": False,
-            "email": "test@random.mail",
-            "hashed_password": password,
+            "user_name": active_user.name,
+            "is_verified": active_user.is_verified,
+            "is_active": active_user.is_active,
+            "is_superuser": active_user.is_superuser,
+            "email": active_user.email,
+            "hashed_password": active_user.hashed_password,
         },
         {
-            "user_name": "inactive_user",
-            "is_verified": True,
-            "is_active": False,
-            "is_superuser": False,
-            "email": "test@random.mail",
-            "hashed_password": password,
+            "user_name": inactive_user.name,
+            "is_verified": inactive_user.is_verified,
+            "is_active": inactive_user.is_active,
+            "is_superuser": inactive_user.is_superuser,
+            "email": inactive_user.email,
+            "hashed_password": inactive_user.hashed_password,
         },
         {
-            "user_name": "test_password_update",
-            "is_verified": True,
-            "is_active": True,
-            "is_superuser": False,
-            "email": "update-password@test",
-            "hashed_password": password,
+            "user_name": update_password_user.name,
+            "is_verified": update_password_user.is_verified,
+            "is_active": update_password_user.is_active,
+            "is_superuser": update_password_user.is_superuser,
+            "email": update_password_user.email,
+            "hashed_password": update_password_user.hashed_password,
         },
         {
-            "user_name": "unverified_user",
-            "is_verified": False,
-            "is_active": True,
-            "is_superuser": False,
-            "email": "unverified@test.mail",
-            "hashed_password": password,
+            "user_name": unverified_user.name,
+            "is_verified": unverified_user.is_verified,
+            "is_active": unverified_user.is_active,
+            "is_superuser": unverified_user.is_superuser,
+            "email": unverified_user.email,
+            "hashed_password": unverified_user.hashed_password,
         },
     ]
 

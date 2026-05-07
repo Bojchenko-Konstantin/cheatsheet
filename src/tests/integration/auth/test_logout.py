@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.hasher import HASHER
+from tests.integration.auth.models import DBUserData
 
 
 @pytest.mark.integration
@@ -15,19 +16,20 @@ async def test_logout_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    test_password: str,
+    active_user: DBUserData,
 ):
     # Arrange.
+    username = active_user.name
     login_data = {
-        "username": "active_user",
-        "password": test_password,
+        "username": username,
+        "password": active_user.password,
     }
     login_response = await async_client.post("/login", data=login_data)
 
     tokens = login_response.json()
     refresh_token = tokens["refresh_token"]
 
-    user = await _get_user_from_db_by_username("active_user", session)
+    user = await _get_user_from_db_by_username(username, session)
 
     logout_data = {
         "user_id": str(user["user_id"]),
@@ -78,8 +80,10 @@ async def test_logout_with_invalid_refresh_token_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
+    active_user: DBUserData,
 ):
-    user = await _get_user_from_db_by_username("active_user", session)
+    username = active_user.name
+    user = await _get_user_from_db_by_username(username, session)
 
     logout_data = {
         "user_id": str(user["user_id"]),

@@ -7,6 +7,7 @@ from sqlalchemy import Row, TextClause, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.hasher import HASHER
+from tests.integration.auth.models import DBUserData
 
 
 @pytest.mark.integration
@@ -14,14 +15,9 @@ from src.infrastructure.hasher import HASHER
 async def test_login_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
-    test_password: str,
+    data_to_login_active_user: dict[str, str],
 ):
-    data_for_login = {
-        "username": "active_user",
-        "password": test_password,
-    }
-
-    response = await async_client.post("/login", data=data_for_login)
+    response = await async_client.post("/login", data=data_to_login_active_user)
     response_data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -32,14 +28,11 @@ async def test_login_was_successful(
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_login_was_unsuccessful_with_nonexistent_username(
-    populate_db_for_multiple_users: None, async_client: AsyncClient, test_password: str
+    populate_db_for_multiple_users: None,
+    async_client: AsyncClient,
+    data_to_login_nonexistent_user: dict[str, str],
 ):
-    data_for_login = {
-        "username": "random",
-        "password": test_password,
-    }
-
-    response = await async_client.post("/login", data=data_for_login)
+    response = await async_client.post("/login", data=data_to_login_nonexistent_user)
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -50,15 +43,17 @@ async def test_login_with_incorrect_password_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
+    active_user: DBUserData,
 ):
+    username = active_user.name
     data_for_login = {
-        "username": "active_user",
+        "username": username,
         "password": "Incorrect_p@ssw0rd",
     }
 
     response = await async_client.post("/login", data=data_for_login)
 
-    user = await _get_user_from_db_by_username("active_user", session)
+    user = await _get_user_from_db_by_username(username, session)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert not HASHER.verify("incorrect_password", user["hashed_password"])
@@ -70,16 +65,12 @@ async def test_login_by_inactive_user_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    test_password: str,
+    inactive_user: DBUserData,
+    data_to_login_inactive_user: dict[str, str],
 ):
-    data_for_login = {
-        "username": "inactive_user",
-        "password": test_password,
-    }
+    response = await async_client.post("/login", data=data_to_login_inactive_user)
 
-    response = await async_client.post("/login", data=data_for_login)
-
-    user = await _get_user_from_db_by_username("inactive_user", session)
+    user = await _get_user_from_db_by_username(inactive_user.name, session)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert not user["is_active"]
