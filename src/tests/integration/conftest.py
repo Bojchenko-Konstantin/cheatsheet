@@ -46,7 +46,7 @@ class FakeNotificationUseCase:
     async def send_welcome_email(self, data: Any) -> None:
         with SMTP(host="localhost", port=1025) as client:
             client.sendmail(
-                from_addr="sender@test.com",
+                from_addr=settings.notification.from_email,
                 to_addrs=EMAIL_RECEIVER,
                 msg="Hello, test",
             )
@@ -54,7 +54,7 @@ class FakeNotificationUseCase:
     async def send_email_verification(self, data: Any) -> None:
         with SMTP(host="localhost", port=1025) as client:
             client.sendmail(
-                from_addr="sender@test.com",
+                from_addr=settings.notification.from_email,
                 to_addrs=EMAIL_RECEIVER,
                 msg="Test email verification",
             )
@@ -192,12 +192,13 @@ def _setup_postgres_container(client: DockerClient) -> Container:
 
 
 def _setup_smtp_container(client: DockerClient) -> Container:
+    api_url = settings.notification.api_url
     container = client.containers.run(
         image="mailhog/mailhog",
         healthcheck={
             "test": [
                 "CMD-SHELL",
-                "wget --no-verbose --tries=1 --spider http://localhost:8025/api/v2/messages",
+                f"wget --no-verbose --tries=1 --spider {api_url}/messages",
             ],
             "interval": 5 * 10**9,
             "retries": 5,
@@ -209,7 +210,6 @@ def _setup_smtp_container(client: DockerClient) -> Container:
             "8025": 8025,
         },
         detach=True,
-        hostname="mailhog",
     )
     return container
 

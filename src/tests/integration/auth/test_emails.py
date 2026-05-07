@@ -3,9 +3,8 @@ import json
 import pytest
 from httpx import AsyncClient
 
+from src.core.config import settings
 from tests.integration.auth.models import DBUserData
-
-MAILHOG = "http://localhost:8025"
 
 
 @pytest.fixture
@@ -38,7 +37,7 @@ async def test_emails_were_sent_successfully_when_register(
     await async_client.post("/register", json=data_for_register)
     async with AsyncClient() as client:
         email = await client.get(
-            f"{MAILHOG}/api/v2/search?kind=to&query={test_email.email}"
+            f"{settings.notification.api_url}/search?kind=to&query={test_email.email}"
         )
 
     email_content = email.content.decode()
