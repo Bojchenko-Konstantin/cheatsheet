@@ -21,7 +21,7 @@ CONTENT = "Test content"
 
 
 @pytest.mark.parametrize(
-    "test_data, expected_result",
+    "test_data, data_for_expected_result",
     [
         (
             {
@@ -34,25 +34,14 @@ CONTENT = "Test content"
                     {"tag_id": 1, "tag_name": "Python"},
                     {"tag_id": 2, "tag_name": "Testing"},
                 ],
-                "created_at": datetime(2025, 6, 8),
-                "updated_at": datetime(2025, 6, 9),
+                "created_at": datetime(2025, 1, 1),
+                "updated_at": datetime(2025, 1, 1),
                 "count_like": 5,
                 "count_view": 10,
             },
-            Cheatsheet(
-                cheatsheet_id=CHEATSHEET_ID,
-                user_id=OWNER_ID,
-                title=TITLE,
-                content=CONTENT,
-                is_public=True,
-                tags={
-                    Tag(tag_id=1, tag_name="Python"),
-                    Tag(tag_id=2, tag_name="Testing"),
-                },
-                created_at=datetime(2025, 6, 8),
-                updated_at=datetime(2025, 6, 9),
-                stats=CheatsheetStats(count_like=5, count_view=10),
-            ),
+            {
+                "stats": CheatsheetStats(count_like=5, count_view=10),
+            },
         ),
         (
             {
@@ -67,22 +56,17 @@ CONTENT = "Test content"
                 "count_like": 0,
                 "count_view": 0,
             },
-            Cheatsheet(
-                cheatsheet_id=UUID("01998b2f-af53-7ca0-85f3-9c01093dd430"),
-                user_id=OWNER_ID,
-                title=TITLE,
-                content=CONTENT,
-                is_public=True,
-                created_at=datetime(2025, 1, 1),
-                updated_at=datetime(2025, 1, 1),
-            ),
+            {
+                "tags": set(),
+            },
         ),
     ],
 )
 def test_cheatsheet_creation_from_dict_was_successful(
-    test_data: dict, expected_result: Cheatsheet
+    test_data: dict, data_for_expected_result: dict
 ):
     created_cheatsheet = Cheatsheet.from_dict(test_data)
+    expected_result = _make_cheatsheet(**data_for_expected_result)
 
     assert created_cheatsheet == expected_result
 
