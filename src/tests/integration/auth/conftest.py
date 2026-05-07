@@ -65,6 +65,26 @@ def data_to_login_inactive_user(inactive_user: DBUserData) -> Generator[dict[str
     }
 
 
+@pytest.fixture(scope="session")
+def data_to_login_update_password_user(
+    update_password_user: DBUserData,
+) -> Generator[dict[str, str]]:
+    yield {
+        "username": update_password_user.name,
+        "password": update_password_user.password,
+    }
+
+
+@pytest.fixture(scope="session")
+def data_to_login_unverified_user(
+    unverified_user: DBUserData,
+) -> Generator[dict[str, str]]:
+    yield {
+        "username": unverified_user.name,
+        "password": unverified_user.password,
+    }
+
+
 @pytest_asyncio.fixture
 async def populate_db_for_multiple_users(
     session: AsyncSession,

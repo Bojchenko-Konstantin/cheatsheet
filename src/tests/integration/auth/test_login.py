@@ -65,12 +65,13 @@ async def test_login_by_inactive_user_was_unsuccessful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    inactive_user: DBUserData,
     data_to_login_inactive_user: dict[str, str],
 ):
     response = await async_client.post("/login", data=data_to_login_inactive_user)
 
-    user = await _get_user_from_db_by_username(inactive_user.name, session)
+    user = await _get_user_from_db_by_username(
+        data_to_login_inactive_user["username"], session
+    )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert not user["is_active"]

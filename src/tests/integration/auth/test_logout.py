@@ -6,8 +6,8 @@ from httpx import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dto.token import TokenStatus
 from src.infrastructure.hasher import HASHER
-from tests.integration.auth.models import DBUserData
 
 
 @pytest.mark.integration
@@ -16,20 +16,17 @@ async def test_logout_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    active_user: DBUserData,
+    data_to_login_active_user: dict[str, str],
 ):
     # Arrange.
-    username = active_user.name
-    login_data = {
-        "username": username,
-        "password": active_user.password,
-    }
-    login_response = await async_client.post("/login", data=login_data)
+    login_response = await async_client.post("/login", data=data_to_login_active_user)
 
     tokens = login_response.json()
     refresh_token = tokens["refresh_token"]
 
-    user = await _get_user_from_db_by_username(username, session)
+    user = await _get_user_from_db_by_username(
+        data_to_login_active_user["username"], session
+    )
 
     logout_data = {
         "user_id": str(user["user_id"]),
@@ -51,7 +48,7 @@ async def test_logout_was_successful(
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert active_token is None
     assert revoked_token is not None
-    assert revoked_token["status_id"] == 2
+    assert revoked_token["status_id"] == TokenStatus.REVOKED
     assert revoked_token["user_id"] == user["user_id"]
 
 
@@ -80,10 +77,11 @@ async def test_logout_with_invalid_refresh_token_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    active_user: DBUserData,
+    data_to_login_active_user: dict[str, str],
 ):
-    username = active_user.name
-    user = await _get_user_from_db_by_username(username, session)
+    user = await _get_user_from_db_by_username(
+        data_to_login_active_user["username"], session
+    )
 
     logout_data = {
         "user_id": str(user["user_id"]),

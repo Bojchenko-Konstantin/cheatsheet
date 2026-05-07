@@ -7,8 +7,6 @@ from httpx import AsyncClient
 from sqlalchemy import Row, TextClause, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tests.integration.auth.models import DBUserData
-
 
 @pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
@@ -16,19 +14,16 @@ async def test_refresh_token_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    active_user: DBUserData,
+    data_to_login_active_user: dict[str, str],
 ):
     # Arrange.
-    username = active_user.name
-    data_for_login = {
-        "username": username,
-        "password": active_user.password,
-    }
 
-    user_data = await _get_user_from_db_by_username(username, session)
+    user_data = await _get_user_from_db_by_username(
+        data_to_login_active_user["username"], session
+    )
     user_id = user_data["user_id"]
 
-    login_response = await async_client.post("/login", data=data_for_login)
+    login_response = await async_client.post("/login", data=data_to_login_active_user)
     login_response_data = login_response.json()
     old_refresh_token = login_response_data["refresh_token"]
     old_access_token = login_response_data["access_token"]
@@ -61,10 +56,12 @@ async def test_refresh_token_was_not_found_when_token_does_not_exist(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
     session: AsyncSession,
-    active_user: DBUserData,
+    data_to_login_active_user: dict[str, str],
 ):
     # Arrange.
-    user_data = await _get_user_from_db_by_username(active_user.name, session)
+    user_data = await _get_user_from_db_by_username(
+        data_to_login_active_user["username"], session
+    )
     user_id = user_data["user_id"]
 
     refresh_request_data = {
