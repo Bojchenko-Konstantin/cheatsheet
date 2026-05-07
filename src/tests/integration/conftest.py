@@ -123,11 +123,6 @@ async def session() -> AsyncGenerator[AsyncSession]:
     yield DEFAULT_SESSION_FACTORY()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator:
-    yield
-
-
 @pytest.fixture
 def app() -> FastAPI:
     app = FastAPI(
@@ -139,6 +134,11 @@ def app() -> FastAPI:
     app.add_middleware(UnhandledExceptionMiddleware)
     app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # type: ignore[arg-type]
     return app
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    yield
 
 
 def _create_docker_client() -> DockerClient:
