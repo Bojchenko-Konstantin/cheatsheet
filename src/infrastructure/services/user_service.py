@@ -16,6 +16,8 @@ from src.infrastructure.hasher import HASHER
 
 
 class UserService(IUserService):
+    _EMAIL_IDENTIFIER = "@"
+
     def __init__(
         self,
         hasher: PasswordHash = HASHER,
@@ -29,15 +31,20 @@ class UserService(IUserService):
             user = await uow.user_repo.get_by_user_name(user_name)
             return user
 
+    async def get_by_email(self, email: str) -> User:
+        async with self._unit_of_work.readonly() as uow:
+            user = await uow.user_repo.get_by_email(email)
+            return user
+
     async def get_by_id(self, user_id: UUID) -> User:
         async with self._unit_of_work.readonly() as uow:
             user = await uow.user_repo.get_by_id(user_id)
             return user
 
-    async def get_by_email(self, email: str) -> PasswordResetData | None:
+    async def get_password_reset_data(self, email: str) -> PasswordResetData | None:
         try:
             async with self._unit_of_work.readonly() as uow:
-                user = await uow.user_repo.get_by_email(email)
+                user = await uow.user_repo.get_password_reset_data(email)
                 return user
         except UserNotFoundError:
             return None
@@ -54,11 +61,12 @@ class UserService(IUserService):
             user_payload = await uow.user_repo.create(create_data)
             return user_payload
 
-    async def authenticate_user(self, user_name: str, password: str) -> User:
-        try:
-            user = await self.get_by_user_name(user_name)
-        except UserNotFoundError:
-            raise
+    async def authenticate_user(self, user_login: str, password: str) -> User:
+        # user_login may be username or email.
+        if self._EMAIL_IDENTIFIER in user_login:
+            user = await self.get_by_email(user_login)
+        else:
+            user = await self.get_by_user_name(user_login)
 
         if not self._verify_password(password, user.hashed_password):
             raise UserAuthenticationError

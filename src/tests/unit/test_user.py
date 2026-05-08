@@ -25,6 +25,16 @@ class FakeUserRepo(IUserRepo):
             is_verified=False,
         )
 
+    async def get_by_email(self, email: str) -> User:
+        return User(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+            user_name="test",
+            hashed_password=PASSWORD_HASH,
+            is_active=True,
+            is_superuser=False,
+            is_verified=False,
+        )
+
     async def get_by_id(self, user_id: UUID) -> User:
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
@@ -45,7 +55,7 @@ class FakeUserRepo(IUserRepo):
     async def update(self, update_data: dict[str, Any]) -> None:
         pass
 
-    async def get_by_email(self, email: str) -> PasswordResetData:
+    async def get_password_reset_data(self, email: str) -> PasswordResetData:
         return PasswordResetData(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
@@ -100,6 +110,23 @@ async def test_get_user_by_user_name_was_successful(user_service: UserService):
     )
 
     user = await sut.get_by_user_name(user_name)
+
+    assert user == expected_user
+
+
+async def test_get_user_by_email_was_successful(user_service: UserService):
+    sut = user_service
+    user_email = "test@test.com"
+    expected_user = User(
+        user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+        user_name="test",
+        hashed_password=PASSWORD_HASH,
+        is_active=True,
+        is_superuser=False,
+        is_verified=False,
+    )
+
+    user = await sut.get_by_email(user_email)
 
     assert user == expected_user
 

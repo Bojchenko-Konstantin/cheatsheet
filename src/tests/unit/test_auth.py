@@ -56,6 +56,16 @@ class FakeUserService(IUserService):
             is_verified=True,
         )
 
+    async def get_by_email(self, email: str) -> User:
+        return User(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
+            user_name="test",
+            hashed_password="password",
+            is_active=True,
+            is_superuser=False,
+            is_verified=True,
+        )
+
     async def get_by_id(self, user_id: UUID) -> User:
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
@@ -71,7 +81,7 @@ class FakeUserService(IUserService):
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
         )
 
-    async def authenticate_user(self, user_name: str, password: str) -> User:
+    async def authenticate_user(self, user_login: str, password: str) -> User:
         return User(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",
@@ -81,7 +91,7 @@ class FakeUserService(IUserService):
             is_verified=True,
         )
 
-    async def get_by_email(self, email: str) -> PasswordResetData | None:
+    async def get_password_reset_data(self, email: str) -> PasswordResetData | None:
         return PasswordResetData(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
             user_name="test",

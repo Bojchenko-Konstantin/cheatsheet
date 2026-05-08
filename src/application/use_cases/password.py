@@ -23,7 +23,7 @@ class PasswordUseCase:
 
     async def request_password_reset(self, email: str) -> dict[str, Any] | None:
         """Handle password reset request and generate reset token."""
-        user = await self._user_service.get_by_email(email)
+        user = await self._user_service.get_password_reset_data(email)
 
         if user is not None:
             token = self._password_reset_service.generate_reset_token(

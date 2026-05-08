@@ -11,13 +11,20 @@ from tests.integration.auth.models import DBUserData
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize(
+    "data_to_login",
+    [
+        {"username": "active_user", "password": "Passw0rd%"},
+        {"username": "active_user@test.com", "password": "Passw0rd%"},
+    ],
+)
 @pytest.mark.asyncio(loop_scope="session")
 async def test_login_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
-    data_to_login_active_user: dict[str, str],
+    data_to_login: dict[str, str],
 ):
-    response = await async_client.post("/login", data=data_to_login_active_user)
+    response = await async_client.post("/login", data=data_to_login)
     response_data = response.json()
 
     assert response.status_code == status.HTTP_200_OK

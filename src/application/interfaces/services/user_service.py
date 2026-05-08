@@ -17,7 +17,11 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def get_by_email(self, email: str) -> PasswordResetData | None:
+    async def get_by_email(self, email: str) -> User:
+        pass
+
+    @abstractmethod
+    async def get_password_reset_data(self, email: str) -> PasswordResetData | None:
         pass
 
     @abstractmethod
@@ -29,7 +33,7 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def authenticate_user(self, user_name: str, password: str) -> User:
+    async def authenticate_user(self, user_login: str, password: str) -> User:
         pass
 
     @abstractmethod

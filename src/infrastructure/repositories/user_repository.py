@@ -66,6 +66,27 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User(**model.user)
         return user
 
+    async def get_by_email(self, email: str) -> User:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.hashed_password,
+                UserModel.is_active,
+                UserModel.is_superuser,
+                UserModel.is_verified,
+            )
+        ).where(UserModel.email == email)
+        result = await self._session.execute(statement)
+        model = result.one_or_none()
+
+        if not model:
+            raise UserNotFoundError
+
+        user = User(**model.user)
+        return user
+
     async def get_by_id(self, user_id: UUID) -> User:
         statement = select(
             DictBundle(
@@ -87,7 +108,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         user = User(**model.user)
         return user
 
-    async def get_by_email(self, email: str) -> PasswordResetData:
+    async def get_password_reset_data(self, email: str) -> PasswordResetData:
         statement = select(
             DictBundle(
                 "user",

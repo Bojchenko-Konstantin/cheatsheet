@@ -13,11 +13,15 @@ class IUserRepo(ABC):
         pass
 
     @abstractmethod
+    async def get_by_email(self, email: str) -> User:
+        pass
+
+    @abstractmethod
     async def get_by_id(self, user_id: UUID) -> User:
         pass
 
     @abstractmethod
-    async def get_by_email(self, email: str) -> PasswordResetData:
+    async def get_password_reset_data(self, email: str) -> PasswordResetData:
         pass
 
     @abstractmethod

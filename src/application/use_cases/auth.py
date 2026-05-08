@@ -17,9 +17,9 @@ class AuthUseCase:
         self._token_service = token_service
         self._user_service = user_service
 
-    async def authenticate(self, user_name: str, password: str) -> dict[str, str]:
+    async def authenticate(self, user_login: str, password: str) -> dict[str, str]:
         """Authenticate user and generate token pair."""
-        user = await self._user_service.authenticate_user(user_name, password)
+        user = await self._user_service.authenticate_user(user_login, password)
         payload = UserPayload.create(
             user_id=user.user_id, is_superuser=user.is_superuser
         )
