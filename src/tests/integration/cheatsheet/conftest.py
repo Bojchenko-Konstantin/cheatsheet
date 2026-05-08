@@ -161,8 +161,7 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
                     cheatsheet_stats,
                     cheatsheet_to_tag
            RESTART IDENTITY
-           CASCADE
-            """
+           CASCADE"""
     )
 
     await session.execute(query)

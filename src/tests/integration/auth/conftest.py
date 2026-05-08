@@ -35,7 +35,7 @@ def nonexistent_user() -> Generator[DBUserData]:
 
 
 @pytest.fixture(scope="session")
-def update_password_user(email_receiver: str) -> Generator[DBUserData]:
+def update_password_user() -> Generator[DBUserData]:
     yield DBUserData(name="test_password_update")
 
 

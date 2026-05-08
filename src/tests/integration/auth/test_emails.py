@@ -42,7 +42,6 @@ async def test_emails_were_sent_successfully_when_register(
 
     email_content = email.content.decode()
     json_email_content = json.loads(email_content)
-    print(json_email_content)
 
     verification_email_content = json_email_content["items"][0]["Raw"]["Data"]
     welcome_email_content = json_email_content["items"][1]["Raw"]["Data"]

@@ -21,7 +21,6 @@ async def test_password_update_was_successful(
         "/login", data=data_to_login_update_password_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     expected_password = "New_password123%"
@@ -55,7 +54,6 @@ async def test_weak_password_update_was_unsuccessful(
         "/login", data=data_to_login_update_password_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
@@ -84,7 +82,6 @@ async def test_passwords_did_not_match_and_update_was_unsuccessful(
         "/login", data=data_to_login_update_password_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {
@@ -114,7 +111,6 @@ async def test_incorrect_current_password_update_was_unsuccessful(
         "/login", data=data_to_login_update_password_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     data_for_password_change = {

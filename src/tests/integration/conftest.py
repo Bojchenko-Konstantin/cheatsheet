@@ -126,7 +126,7 @@ async def broker():
     await test_broker.shutdown()
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def session() -> AsyncGenerator[AsyncSession]:
     yield DEFAULT_SESSION_FACTORY()
 

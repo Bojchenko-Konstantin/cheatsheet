@@ -17,7 +17,6 @@ async def test_refresh_token_was_successful(
     data_to_login_active_user: dict[str, str],
 ):
     # Arrange.
-
     user_data = await _get_user_from_db_by_username(
         data_to_login_active_user["username"], session
     )

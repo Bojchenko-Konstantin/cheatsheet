@@ -17,7 +17,6 @@ async def test_create_cheatsheet_by_unverified_user_was_unsuccessful(
         "/login", data=data_to_login_unverified_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     cheatsheet_data = {
@@ -47,7 +46,6 @@ async def test_update_cheatsheet_by_unverified_user_was_unsuccessful(
         "/login", data=data_to_login_unverified_user
     )
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     update_data = {
@@ -185,10 +183,9 @@ async def test_get_public_cheatsheet_by_unverified_user_was_successful(
     data_to_login_active_user: dict[str, str],
     data_to_login_unverified_user: dict[str, str],
 ):
-    # Arrange
+    # Arrange.
     login_response = await async_client.post("/login", data=data_to_login_active_user)
     access_token = login_response.json()["access_token"]
-
     async_client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     cheatsheet_data = {
@@ -204,8 +201,8 @@ async def test_get_public_cheatsheet_by_unverified_user_was_successful(
     login_response = await async_client.post(
         "/login", data=data_to_login_unverified_user
     )
-    unverified_token = login_response.json()["access_token"]
 
+    unverified_token = login_response.json()["access_token"]
     async_client.headers.update({"Authorization": f"Bearer {unverified_token}"})
 
     # Act.
