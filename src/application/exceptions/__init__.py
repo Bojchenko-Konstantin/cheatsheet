@@ -4,6 +4,9 @@ __all__ = (
     "CheatsheetNotFoundError",
     "CheatsheetException",
     "CheatsheetCreationError",
+    "CheatsheetListError",
+    "CheatsheetSuggestionsError",
+    "InvalidCursorError",
     "AccessTokenGenerationError",
     "AccessTokenExpiredError",
     "AccessTokenException",
@@ -29,6 +32,11 @@ __all__ = (
     "ExpiredEmailVerificationTokenError",
     "EmailVerificationException",
     "EmailAlreadyVerifiedError",
+    "InvalidSortOrderError",
+    "InvalidSortFieldError",
+    "InvalidSearchQueryError",
+    "InvalidCursorError",
+    "SearchException",
 )
 
 from .access_token import (
@@ -40,8 +48,11 @@ from .base import ApplicationException
 from .cheatsheet import (
     CheatsheetCreationError,
     CheatsheetException,
+    CheatsheetListError,
     CheatsheetNotFoundError,
+    CheatsheetSuggestionsError,
     CheatsheetUpdateError,
+    InvalidCursorError,
 )
 from .email_verification import (
     EmailAlreadyVerifiedError,
@@ -62,6 +73,12 @@ from .refresh_token import (
     RefreshTokenException,
     RefreshTokenNotFoundError,
     RevokeRefreshTokenError,
+)
+from .search import (
+    InvalidSearchQueryError,
+    InvalidSortFieldError,
+    InvalidSortOrderError,
+    SearchException,
 )
 from .user import (
     DuplicateUserError,
