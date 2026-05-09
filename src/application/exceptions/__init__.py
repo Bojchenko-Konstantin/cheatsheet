@@ -35,6 +35,7 @@ __all__ = (
     "InvalidSortOrderError",
     "InvalidSortFieldError",
     "InvalidSearchQueryError",
+    "CursorException",
     "InvalidCursorError",
     "SearchException",
 )
@@ -52,8 +53,8 @@ from .cheatsheet import (
     CheatsheetNotFoundError,
     CheatsheetSuggestionsError,
     CheatsheetUpdateError,
-    InvalidCursorError,
 )
+from .cursor import CursorException, InvalidCursorError
 from .email_verification import (
     EmailAlreadyVerifiedError,
     EmailVerificationException,

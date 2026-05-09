@@ -23,7 +23,3 @@ class CheatsheetListError(CheatsheetException):
 
 class CheatsheetSuggestionsError(CheatsheetException):
     """Raised when suggestions query fails."""
-
-
-class InvalidCursorError(CheatsheetException):
-    """Raised when cursor is malformed or expired."""
