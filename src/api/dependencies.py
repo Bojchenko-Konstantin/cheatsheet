@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
@@ -12,13 +13,17 @@ from src.application.interfaces import (
     IUserService,
     IVerificationService,
 )
+from src.application.interfaces.services import ICheatsheetSearchService
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
 from src.application.use_cases.password import PasswordUseCase
 from src.application.use_cases.verification import VerificationUseCase
 from src.core.config import settings
+from src.infrastructure.database.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.services import (
+    CheatsheetSearchService,
+    CursorService,
     EmailVerificationService,
     JWTCoreService,
     PasswordResetService,
@@ -26,19 +31,59 @@ from src.infrastructure.services import (
     UserService,
 )
 
+
+@dataclass(slots=True, frozen=True)
+class CursorPaginationParams:
+    """Validated cursor pagination parameters."""
+
+    cursor: str | None
+    size: int
+
+
+@dataclass(slots=True, frozen=True)
+class CheatsheetFilters:
+    """Validated cheatsheet filter parameters."""
+
+    tag: str | None
+    search: str | None
+    sort_by: str
+    sort_order: str
+
+
+@dataclass(slots=True, frozen=True)
+class SearchSuggestionsParams:
+    """Validated search suggestions parameters."""
+
+    query: str
+    limit: int
+
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=True)
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 
-async def get_unit_of_work() -> SQLAlchemyUnitOfWork:
-    async with SQLAlchemyUnitOfWork() as unit_of_work:
-        return unit_of_work
+def get_cheatsheet_search_service() -> ICheatsheetSearchService:
+    cursor_service = CursorService()
+    return CheatsheetSearchService(cursor_service=cursor_service)
+
+
+async def get_unit_of_work(
+    search_service: ICheatsheetSearchService = Depends(get_cheatsheet_search_service),
+) -> SQLAlchemyUnitOfWork:
+    return SQLAlchemyUnitOfWork(
+        session_factory=DEFAULT_SESSION_FACTORY,
+        search_service=search_service,
+    )
 
 
 def get_cheatsheet_use_case(
     unit_of_work: IUnitOfWork = Depends(get_unit_of_work),
+    search_service: ICheatsheetSearchService = Depends(get_cheatsheet_search_service),
 ) -> CheatsheetUseCase:
-    return CheatsheetUseCase(unit_of_work=unit_of_work)
+    return CheatsheetUseCase(
+        unit_of_work=unit_of_work,
+        search_service=search_service,
+    )
 
 
 def get_jwt_core_service() -> JWTCoreService:
@@ -117,6 +162,36 @@ def get_verification_use_case(
     )
 
 
+async def get_cursor_pagination(
+    cursor: Annotated[str | None, Query()] = None,
+    size: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> CursorPaginationParams:
+    return CursorPaginationParams(cursor=cursor, size=size)
+
+
+async def get_cheatsheet_filters(
+    tag: Annotated[str | None, Query()] = None,
+    search: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[
+        str, Query(pattern=r"^(created_at|updated_at|title)$")
+    ] = "created_at",
+    sort_order: Annotated[str, Query(pattern=r"^(asc|desc)$")] = "desc",
+) -> CheatsheetFilters:
+    return CheatsheetFilters(
+        tag=tag,
+        search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+
+async def get_search_suggestions_params(
+    query: Annotated[str, Query(min_length=1, max_length=100)],
+    limit: Annotated[int, Query(ge=1, le=10)] = 5,
+) -> SearchSuggestionsParams:
+    return SearchSuggestionsParams(query=query, limit=limit)
+
+
 async def get_current_user_required(
     access_token: Annotated[str, Depends(oauth2_scheme)],
     auth_use_case: Annotated[AuthUseCase, Depends(get_auth_use_case)],
@@ -170,6 +245,11 @@ AuthUseCaseDep = Annotated[AuthUseCase, Depends(get_auth_use_case)]
 PasswordUseCaseDep = Annotated[PasswordUseCase, Depends(get_password_use_case)]
 VerificationUseCaseDep = Annotated[
     VerificationUseCase, Depends(get_verification_use_case)
+]
+CursorPaginationDep = Annotated[CursorPaginationParams, Depends(get_cursor_pagination)]
+CheatsheetFiltersDep = Annotated[CheatsheetFilters, Depends(get_cheatsheet_filters)]
+SearchSuggestionsDep = Annotated[
+    SearchSuggestionsParams, Depends(get_search_suggestions_params)
 ]
 
 

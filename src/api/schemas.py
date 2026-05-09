@@ -75,6 +75,19 @@ class CheatsheetRead(Schema):
         return self
 
 
+class CheatsheetListRead(Schema):
+    items: list[CheatsheetRead]
+    next_cursor: str | None
+    previous_cursor: str | None
+    has_next: bool
+    has_previous: bool
+
+
+class SearchSuggestionsRead(Schema):
+    titles: list[str]
+    tags: list[str]
+
+
 class CheatsheetCreate(CheatsheetBase):
     pass
 
