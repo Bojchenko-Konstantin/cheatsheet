@@ -4,9 +4,15 @@ from uuid import UUID
 
 import pytest
 
-from application.interfaces import ICheatsheetRepo, IUnitOfWork
-from application.use_cases import CheatsheetUseCase
-from domain.entities import Cheatsheet, CheatsheetStats, Tag
+from src.application.dto import (
+    CheatsheetList,
+    CheatsheetSearchSuggestions,
+    PaginationMetadata,
+)
+from src.application.interfaces import ICheatsheetRepo, IUnitOfWork
+from src.application.interfaces.services import CursorDTO, ICheatsheetSearchService
+from src.application.use_cases import CheatsheetUseCase
+from src.domain.entities import Cheatsheet, CheatsheetStats, Tag
 
 
 class FakeCheatsheetRepo(ICheatsheetRepo):
@@ -43,6 +49,59 @@ class FakeCheatsheetRepo(ICheatsheetRepo):
             )
         )
 
+    async def list_accessible_cheatsheets(
+        self,
+        user_id: UUID | None,
+        cursor: str | None,
+        size: int,
+        tag: str | None,
+        search: str | None,
+        sort_by: str,
+        sort_order: str,
+    ) -> CheatsheetList:
+        raise NotImplementedError
+
+    async def search_suggestions(
+        self, query: str, limit: int
+    ) -> CheatsheetSearchSuggestions:
+        raise NotImplementedError
+
+
+class FakeSearchService(ICheatsheetSearchService):
+    @property
+    def similarity_search_threshold(self) -> float:
+        return 0.2
+
+    @property
+    def similarity_suggestions_threshold(self) -> float:
+        return 0.2
+
+    def validate_search_query(self, query: str | None) -> None:
+        pass
+
+    def validate_sort_params(self, sort_by: str, sort_order: str) -> None:
+        pass
+
+    def decode_cursor(self, cursor_str: str | None) -> CursorDTO | None:
+        return None
+
+    def build_pagination_metadata(
+        self,
+        rows: list,
+        size: int,
+        current_cursor: str | None,
+        sort_by: str,
+    ) -> PaginationMetadata:
+        return PaginationMetadata(
+            next_cursor=None,
+            previous_cursor=None,
+            has_next=False,
+            has_previous=False,
+        )
+
+    def validate_suggestions_limit(self, limit: int) -> None:
+        pass
+
 
 class FakeUnitOfWork(IUnitOfWork):
     async def __aenter__(self) -> Self:
@@ -62,7 +121,9 @@ class FakeUnitOfWork(IUnitOfWork):
 @pytest.mark.asyncio
 async def test_get_cheatsheet_by_id_was_successful():
     unit_of_work = FakeUnitOfWork()
-    sut = CheatsheetUseCase(unit_of_work)
+    search_service = FakeSearchService()
+    sut = CheatsheetUseCase(unit_of_work, search_service)
+
     existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
     expected_result = Cheatsheet(
         cheatsheet_id=existing_id,
@@ -84,7 +145,8 @@ async def test_get_cheatsheet_by_id_was_successful():
 @pytest.mark.asyncio
 async def test_create_cheatsheet_was_successful():
     unit_of_work = FakeUnitOfWork()
-    sut = CheatsheetUseCase(unit_of_work)
+    search_service = FakeSearchService()
+    sut = CheatsheetUseCase(unit_of_work, search_service)
 
     create_data = dict(
         title="title",
@@ -121,7 +183,8 @@ async def test_create_cheatsheet_was_successful():
 @pytest.mark.asyncio
 async def test_cheatsheet_was_updated_and_timestamps_preserved():
     unit_of_work = FakeUnitOfWork()
-    sut = CheatsheetUseCase(unit_of_work)
+    search_service = FakeSearchService()
+    sut = CheatsheetUseCase(unit_of_work, search_service)
 
     existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
@@ -156,7 +219,8 @@ async def test_cheatsheet_was_updated_and_timestamps_preserved():
 @pytest.mark.asyncio
 async def test_tag_conversion_from_dict_to_objects_was_successful():
     unit_of_work = FakeUnitOfWork()
-    sut = CheatsheetUseCase(unit_of_work)
+    search_service = FakeSearchService()
+    sut = CheatsheetUseCase(unit_of_work, search_service)
 
     existing_id = UUID("01998b2f-af53-7ca0-85f3-9c01093dd430")
 
