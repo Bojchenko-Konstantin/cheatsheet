@@ -15,3 +15,11 @@ class CheatsheetCreationError(CheatsheetException):
 
 class CheatsheetUpdateError(CheatsheetException):
     """Raised when persisting an update fails."""
+
+
+class CheatsheetListError(CheatsheetException):
+    """Raised when cheatsheet list query fails."""
+
+
+class CheatsheetSuggestionsError(CheatsheetException):
+    """Raised when suggestions query fails."""

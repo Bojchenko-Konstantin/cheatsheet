@@ -9,8 +9,10 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -75,3 +77,20 @@ class CheatsheetModel(Base):
         back_populates="cheatsheet"
     )
     user: Mapped[list[UserModel]] = relationship(back_populates="cheatsheets")
+    __table_args__ = (
+        Index(
+            "ix_cheatsheet_title_trgm",
+            text("title gin_trgm_ops"),
+            postgresql_using="gin",
+        ),
+        Index(
+            "ix_cheatsheet_content_trgm",
+            text("content gin_trgm_ops"),
+            postgresql_using="gin",
+        ),
+        Index(
+            "ix_cheatsheet_search_trgm",
+            text("(title || ' ' || content) gin_trgm_ops"),
+            postgresql_using="gin",
+        ),
+    )
