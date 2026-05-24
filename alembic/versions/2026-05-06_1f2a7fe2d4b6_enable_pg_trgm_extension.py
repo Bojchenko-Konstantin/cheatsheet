@@ -17,24 +17,6 @@ depends_on = None
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
-    op.execute(
-        "CREATE INDEX ix_cheatsheet_title_trgm ON cheatsheet "
-        "USING gin (title gin_trgm_ops)"
-    )
-
-    op.execute(
-        "CREATE INDEX ix_cheatsheet_content_trgm ON cheatsheet "
-        "USING gin (content gin_trgm_ops)"
-    )
-
-    op.execute(
-        "CREATE INDEX ix_cheatsheet_search_trgm ON cheatsheet "
-        "USING gin ((title || ' ' || content) gin_trgm_ops)"
-    )
-
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_cheatsheet_search_trgm")
-    op.execute("DROP INDEX IF EXISTS ix_cheatsheet_content_trgm")
-    op.execute("DROP INDEX IF EXISTS ix_cheatsheet_title_trgm")
     op.execute("DROP EXTENSION IF EXISTS pg_trgm")
