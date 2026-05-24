@@ -39,6 +39,7 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(
         String(length=320),
         nullable=False,
+        unique=True,
     )
     hashed_password: Mapped[str] = mapped_column(
         String(length=1024),
