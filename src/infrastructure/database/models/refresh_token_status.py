@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    BigInteger,
     Identity,
+    SmallInteger,
     String,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -23,7 +23,7 @@ class RefreshTokenStatusModel(Base):
     __tablename__ = "md_refresh_token_status"  # type: ignore[assignment]
 
     status_id: Mapped[int] = mapped_column(
-        BigInteger,
+        SmallInteger,
         Identity(always=True),
         primary_key=True,
     )

@@ -9,12 +9,17 @@ from uuid import UUID
 from sqlalchemy import Row, delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dto import CheatsheetList, CheatsheetSearchSuggestions
 from src.application.exceptions import (
     CheatsheetCreationError,
+    CheatsheetListError,
     CheatsheetNotFoundError,
+    CheatsheetSuggestionsError,
     CheatsheetUpdateError,
+    InvalidCursorError,
 )
 from src.application.interfaces import ICheatsheetRepo
+from src.application.interfaces.services import ICheatsheetSearchService
 from src.domain.entities import Cheatsheet
 from src.infrastructure.database.models import (
     CheatsheetModel,
@@ -22,6 +27,7 @@ from src.infrastructure.database.models import (
     CheatsheetToTagModel,
     TagModel,
 )
+from src.infrastructure.repositories.query_builders import CheatsheetQueryBuilder
 from src.infrastructure.repositories.utils import DictBundle
 
 
@@ -36,8 +42,13 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
     Class for operations with cheatsheets that interact with database using SQLAlchemy.
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        search_service: ICheatsheetSearchService,
+    ) -> None:
         self._session = session
+        self._search_service = search_service
 
     def _to_model(
         self, cheatsheet: Cheatsheet | MutableMapping[str, Any]
@@ -157,6 +168,110 @@ class SQLAlchemyCheatsheetRepo(ICheatsheetRepo):
         await self._update_tags(updated_cheatsheet)
 
         return updated_cheatsheet
+
+    async def list_accessible_cheatsheets(
+        self,
+        user_id: UUID | None,
+        cursor: str | None = None,
+        size: int = 20,
+        tag: str | None = None,
+        search: str | None = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> CheatsheetList:
+        try:
+            decoded_cursor = self._search_service.decode_cursor(cursor)
+
+            base_query = (
+                CheatsheetQueryBuilder()
+                .apply_access_filter(user_id)
+                .apply_tag_filter(tag)
+                .apply_search(search)
+                .apply_sorting(sort_by, sort_order, search)
+                .apply_cursor(decoded_cursor, sort_by, sort_order)
+                .build()
+                .limit(size + 1)
+            )
+
+            result = await self._session.execute(base_query)
+            rows = list(result.all())
+        except InvalidCursorError:
+            raise
+        except Exception as e:
+            raise CheatsheetListError from e
+
+        return self._build_cheatsheet_list_dto(rows, size, cursor, sort_by)
+
+    async def search_suggestions(
+        self,
+        query: str,
+        limit: int = 5,
+    ) -> CheatsheetSearchSuggestions:
+        try:
+            query_builder = CheatsheetQueryBuilder()
+
+            titles = await self._get_title_suggestions(query, limit, query_builder)
+            tags = await self._get_tag_suggestions(query, limit, query_builder)
+        except Exception as e:
+            raise CheatsheetSuggestionsError from e
+
+        return CheatsheetSearchSuggestions(titles=titles, tags=tags)
+
+    def _build_cheatsheet_list_dto(
+        self,
+        rows: list,
+        size: int,
+        cursor: str | None,
+        sort_by: str,
+    ) -> CheatsheetList:
+        pagination = self._search_service.build_pagination_metadata(
+            rows=rows,
+            size=size,
+            current_cursor=cursor,
+            sort_by=sort_by,
+        )
+
+        items_rows = rows[:size]
+        items = [
+            Cheatsheet.from_dict(dict(**row.cheatsheet, tags=row.tags))
+            for row in items_rows
+        ]
+
+        return CheatsheetList(
+            items=items,
+            next_cursor=pagination.next_cursor,
+            previous_cursor=pagination.previous_cursor,
+            has_next=pagination.has_next,
+            has_previous=pagination.has_previous,
+        )
+
+    async def _get_title_suggestions(
+        self,
+        query: str,
+        limit: int,
+        query_builder: CheatsheetQueryBuilder,
+    ) -> list[str]:
+        title_query = query_builder.apply_suggestions_titles(
+            query=query,
+            limit=limit,
+            threshold=self._search_service.similarity_suggestions_threshold,
+        )
+        result = await self._session.execute(title_query)
+        return [row[0] for row in result.all()]
+
+    async def _get_tag_suggestions(
+        self,
+        query: str,
+        limit: int,
+        query_builder: CheatsheetQueryBuilder,
+    ) -> list[str]:
+        tag_query = query_builder.apply_suggestions_tags(
+            query=query,
+            limit=limit,
+            threshold=self._search_service.similarity_suggestions_threshold,
+        )
+        result = await self._session.execute(tag_query)
+        return [row[0] for row in result.all()]
 
     @staticmethod
     def _get_new_cheatsheet(

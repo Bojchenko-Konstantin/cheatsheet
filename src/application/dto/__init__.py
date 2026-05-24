@@ -11,6 +11,9 @@ __all__ = (
     "User",
     "UserPayload",
     "WelcomeEmailData",
+    "CheatsheetSearchSuggestions",
+    "CheatsheetList",
+    "PaginationMetadata",
 )
 
 from .auth import (
@@ -18,6 +21,7 @@ from .auth import (
     User,
     UserPayload,
 )
+from .cheatsheet import CheatsheetList, CheatsheetSearchSuggestions, PaginationMetadata
 from .email import (
     EmailMessage,
     EmailType,

@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     UUID,
-    BigInteger,
     DateTime,
     ForeignKey,
+    SmallInteger,
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -32,7 +32,7 @@ class RefreshTokenBlacklistModel(Base):
         nullable=False,
     )
     status_id: Mapped[int] = mapped_column(
-        BigInteger,
+        SmallInteger,
         ForeignKey("md_refresh_token_status.status_id", ondelete="RESTRICT"),
         nullable=False,
         server_default="1",
