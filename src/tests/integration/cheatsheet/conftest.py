@@ -35,9 +35,7 @@ async def populate_db_for_single_cheatsheet(
 
 
 @pytest_asyncio.fixture
-async def populate_db_for_cheatsheet_list() -> AsyncGenerator[None]:
-    session = DEFAULT_SESSION_FACTORY()
-
+async def populate_db_for_cheatsheet_list(session) -> AsyncGenerator[None]:
     await _truncate_all_tables(session)
 
     user_id = await _populate_user(session, suffix="_list")
