@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     Identity,
     Index,
-    SmallInteger,
     String,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,7 +22,7 @@ class TagModel(Base):
     __tablename__ = "md_tag"  # type: ignore[assignment]
 
     tag_id: Mapped[int] = mapped_column(
-        SmallInteger,
+        BigInteger,
         primary_key=True,
         server_default=Identity(always=True),
     )
