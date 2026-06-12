@@ -80,13 +80,15 @@ class CheatsheetModel(Base):
     __table_args__ = (
         Index(
             "ix_cheatsheet_title_trgm",
-            text("title gin_trgm_ops"),
+            title,
             postgresql_using="gin",
+            postgresql_ops={"title": "gin_trgm_ops"},
         ),
         Index(
             "ix_cheatsheet_content_trgm",
-            text("content gin_trgm_ops"),
+            content,
             postgresql_using="gin",
+            postgresql_ops={"content": "gin_trgm_ops"},
         ),
         Index(
             "ix_cheatsheet_search_trgm",

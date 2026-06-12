@@ -32,7 +32,7 @@ def upgrade() -> None:
     op.create_index(
         "ix_cheatsheet_search_trgm",
         "cheatsheet",
-        [sa.literal_column("(title || ' ' || content) gin_trgm_ops")],
+        [sa.text("(title || ' ' || content) gin_trgm_ops")],
         unique=False,
         postgresql_using="gin",
     )
