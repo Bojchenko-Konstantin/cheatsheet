@@ -72,6 +72,12 @@ class EmailVerificationConfig(BaseModel):
     frontend_url: str = "http://localhost:3000/verify-email"
 
 
+class YandexOAuthConfig(BaseModel):
+    client_id: str
+    client_secret: str
+    callback_url: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -86,6 +92,7 @@ class Settings(BaseSettings):
     password_reset: PasswordResetConfig = PasswordResetConfig()
     email_template: EmailTemplateConfig = EmailTemplateConfig()
     email_verification: EmailVerificationConfig = EmailVerificationConfig()
+    yandex_oauth: YandexOAuthConfig
 
 
 settings = Settings()  # type: ignore
