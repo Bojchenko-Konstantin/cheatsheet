@@ -246,3 +246,11 @@ def _validate_password_strength(password: str) -> None:
             "and contain at least 1 digit, 1 punctuation symbol "
             "and 1 capital letter."
         )
+
+
+class OAuthCallbackParams(Schema):
+    code: str
+    state: str
+    cid: str | None = None
+    error: str | None = None
+    error_description: str | None = None
