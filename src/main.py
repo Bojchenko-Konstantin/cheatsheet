@@ -9,6 +9,7 @@ from src.api.exception_handlers import email_not_verified_handler
 from src.api.middleware import UnhandledExceptionMiddleware
 from src.api.v1.routers.auth import router as router_auth
 from src.api.v1.routers.cheatsheet import router as router_cheatsheet
+from src.api.v1.routers.oauth import router as router_oauth
 from src.application.exceptions.user import UserNotVerifiedError
 from src.core.logging_config import setup_logging
 from src.infrastructure.background_tasks.broker import BROKER
@@ -36,6 +37,7 @@ app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # t
 
 app.include_router(router_cheatsheet)
 app.include_router(router_auth)
+app.include_router(router_oauth)
 
 if __name__ == "__main__":
     uvicorn.run(
