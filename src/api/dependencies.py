@@ -29,6 +29,7 @@ from src.infrastructure.services import (
     PasswordResetService,
     TokenService,
     UserService,
+    YandexOAuthService,
 )
 
 
@@ -235,6 +236,10 @@ async def get_current_user_optional(
         return None
 
 
+async def get_yandex_oauth_service() -> YandexOAuthService:
+    return YandexOAuthService()
+
+
 # Type aliases for dependencies.
 OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 OAuth2SchemeRequiredDep = Annotated[str, Depends(oauth2_scheme)]
@@ -256,3 +261,5 @@ SearchSuggestionsDep = Annotated[
 CurrentUserRequiredDep = Annotated[User, Depends(get_current_user_required)]
 CurrentVerifiedUserDep = Annotated[User, Depends(get_current_verified_user)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]
+
+YandexOAuthServiceDep = Annotated[YandexOAuthService, Depends(get_yandex_oauth_service)]
