@@ -102,6 +102,7 @@ async def _get_user_from_db_by_username(
             """
             SELECT user_id, user_name, hashed_password, is_active
             FROM "user"
+            JOIN registered_user USING (user_id)
             WHERE user_name = :user_name
             """
         )

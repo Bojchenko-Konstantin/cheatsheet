@@ -3,16 +3,13 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import (
-    UUID,
-    Boolean,
-    String,
-)
+from sqlalchemy import UUID, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from src.infrastructure.database.models import (
     Base,
+    OAuthAccountModel,
     RefreshTokenBlacklistModel,
     RefreshTokenModel,
 )
@@ -21,6 +18,7 @@ if TYPE_CHECKING:
     from src.infrastructure.database.models import (
         CheatsheetModel,
         RefreshTokenModel,
+        RegisteredUserModel,
         UserDetailModel,
     )
 
@@ -41,23 +39,9 @@ class UserModel(Base):
         nullable=False,
         unique=True,
     )
-    hashed_password: Mapped[str] = mapped_column(
-        String(length=1024),
-        nullable=False,
-    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        nullable=False,
-    )
-    is_superuser: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-    is_verified: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
         nullable=False,
     )
     cheatsheets: Mapped[list[CheatsheetModel]] = relationship(back_populates="user")
@@ -70,3 +54,5 @@ class UserModel(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    registered_user: Mapped[RegisteredUserModel] = relationship(back_populates="user")
+    oauth_account: Mapped[OAuthAccountModel] = relationship(back_populates="user")

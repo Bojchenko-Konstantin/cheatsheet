@@ -96,12 +96,13 @@ def _build_user_query() -> TextClause:
         SELECT
             u.user_name,
             u.email,
-            u.hashed_password,
+            ru.hashed_password,
             du.first_name,
             du.last_name,
             du.profile_description,
             du.image_url
         FROM "user" u
+        JOIN registered_user ru USING(user_id)
         JOIN user_detail du USING(user_id)
         WHERE u.user_name = :user_name
     """

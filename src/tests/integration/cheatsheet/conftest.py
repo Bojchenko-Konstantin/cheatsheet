@@ -19,6 +19,7 @@ async def populate_db_for_single_cheatsheet(
     tag_quantity = 3 + START_INDEX
 
     user_id = await _populate_user(session)
+    await _populate_registered_user(session, user_id)
     cheatsheet_id = await _populate_cheatsheet(
         session, user_id, quantity=cheatsheet_quantity
     )
@@ -39,6 +40,7 @@ async def populate_db_for_cheatsheet_list(session) -> AsyncGenerator[None]:
     await _truncate_all_tables(session)
 
     user_id = await _populate_user(session, suffix="_list")
+    await _populate_registered_user(session, user_id)
     cheatsheet_ids = await _populate_cheatsheets_for_list(session, user_id)
     await _populate_tags_for_list(session)
     await _populate_cheatsheet_stats_for_list(session, cheatsheet_ids)
@@ -52,21 +54,16 @@ async def populate_db_for_cheatsheet_list(session) -> AsyncGenerator[None]:
 
 async def _populate_user(session: AsyncSession, suffix: str = "") -> UUID:
     query = text(
-        """INSERT INTO "user"(user_name, is_verified, is_active,
-                              is_superuser, email, hashed_password)
-           VALUES (:user_name, :is_verified, :is_active,
-                   :is_superuser, :email, :hashed_password)
+        """INSERT INTO "user"(user_name, is_active, email)
+           VALUES (:user_name, :is_active, :email)
            RETURNING user_id"""
     )
 
     data = [
         {
             "user_name": f"test{suffix}",
-            "is_verified": True,
             "is_active": True,
-            "is_superuser": False,
             "email": f"test{suffix}@random.mail",
-            "hashed_password": "hashed_password",
         }
     ]
 
@@ -74,6 +71,27 @@ async def _populate_user(session: AsyncSession, suffix: str = "") -> UUID:
     [user_id] = result.first()  # type: ignore
 
     return user_id
+
+
+async def _populate_registered_user(session: AsyncSession, user_id: UUID) -> None:
+    query = text(
+        """INSERT INTO registered_user(user_id, is_verified,
+                                       is_superuser, hashed_password)
+        VALUES (:user_id, :is_verified, :is_superuser,:hashed_password)
+           RETURNING user_id"""
+    )
+
+    data = [
+        {
+            "user_id": user_id,
+            "is_verified": True,
+            "is_superuser": False,
+            "hashed_password": "hashed_password",
+        }
+    ]
+
+    result = await session.execute(query, data)
+    result.first()  # type: ignore
 
 
 async def _populate_cheatsheet(
@@ -288,6 +306,7 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
     query = text(
         """TRUNCATE cheatsheet,
                     "user",
+                    registered_user,
                     md_tag,
                     cheatsheet_stats,
                     cheatsheet_to_tag

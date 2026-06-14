@@ -135,6 +135,7 @@ async def _get_password_from_db_by_username(
             """
             SELECT hashed_password
             FROM "user"
+            JOIN registered_user USING (user_id)
             WHERE user_name = :user_name
             """
         )

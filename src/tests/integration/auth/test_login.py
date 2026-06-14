@@ -101,6 +101,7 @@ def _build_user_query() -> TextClause:
         """
     SELECT user_name, hashed_password, is_active
     FROM "user"
+    JOIN registered_user USING (user_id)
     WHERE user_name = :user_name
     """
     )

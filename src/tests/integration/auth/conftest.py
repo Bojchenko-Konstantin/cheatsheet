@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, Generator
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -93,8 +94,16 @@ async def populate_db_for_multiple_users(
     unverified_user: DBUserData,
     update_password_user: DBUserData,
 ) -> AsyncGenerator[None]:
-    await _populate_users_for_auth_test(
+    user_ids = await _populate_users_for_auth_test(
         session,
+        active_user,
+        inactive_user,
+        unverified_user,
+        update_password_user,
+    )
+    await _populate_registered_users_for_auth_test(
+        session,
+        user_ids,
         active_user,
         inactive_user,
         unverified_user,
@@ -113,46 +122,84 @@ async def _populate_users_for_auth_test(
     inactive_user: DBUserData,
     unverified_user: DBUserData,
     update_password_user: DBUserData,
-) -> None:
+) -> list[UUID]:
     query = text(
-        """INSERT INTO "user"(user_name, is_verified, is_active,
-                              is_superuser, email, hashed_password)
-           VALUES (:user_name, :is_verified, :is_active,
-                   :is_superuser, :email, :hashed_password)
+        """INSERT INTO "user"(user_name, is_active, email)
+           VALUES (:user_name, :is_active, :email)
            RETURNING user_id"""
     )
 
     users_to_create = [
         {
             "user_name": active_user.name,
-            "is_verified": active_user.is_verified,
             "is_active": active_user.is_active,
-            "is_superuser": active_user.is_superuser,
             "email": active_user.email,
-            "hashed_password": active_user.hashed_password,
         },
         {
             "user_name": inactive_user.name,
-            "is_verified": inactive_user.is_verified,
             "is_active": inactive_user.is_active,
-            "is_superuser": inactive_user.is_superuser,
             "email": inactive_user.email,
-            "hashed_password": inactive_user.hashed_password,
         },
         {
             "user_name": update_password_user.name,
-            "is_verified": update_password_user.is_verified,
             "is_active": update_password_user.is_active,
-            "is_superuser": update_password_user.is_superuser,
             "email": update_password_user.email,
-            "hashed_password": update_password_user.hashed_password,
         },
         {
             "user_name": unverified_user.name,
-            "is_verified": unverified_user.is_verified,
             "is_active": unverified_user.is_active,
-            "is_superuser": unverified_user.is_superuser,
             "email": unverified_user.email,
+        },
+    ]
+    user_ids = []
+
+    for user in users_to_create:
+        result = await session.execute(query, user)
+        user_ids.append(result.scalar_one())
+
+    await session.commit()
+    return user_ids
+
+
+async def _populate_registered_users_for_auth_test(
+    session: AsyncSession,
+    user_ids: list[UUID],
+    active_user: DBUserData,
+    inactive_user: DBUserData,
+    unverified_user: DBUserData,
+    update_password_user: DBUserData,
+) -> None:
+    query = text(
+        """INSERT INTO registered_user(user_id, is_verified,
+                                       is_superuser, hashed_password)
+           VALUES (:user_id, :is_verified,
+                   :is_superuser, :hashed_password)
+           RETURNING user_id"""
+    )
+
+    users_to_create = [
+        {
+            "user_id": user_ids[0],
+            "is_verified": active_user.is_verified,
+            "is_superuser": active_user.is_superuser,
+            "hashed_password": active_user.hashed_password,
+        },
+        {
+            "user_id": user_ids[1],
+            "is_verified": inactive_user.is_verified,
+            "is_superuser": inactive_user.is_superuser,
+            "hashed_password": inactive_user.hashed_password,
+        },
+        {
+            "user_id": user_ids[2],
+            "is_verified": update_password_user.is_verified,
+            "is_superuser": update_password_user.is_superuser,
+            "hashed_password": update_password_user.hashed_password,
+        },
+        {
+            "user_id": user_ids[3],
+            "is_verified": unverified_user.is_verified,
+            "is_superuser": unverified_user.is_superuser,
             "hashed_password": unverified_user.hashed_password,
         },
     ]
@@ -185,6 +232,7 @@ async def _truncate_all_tables(session: AsyncSession) -> None:
                     refresh_token,
                     cheatsheet,
                     "user",
+                    registered_user,
                     md_tag,
                     cheatsheet_stats,
                     cheatsheet_to_tag
