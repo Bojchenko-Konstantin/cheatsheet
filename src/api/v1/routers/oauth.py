@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 
-from src.api.dependencies import YandexOAuthServiceDep
+from src.api.dependencies import OAuthAccountServiceDep, YandexOAuthServiceDep
 from src.api.schemas import OAuthCallbackParams
 
 router = APIRouter(tags=["OAuth"])
@@ -35,6 +35,7 @@ async def login_with_yandex(oauth_service: YandexOAuthServiceDep):
 async def yandex_auth_callback(
     request: Request,
     oauth_service: YandexOAuthServiceDep,
+    oauth_account_service: OAuthAccountServiceDep,
     params: Annotated[OAuthCallbackParams, Query()],
 ):
     state_from_cookie = request.cookies.get("yandex_oauth_state")
@@ -43,13 +44,14 @@ async def yandex_auth_callback(
         raise HTTPException(status_code=400, detail="Invalid state — possible CSRF")
 
     access_token, refresh_token = await oauth_service.get_tokens(code=params.code)
-    # Get user_info
-    _ = await oauth_service.get_user_info(access_token)
+    user_info = await oauth_service.get_user_info(access_token)
     response = RedirectResponse(url="/cheatsheet", status_code=303)
     response.delete_cookie("yandex_oauth_state", path="/")
 
+    await oauth_account_service.save_account_with_refresh_token(
+        refresh_token, user_info
+    )
     # TODO:
-    # save refresh_token in db to update access token without sign up later
     # create local refresh token to use in application
     # save user_info
 
