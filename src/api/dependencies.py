@@ -26,6 +26,7 @@ from src.infrastructure.services import (
     CursorService,
     EmailVerificationService,
     JWTCoreService,
+    OAuthAccountService,
     PasswordResetService,
     TokenService,
     UserService,
@@ -240,6 +241,10 @@ async def get_yandex_oauth_service() -> YandexOAuthService:
     return YandexOAuthService()
 
 
+async def get_oauth_account_service() -> OAuthAccountService:
+    return OAuthAccountService()
+
+
 # Type aliases for dependencies.
 OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 OAuth2SchemeRequiredDep = Annotated[str, Depends(oauth2_scheme)]
@@ -263,3 +268,6 @@ CurrentVerifiedUserDep = Annotated[User, Depends(get_current_verified_user)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]
 
 YandexOAuthServiceDep = Annotated[YandexOAuthService, Depends(get_yandex_oauth_service)]
+OAuthAccountServiceDep = Annotated[
+    OAuthAccountService, Depends(get_oauth_account_service)
+]
