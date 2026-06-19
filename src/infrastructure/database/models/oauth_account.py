@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.infrastructure.database.models import Base
 
 if TYPE_CHECKING:
-    from src.infrastructure.database.models import UserModel
+    from src.infrastructure.database.models import OAuthRefreshTokenModel, UserModel
 
 
 class OAuthAccountModel(Base):
@@ -29,12 +29,19 @@ class OAuthAccountModel(Base):
         String(length=255),
         nullable=False,
     )
+    provider_psuid: Mapped[str] = mapped_column(
+        String(length=255),
+        nullable=False,
+    )
     oauth_service_id: Mapped[int] = mapped_column(
         SmallInteger,
         ForeignKey("md_oauth_service.oauth_service_id", ondelete="CASCADE"),
         nullable=False,
     )
     user: Mapped[UserModel] = relationship(back_populates="oauth_account")
+    refresh_tokens: Mapped[list[OAuthRefreshTokenModel]] = relationship(
+        back_populates="oauth_account"
+    )
     __table_args__ = (
         UniqueConstraint(
             "oauth_service_id", "provider_user_id", name="uq_oauth_service_provider"

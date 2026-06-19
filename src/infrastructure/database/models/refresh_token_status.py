@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import (
     Identity,
     SmallInteger,
@@ -11,12 +9,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.models import (
     Base,
+    OAuthRefreshTokenModel,
     RefreshTokenBlacklistModel,
     RefreshTokenModel,
 )
-
-if TYPE_CHECKING:
-    from src.infrastructure.database.models import RefreshTokenModel
 
 
 class RefreshTokenStatusModel(Base):
@@ -34,6 +30,11 @@ class RefreshTokenStatusModel(Base):
     )
     refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
         "RefreshTokenModel",
+        back_populates="status_name",
+        cascade="all, delete-orphan",
+    )
+    oauth_refresh_tokens: Mapped[list[OAuthRefreshTokenModel]] = relationship(
+        "OAuthRefreshTokenModel",
         back_populates="status_name",
         cascade="all, delete-orphan",
     )
