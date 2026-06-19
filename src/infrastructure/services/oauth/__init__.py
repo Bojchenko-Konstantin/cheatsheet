@@ -1,3 +1,7 @@
-__all__ = ("YandexOAuthService",)
+__all__ = (
+    "YandexOAuthService",
+    "OAuthAccountService",
+)
 
+from .account_service import OAuthAccountService
 from .yandex import YandexOAuthService

@@ -7,6 +7,7 @@ from src.application.interfaces.services import ICheatsheetSearchService
 from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.infrastructure.repositories import (
     SQLAlchemyCheatsheetRepo,
+    SQLAlchemyOAuthRepo,
     SQLAlchemyTokenRepo,
     SQLAlchemyUserRepo,
 )
@@ -40,6 +41,7 @@ class SQLAlchemyUnitOfWork(IUnitOfWork):
         )
         self.user_repo = SQLAlchemyUserRepo(self._session)
         self.token_repo = SQLAlchemyTokenRepo(self._session)
+        self.oauth_repo = SQLAlchemyOAuthRepo(self._session)
 
         if not self._read_only:
             await self._session.begin()
