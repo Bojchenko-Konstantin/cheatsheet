@@ -20,6 +20,7 @@ class OAuthUserCreationData:
     image_url: str | None = None
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OAuthUserAccount:
     oauth_account_id: UUID
     user_id: UUID
