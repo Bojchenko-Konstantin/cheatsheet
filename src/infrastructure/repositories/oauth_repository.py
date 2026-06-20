@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.database.models import (
@@ -14,8 +16,13 @@ class SQLAlchemyOAuthRepo:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def save(self, refresh_token_hash: str, save_data: OAuthUserCreationData):
+    async def save(
+        self, refresh_token_hash: str, save_data: OAuthUserCreationData
+    ) -> UUID:
         model = UserModel(user_name=save_data.user_name, email=save_data.email)
+
+        # TODO: save user detail
+
         model.oauth_account = OAuthAccountModel(
             provider_user_id=save_data.provider_user_id,
             provider_psuid=save_data.provider_psuid,
@@ -28,6 +35,7 @@ class SQLAlchemyOAuthRepo:
 
         try:
             await self._session.flush()
+            return model.user_id
         except Exception:
             # TODO: add custom Exception
             raise
