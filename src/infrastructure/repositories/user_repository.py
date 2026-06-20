@@ -165,9 +165,8 @@ class SQLAlchemyUserRepo(IUserRepo):
             self._session.add(model)
             await self._session.flush()
         except IntegrityError as e:
-            if "uq_user_user_name" in str(e):
+            if "uq_user_user_name" in str(e) or "uq_user_email" in str(e):
                 raise DuplicateUserError from e
-            # TODO: add email check
             else:
                 raise UserCreationError from e
         except Exception as e:
