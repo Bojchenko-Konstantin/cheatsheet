@@ -34,7 +34,10 @@ class UserPayload:
 
     @classmethod
     def create(
-        cls, user_id: UUID | str, is_superuser: bool, exp: datetime | int | None = None
+        cls,
+        user_id: UUID | str,
+        is_superuser: bool = False,
+        exp: datetime | int | None = None,
     ) -> Self:
         if isinstance(user_id, str):
             try:
