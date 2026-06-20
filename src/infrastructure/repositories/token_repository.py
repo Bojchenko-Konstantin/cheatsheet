@@ -129,8 +129,6 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             self._session.add(blacklisted_model)
         except IntegrityError as e:
             raise RevokeRefreshTokenError from e
-        except RefreshTokenNotFoundError:
-            raise
 
     async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
         stmt = (
