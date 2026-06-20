@@ -4,8 +4,13 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 
-from src.api.dependencies import OAuthAccountServiceDep, YandexOAuthServiceDep
+from src.api.dependencies import (
+    OAuthAccountServiceDep,
+    TokenServiceDep,
+    YandexOAuthServiceDep,
+)
 from src.api.schemas import OAuthCallbackParams
+from src.application.dto.auth import UserPayload
 
 router = APIRouter(tags=["OAuth"])
 
@@ -36,6 +41,7 @@ async def yandex_auth_callback(
     request: Request,
     oauth_service: YandexOAuthServiceDep,
     oauth_account_service: OAuthAccountServiceDep,
+    token_service: TokenServiceDep,
     params: Annotated[OAuthCallbackParams, Query()],
 ):
     state_from_cookie = request.cookies.get("yandex_oauth_state")
@@ -45,14 +51,19 @@ async def yandex_auth_callback(
 
     access_token, refresh_token = await oauth_service.get_tokens(code=params.code)
     user_info = await oauth_service.get_user_info(access_token)
-    response = RedirectResponse(url="/cheatsheet", status_code=303)
-    response.delete_cookie("yandex_oauth_state", path="/")
 
-    await oauth_account_service.save_account_with_refresh_token(
+    user_id = await oauth_account_service.save_account_with_refresh_token(
         refresh_token, user_info
     )
-    # TODO:
-    # create local refresh token to use in application
-    # save user_info
+    payload = UserPayload.create(user_id=user_id)
+    token_pair = await token_service.generate_tokens(payload)
+
+    redirect_url = (
+        f"/cheatsheet#access_token={token_pair['access_token']}"
+        f"&refresh_token={token_pair['refresh_token']}"
+    )
+
+    response = RedirectResponse(url=redirect_url, status_code=303)
+    response.delete_cookie("yandex_oauth_state", path="/")
 
     return response
