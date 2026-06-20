@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from enum import IntEnum
+from uuid import UUID
 
 
-class OAuthProvider(IntEnum):
+class OAuthService(IntEnum):
     YANDEX = 1
     GITHUB = 2
 
@@ -13,7 +14,19 @@ class OAuthUserCreationData:
     provider_psuid: str
     user_name: str
     email: str
-    oauth_service_id: OAuthProvider
+    oauth_service_id: OAuthService
+    first_name: str | None = None
+    last_name: str | None = None
+    image_url: str | None = None
+
+
+class OAuthUserAccount:
+    oauth_account_id: UUID
+    user_id: UUID
+    oauth_service_name: str
+    oauth_service_id: int
+    user_name: str
+    email: str
     first_name: str | None = None
     last_name: str | None = None
     image_url: str | None = None

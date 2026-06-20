@@ -11,6 +11,7 @@ from src.api.dependencies import (
 )
 from src.api.schemas import OAuthCallbackParams
 from src.application.dto.auth import UserPayload
+from src.infrastructure.dto import OAuthService
 
 router = APIRouter(tags=["OAuth"])
 
@@ -52,8 +53,8 @@ async def yandex_auth_callback(
     access_token, refresh_token = await oauth_service.get_tokens(code=params.code)
     user_info = await oauth_service.get_user_info(access_token)
 
-    user_id = await oauth_account_service.save_account_with_refresh_token(
-        refresh_token, user_info
+    user_id = await oauth_account_service.process_oauth_login(
+        refresh_token, user_info, OAuthService.YANDEX
     )
     payload = UserPayload.create(user_id=user_id)
     token_pair = await token_service.generate_tokens(payload)
