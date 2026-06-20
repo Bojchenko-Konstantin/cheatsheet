@@ -251,6 +251,7 @@ OAuth2SchemeRequiredDep = Annotated[str, Depends(oauth2_scheme)]
 OAuth2SchemeOptionalDep = Annotated[str | None, Depends(oauth2_scheme_optional)]
 
 CheatsheetUseCaseDep = Annotated[CheatsheetUseCase, Depends(get_cheatsheet_use_case)]
+TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 AuthUseCaseDep = Annotated[AuthUseCase, Depends(get_auth_use_case)]
 PasswordUseCaseDep = Annotated[PasswordUseCase, Depends(get_password_use_case)]
 VerificationUseCaseDep = Annotated[
