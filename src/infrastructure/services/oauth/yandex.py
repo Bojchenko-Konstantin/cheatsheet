@@ -6,6 +6,14 @@ from urllib.parse import urlencode
 from httpx import AsyncClient, Timeout
 
 from src.core.config import settings
+from src.infrastructure.exceptions.oauth import (
+    YandexAccessTokenMissingError,
+    YandexRefreshTokenMissingError,
+    YandexTokenRequestError,
+    YandexTokenResponseParseError,
+    YandexUserInfoRequestError,
+    YandexUserInfoResponseParseError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,25 +61,26 @@ class YandexOAuthService:
                 response.status_code,
                 response.text,
             )
-            raise
+            raise YandexTokenRequestError
 
         try:
             response_data = response.json()
-        except JSONDecodeError:
+        except JSONDecodeError as e:
             logger.exception("Failed to decode response from %s", token_url)
-            raise
+            raise YandexTokenResponseParseError from e
 
         access_token = response_data.get("access_token")
         refresh_token = response_data.get("refresh_token")
 
         if access_token is None:
             logger.error("access_token is not present: %s", response_data)
-            raise
+            raise YandexAccessTokenMissingError
 
         logger.info("Received access_token")
 
         if refresh_token is None:
             logger.exception("refresh_token is not present: %s", response_data)
+            raise YandexRefreshTokenMissingError
 
         logger.info("Received refresh_token")
 
@@ -95,13 +104,13 @@ class YandexOAuthService:
                 response.status_code,
                 response.text,
             )
-            raise
+            raise YandexUserInfoRequestError
 
         try:
             user_info = response.json()
-        except JSONDecodeError:
+        except JSONDecodeError as e:
             logger.exception("Failed to decode response from %s", user_info_url)
-            raise
+            raise YandexUserInfoResponseParseError from e
 
         logger.info("user_info was obtained successfully")
         return user_info
