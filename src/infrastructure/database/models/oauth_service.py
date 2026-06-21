@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import CheckConstraint, Identity, Index, SmallInteger, String, func
+from sqlalchemy import CheckConstraint, Identity, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.database.models import Base
@@ -24,8 +24,5 @@ class OAuthServiceModel(Base):
         CheckConstraint(
             "LENGTH(TRIM(oauth_service_name)) > 0",
             name="ck_oauth_service_name_non_empty",
-        ),
-        Index(
-            "ix_oauth_service_name_lower", func.lower(oauth_service_name), unique=True
         ),
     )
