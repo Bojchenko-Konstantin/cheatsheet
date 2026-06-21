@@ -128,7 +128,8 @@ async def broker():
 
 @pytest_asyncio.fixture
 async def session() -> AsyncGenerator[AsyncSession]:
-    yield DEFAULT_SESSION_FACTORY()
+    async with DEFAULT_SESSION_FACTORY() as session:
+        yield session
 
 
 @pytest.fixture
