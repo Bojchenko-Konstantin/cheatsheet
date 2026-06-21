@@ -27,6 +27,16 @@ class OAuthAccountService:
         user_info: dict[str, str],
         oauth_service_id: OAuthService,
     ) -> UUID:
+        """
+        Process the OAuth authentication flow for a user.
+
+        This method orchestrates the entire login/registration workflow via OAuth:
+        1. Encrypts the raw refresh token received from the provider.
+        2. Normalizes user profile data.
+        3. Identifies whether the user already exists by their email.
+        4. Rotates the token (if the service is already linked), links a new service
+        to the existing user, or registers a brand new user.
+        """
         refresh_token_hash = self._generate_refresh_token_hash(plain_refresh_token)
         save_data = self._get_data_to_save(user_info, oauth_service_id)
 
