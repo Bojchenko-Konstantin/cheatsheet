@@ -3,7 +3,7 @@ from collections.abc import MutableMapping
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import CursorResult, Row, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,44 +30,8 @@ class SQLAlchemyUserRepo(IUserRepo):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    def _to_model(self, user: MutableMapping[str, Any]) -> UserModel:
-        user_copy = dict(user)
-
-        user_name = user_copy.pop("username")
-
-        registered_user = dict(
-            hashed_password=user_copy.pop("hashed_password"),
-        )
-        user_detail = dict(
-            first_name=user_copy.pop("first_name"),
-            last_name=user_copy.pop("last_name"),
-            profile_description=user_copy.pop("profile_description", None),
-            image_url=user_copy.pop("image_url", None),
-        )
-
-        model = UserModel(**user_copy, user_name=user_name)
-        model.detail = UserDetailModel(**user_detail)
-        model.registered_user = RegisteredUserModel(**registered_user)
-        return model
-
     async def get_by_user_name(self, user_name: str) -> User:
-        statement = (
-            select(
-                DictBundle(
-                    "user",
-                    UserModel.user_id,
-                    UserModel.user_name,
-                    RegisteredUserModel.hashed_password,
-                    UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
-                )
-            )
-            .join(RegisteredUserModel)
-            .where(UserModel.user_name == user_name)
-        )
-        result = await self._session.execute(statement)
-        model = result.one_or_none()
+        model = await self._get_user_model_by_user_name(user_name)
 
         if not model:
             raise UserNotFoundError
@@ -76,23 +40,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         return user
 
     async def get_by_email(self, email: str) -> User:
-        statement = (
-            select(
-                DictBundle(
-                    "user",
-                    UserModel.user_id,
-                    UserModel.user_name,
-                    RegisteredUserModel.hashed_password,
-                    UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
-                )
-            )
-            .join(RegisteredUserModel)
-            .where(UserModel.email == email)
-        )
-        result = await self._session.execute(statement)
-        model = result.one_or_none()
+        model = await self._get_user_model_by_email(email)
 
         if not model:
             raise UserNotFoundError
@@ -101,23 +49,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         return user
 
     async def get_by_id(self, user_id: UUID) -> User:
-        statement = (
-            select(
-                DictBundle(
-                    "user",
-                    UserModel.user_id,
-                    UserModel.user_name,
-                    RegisteredUserModel.hashed_password,
-                    UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
-                )
-            )
-            .join(RegisteredUserModel)
-            .where(UserModel.user_id == user_id)
-        )
-        result = await self._session.execute(statement)
-        model = result.one_or_none()
+        model = await self._get_user_model_by_id(user_id)
 
         if not model:
             raise UserNotFoundError
@@ -126,16 +58,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         return user
 
     async def get_password_reset_data(self, email: str) -> PasswordResetData:
-        statement = select(
-            DictBundle(
-                "user",
-                UserModel.user_id,
-                UserModel.user_name,
-                UserModel.email,
-            )
-        ).where(UserModel.email == email)
-        result = await self._session.execute(statement)
-        model = result.one_or_none()
+        model = await self._get_user_model_for_password_reset(email)
 
         if not model:
             raise UserNotFoundError
@@ -145,9 +68,7 @@ class SQLAlchemyUserRepo(IUserRepo):
 
     async def get_email_by_id(self, user_id: UUID) -> str:
         """Get user email by user ID."""
-        statement = select(UserModel.email).where(UserModel.user_id == user_id)
-        result = await self._session.execute(statement)
-        email = result.scalar_one_or_none()
+        email = await self._get_user_email_by_id(user_id)
 
         if not email:
             raise UserNotFoundError
@@ -178,12 +99,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         pass
 
     async def update_password(self, user_id: UUID, hashed_password: str) -> None:
-        stmt = (
-            update(RegisteredUserModel)
-            .where(RegisteredUserModel.user_id == user_id)
-            .values(hashed_password=hashed_password)
-        )
-        result = await self._session.execute(stmt)
+        result = await self._update_user_password(user_id, hashed_password)
 
         if result.rowcount == 0:
             raise UserNotFoundError
@@ -196,3 +112,108 @@ class SQLAlchemyUserRepo(IUserRepo):
             .values(is_verified=True)
         )
         await self._session.execute(statement)
+
+    async def _get_user_model_by_user_name(self, user_name: str) -> Row | None:
+        statement = (
+            select(
+                DictBundle(
+                    "user",
+                    UserModel.user_id,
+                    UserModel.user_name,
+                    RegisteredUserModel.hashed_password,
+                    UserModel.is_active,
+                    RegisteredUserModel.is_superuser,
+                    RegisteredUserModel.is_verified,
+                )
+            )
+            .join(RegisteredUserModel)
+            .where(UserModel.user_name == user_name)
+        )
+        result = await self._session.execute(statement)
+        return result.one_or_none()
+
+    async def _get_user_model_by_email(self, email: str) -> Row | None:
+        statement = (
+            select(
+                DictBundle(
+                    "user",
+                    UserModel.user_id,
+                    UserModel.user_name,
+                    RegisteredUserModel.hashed_password,
+                    UserModel.is_active,
+                    RegisteredUserModel.is_superuser,
+                    RegisteredUserModel.is_verified,
+                )
+            )
+            .join(RegisteredUserModel)
+            .where(UserModel.email == email)
+        )
+        result = await self._session.execute(statement)
+        return result.one_or_none()
+
+    async def _get_user_model_by_id(self, user_id: UUID) -> Row | None:
+        statement = (
+            select(
+                DictBundle(
+                    "user",
+                    UserModel.user_id,
+                    UserModel.user_name,
+                    RegisteredUserModel.hashed_password,
+                    UserModel.is_active,
+                    RegisteredUserModel.is_superuser,
+                    RegisteredUserModel.is_verified,
+                )
+            )
+            .join(RegisteredUserModel)
+            .where(UserModel.user_id == user_id)
+        )
+        result = await self._session.execute(statement)
+        return result.one_or_none()
+
+    async def _get_user_model_for_password_reset(self, email: str) -> Row | None:
+        statement = select(
+            DictBundle(
+                "user",
+                UserModel.user_id,
+                UserModel.user_name,
+                UserModel.email,
+            )
+        ).where(UserModel.email == email)
+        result = await self._session.execute(statement)
+        return result.one_or_none()
+
+    async def _get_user_email_by_id(self, user_id: UUID) -> str | None:
+        statement = select(UserModel.email).where(UserModel.user_id == user_id)
+        result = await self._session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def _update_user_password(
+        self, user_id: UUID, hashed_password: str
+    ) -> CursorResult:
+        statement = (
+            update(RegisteredUserModel)
+            .where(RegisteredUserModel.user_id == user_id)
+            .values(hashed_password=hashed_password)
+        )
+        return await self._session.execute(statement)
+
+    @staticmethod
+    def _to_model(user: MutableMapping[str, Any]) -> UserModel:
+        user_copy = dict(user)
+
+        user_name = user_copy.pop("username")
+
+        registered_user = dict(
+            hashed_password=user_copy.pop("hashed_password"),
+        )
+        user_detail = dict(
+            first_name=user_copy.pop("first_name"),
+            last_name=user_copy.pop("last_name"),
+            profile_description=user_copy.pop("profile_description", None),
+            image_url=user_copy.pop("image_url", None),
+        )
+
+        model = UserModel(**user_copy, user_name=user_name)
+        model.detail = UserDetailModel(**user_detail)
+        model.registered_user = RegisteredUserModel(**registered_user)
+        return model
