@@ -17,7 +17,7 @@ async def test_process_oauth_login_new_user_sign_up(session: AsyncSession):
     plain_refresh_token = "test_hash"
     test_user_info = dict(
         id="1234567890",
-        psuid="3.BBodb.Gnes5pBRaO7MusadkV7r8U2A.FG77AksboyRm0oaKSaD8298vlaKD24",
+        psuid="test_psuid",
         default_email="test@email.com",
         login="test",
     )
@@ -29,7 +29,9 @@ async def test_process_oauth_login_new_user_sign_up(session: AsyncSession):
         user_info=test_user_info,
         oauth_service_id=OAuthService.YANDEX,
     )
-    expected_user_id = await _get_user_id_from_db(session, test_user_info["id"])
+    expected_user_id = await _get_user_id_by_provider_user_id(
+        session, test_user_info["id"]
+    )
 
     # Assert.
     assert result == expected_user_id
@@ -44,13 +46,13 @@ async def test_process_oauth_login_when_user_refresh_token(
     plain_refresh_token = "updated_hash"
     test_user_info = dict(
         id="987654321",
-        psuid="3.BBo8b.Gnas7pBRaO7MusadkV7r0U9A.FG78AksboyR0moaKSaD8298vlaKD24",
+        psuid="update_hash_test_psuid",
         default_email="test_update_token@email.com",
         login="test_update_token",
     )
     data = dict(
         provider_user_id="987654321",
-        provider_psuid="3.BBo8b.Gnas7pBRaO7MusadkV7r0U9A.FG78AksboyR0moaKSaD8298vlaKD24",
+        provider_psuid="update_hash_test_psuid",
         email="test_update_token@email.com",
         user_name="test_update_token",
         hashed_token="old_hashed_token",
@@ -67,14 +69,69 @@ async def test_process_oauth_login_when_user_refresh_token(
         user_info=test_user_info,
         oauth_service_id=OAuthService.YANDEX,
     )
-    expected_user_id, new_hash = await _get_new_hash_from_db(session, oauth_account_id)
+    expected_user_id, new_hash = await _get_active_token_info_by_account_id(
+        session, oauth_account_id
+    )
 
     # Assert.
     assert new_hash != original_hash
     assert user_id == expected_user_id
 
 
-async def _get_user_id_from_db(session: AsyncSession, provider_user_id: str):
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_process_oauth_login_existing_user_link_new_provider(
+    session: AsyncSession,
+):
+    # Arrange
+    shared_email = "shared_user@email.com"
+    plain_refresh_token = "github_refresh_token"
+    new_oauth_service = OAuthService.GITHUB
+
+    test_user_info = {
+        "id": "github_user_id_123",
+        "psuid": "github_psuid_abc",
+        "default_email": shared_email,
+        "login": "github_login",
+    }
+
+    existing_user_data = {
+        "provider_user_id": "yandex_user_id_789",
+        "provider_psuid": "yandex_psuid_xyz",
+        "email": shared_email,
+        "user_name": "yandex_login",
+        "hashed_token": "yandex_hashed_token",
+        "oauth_service_id": OAuthService.YANDEX,
+    }
+
+    oauth_account_id, _ = await _prepare_oauth_account(session, existing_user_data)
+    await session.commit()
+
+    expected_user_id = await _get_user_id_by_account_id(session, oauth_account_id)
+    sut = OAuthAccountService()
+
+    # Act
+    returned_user_id = await sut.process_oauth_login(
+        plain_refresh_token=plain_refresh_token,
+        user_info=test_user_info,
+        oauth_service_id=new_oauth_service,
+    )
+
+    is_new_service_linked = await _is_service_linked_to_user(
+        session=session,
+        user_id=expected_user_id,
+        oauth_service_id=new_oauth_service.value,
+    )
+
+    # Assert
+    assert returned_user_id == expected_user_id
+    assert is_new_service_linked is True
+
+
+async def _get_user_id_by_provider_user_id(
+    session: AsyncSession, provider_user_id: str
+):
+    """Retrieves the internal user ID using their external OAuth provider user ID."""
     query = _build_select_user_id_query()
     result = await session.execute(query, {"provider_user_id": provider_user_id})
     db_row = result.one()
@@ -82,6 +139,7 @@ async def _get_user_id_from_db(session: AsyncSession, provider_user_id: str):
 
 
 def _build_select_user_id_query() -> TextClause:
+    """Builds the SQL query to find a user_id based on provider_user_id."""
     return text(
         """
         SELECT user_id
@@ -92,21 +150,26 @@ def _build_select_user_id_query() -> TextClause:
 
 
 async def _prepare_oauth_account(session: AsyncSession, data: dict[str, Any]):
-    user_id = await _insert_user_data(session, data["user_name"], data["email"])
-    oauth_account_id = await _insert_oauth_account_data(
+    """
+    Prepares the database environment by creating a user,
+    an OAuth account, and a refresh token.
+    """
+    user_id = await _insert_user(session, data["user_name"], data["email"])
+    oauth_account_id = await _insert_oauth_account(
         session=session,
         user_id=user_id,
         provider_user_id=data["provider_user_id"],
         provider_psuid=data["provider_psuid"],
         oauth_service_id=data["oauth_service_id"],
     )
-    refresh_token_hash = await _insert_refresh_token_data(
+    refresh_token_hash = await _insert_refresh_token(
         session, oauth_account_id, data["hashed_token"]
     )
     return oauth_account_id, refresh_token_hash
 
 
-async def _insert_user_data(session: AsyncSession, user_name: str, email: str) -> UUID:
+async def _insert_user(session: AsyncSession, user_name: str, email: str) -> UUID:
+    """Inserts a new user record into the "user" table."""
     query = text(
         """
         INSERT INTO "user"(user_name, email, is_active) VALUES
@@ -118,13 +181,14 @@ async def _insert_user_data(session: AsyncSession, user_name: str, email: str) -
     return result.one().user_id
 
 
-async def _insert_oauth_account_data(
+async def _insert_oauth_account(
     session: AsyncSession,
     user_id: UUID,
     provider_user_id: str,
     provider_psuid: str,
     oauth_service_id: OAuthService,
 ) -> UUID:
+    """Links an external OAuth provider account to an internal user record."""
     query = text(
         """
         INSERT INTO oauth_account(user_id, provider_user_id,
@@ -145,9 +209,10 @@ async def _insert_oauth_account_data(
     return result.one().oauth_account_id
 
 
-async def _insert_refresh_token_data(
+async def _insert_refresh_token(
     session: AsyncSession, oauth_account_id: UUID, hashed_token: str
 ) -> str:
+    """Saves a hashed refresh token for the specified OAuth account in the database."""
     query = text(
         """
     INSERT INTO oauth_refresh_token(oauth_account_id, status_id, hashed_token) VALUES
@@ -166,7 +231,7 @@ async def _insert_refresh_token_data(
     return result.one().hashed_token
 
 
-async def _get_new_hash_from_db(
+async def _get_active_token_info_by_account_id(
     session: AsyncSession, oauth_account_id: UUID
 ) -> tuple[UUID, str]:
     query = text(
@@ -181,3 +246,41 @@ async def _get_new_hash_from_db(
     result = await session.execute(query, {"oauth_account_id": oauth_account_id})
     db_row = result.one()
     return db_row.user_id, db_row.hashed_token
+
+
+async def _get_user_id_by_account_id(
+    session: AsyncSession, oauth_account_id: UUID
+) -> UUID:
+    query = text(
+        """
+        SELECT user_id
+        FROM oauth_account
+        WHERE oauth_account_id = :oauth_account_id
+        """
+    )
+
+    result = await session.execute(query, {"oauth_account_id": oauth_account_id})
+
+    return result.one().user_id
+
+
+async def _is_service_linked_to_user(
+    session: AsyncSession, user_id: UUID, oauth_service_id: int
+) -> bool:
+    """Checks whether a specific OAuth provider is linked to the given user."""
+
+    query = text(
+        """
+        SELECT EXISTS (
+            SELECT 1
+            FROM oauth_account
+            WHERE user_id = :user_id AND oauth_service_id = :oauth_service_id
+        )
+        """
+    )
+
+    result = await session.execute(
+        query, {"user_id": user_id, "oauth_service_id": oauth_service_id}
+    )
+
+    return result.scalar_one()
