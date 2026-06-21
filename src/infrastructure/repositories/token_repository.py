@@ -209,24 +209,25 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         )
 
         try:
-            result = await self._session.execute(statement)
-            deleted_models = result.all()
-            blacklisted_models = []
+            async with self._session.begin_nested():
+                result = await self._session.execute(statement)
+                deleted_models = result.all()
+                blacklisted_models = []
 
-            for model in deleted_models:
-                blacklisted_models.append(
-                    RefreshTokenBlacklistModel(
-                        user_id=model.user_id,
-                        hashed_token=model.hashed_token,
-                        hashed_fingerprint=model.hashed_fingerprint,
-                        created_at=model.created_at,
-                        expires_at=model.expires_at,
-                        status_id=TokenStatus.COMPROMISED,
+                for model in deleted_models:
+                    blacklisted_models.append(
+                        RefreshTokenBlacklistModel(
+                            user_id=model.user_id,
+                            hashed_token=model.hashed_token,
+                            hashed_fingerprint=model.hashed_fingerprint,
+                            created_at=model.created_at,
+                            expires_at=model.expires_at,
+                            status_id=TokenStatus.COMPROMISED,
+                        )
                     )
-                )
-            self._session.add_all(blacklisted_models)
+                self._session.add_all(blacklisted_models)
         except Exception:
-            logger.error("Failed to delete compromised tokens")
+            logger.error("Failed to delete compromised tokens, falling back to update")
 
             statement = (
                 update(RefreshTokenModel)
