@@ -128,9 +128,63 @@ async def test_process_oauth_login_existing_user_link_new_provider(
     assert is_new_service_linked is True
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_process_oauth_login_when_user_sign_up_with_existing_user_name(
+    session: AsyncSession,
+):
+    # Arrange.
+    plain_refresh_token = "test_hash"
+    test_user_info = dict(
+        id="1234567890",
+        psuid="test_psuid",
+        default_email="test@email.com",
+        login="repeated_login",
+    )
+    existing_user_data = {
+        "provider_user_id": "yandex_user_id",
+        "provider_psuid": "yandex_psuid",
+        "email": "different@email.com",
+        "user_name": "repeated_login",
+        "hashed_token": "yandex_hashed_token",
+        "oauth_service_id": OAuthService.YANDEX,
+    }
+
+    await _prepare_oauth_account(session, existing_user_data)
+    await session.commit()
+
+    sut = OAuthAccountService()
+
+    # Act.
+    returned_user_id = await sut.process_oauth_login(
+        plain_refresh_token=plain_refresh_token,
+        user_info=test_user_info,
+        oauth_service_id=OAuthService.YANDEX,
+    )
+    user_name = await _get_user_name_by_user_id(session, returned_user_id)
+
+    # Assert.
+    assert user_name != test_user_info["login"]
+
+
+async def _get_user_name_by_user_id(session: AsyncSession, user_id: UUID) -> str:
+    """Retrieves the internal user ID using their external OAuth provider user ID."""
+    query = text(
+        """
+        SELECT user_name
+        FROM "user"
+        WHERE user_id = :user_id
+        """
+    )
+
+    result = await session.execute(query, {"user_id": user_id})
+    db_row = result.one()
+    return db_row.user_name
+
+
 async def _get_user_id_by_provider_user_id(
     session: AsyncSession, provider_user_id: str
-):
+) -> UUID:
     """Retrieves the internal user ID using their external OAuth provider user ID."""
     query = _build_select_user_id_query()
     result = await session.execute(query, {"provider_user_id": provider_user_id})
