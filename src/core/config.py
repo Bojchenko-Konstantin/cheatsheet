@@ -38,6 +38,8 @@ class JWTConfig(BaseModel):
     algorithm: str
     private_key: str
     public_key: str
+    issuer: str
+    audience: list[str]
 
 
 class NotificationConfig(BaseModel):

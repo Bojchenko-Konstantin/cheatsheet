@@ -70,16 +70,18 @@ class FakeUnitOfWork(IUnitOfWork):
 
 
 @pytest.fixture
-def jwt_core_service():
+def jwt_core_service() -> JWTCoreService:
     return JWTCoreService(
         private_key=settings.jwt.private_key,
         public_key=settings.jwt.public_key,
         algorithm=settings.jwt.algorithm,
+        issuer=settings.jwt.issuer,
+        audience=settings.jwt.audience,
     )
 
 
 @pytest.fixture
-def token_service(jwt_core_service):
+def token_service(jwt_core_service: JWTCoreService) -> TokenService:
     return TokenService(
         jwt_core=jwt_core_service,
         access_token_expires_in=settings.jwt.access_token_expires_in,
@@ -104,6 +106,8 @@ async def test_generate_tokens_was_successful(token_service: TokenService):
         jwt=result["access_token"],
         key=public_key,  # type: ignore
         algorithms=[settings.jwt.algorithm],
+        issuer=settings.jwt.issuer,
+        audience=settings.jwt.audience,
         options={"require": ["exp"]},
     )
 
@@ -114,16 +118,12 @@ async def test_generate_tokens_was_successful(token_service: TokenService):
 
 
 @pytest.mark.asyncio
-async def test_verify_access_token_was_successful(token_service: TokenService):
+async def test_verify_access_token_was_successful(
+    jwt_core_service: JWTCoreService, token_service: TokenService
+):
     sut = token_service
 
-    jwt_core = JWTCoreService(
-        private_key=settings.jwt.private_key,
-        public_key=settings.jwt.public_key,
-        algorithm=settings.jwt.algorithm,
-    )
-
-    access_token = jwt_core.generate_token(
+    access_token = jwt_core_service.generate_token(
         payload={
             "user_id": "019b4a71-173e-7f64-a840-9e8b042658cd",
             "is_superuser": False,
@@ -137,6 +137,8 @@ async def test_verify_access_token_was_successful(token_service: TokenService):
     decoded = jwt.decode(
         jwt=access_token,
         key=public_key,  # type: ignore[arg-type]
+        issuer=settings.jwt.issuer,
+        audience=settings.jwt.audience,
         algorithms=[settings.jwt.algorithm],
     )
 

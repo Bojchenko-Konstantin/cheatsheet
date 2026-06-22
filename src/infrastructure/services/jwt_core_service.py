@@ -18,10 +18,14 @@ class JWTCoreService:
         private_key: str,
         public_key: str,
         algorithm: str,
+        issuer: str,
+        audience: list[str],
     ):
         self._private_key = private_key
         self._public_key = public_key
         self._algorithm = algorithm
+        self._issuer = issuer
+        self._audience = audience
 
     def generate_token(
         self,
@@ -33,6 +37,8 @@ class JWTCoreService:
         expiration_time = now + timedelta(minutes=expires_in_minutes)
 
         full_payload = {
+            "iss": self._issuer,
+            "aud": self._audience,
             "type": token_type,
             "exp": expiration_time,
             **payload,
@@ -59,13 +65,16 @@ class JWTCoreService:
     ) -> dict[str, Any]:
         """Verify and decode a JWT token."""
         public_key = self._get_appropriate_public_key_form()
+        options = {"require": required_claims + ["iss", "aud"]}
 
         try:
             payload = jwt.decode(
                 jwt=token,
                 key=public_key,  # type: ignore
                 algorithms=[self._algorithm],
-                options={"require": required_claims},
+                issuer=self._issuer,
+                audience=self._audience,
+                options=options,
             )
         except jwt.ExpiredSignatureError:
             raise

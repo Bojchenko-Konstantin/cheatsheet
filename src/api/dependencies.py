@@ -93,6 +93,8 @@ def get_jwt_core_service() -> JWTCoreService:
         private_key=settings.jwt.private_key,
         public_key=settings.jwt.public_key,
         algorithm=settings.jwt.algorithm,
+        issuer=settings.jwt.issuer,
+        audience=settings.jwt.audience,
     )
 
 
