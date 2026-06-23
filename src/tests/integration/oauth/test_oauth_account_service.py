@@ -326,8 +326,7 @@ async def _is_service_linked_to_user(
     query = text(
         """
         SELECT EXISTS (
-            SELECT 1
-            FROM oauth_account
+            SELECT FROM oauth_account
             WHERE user_id = :user_id AND oauth_service_id = :oauth_service_id
         )
         """
