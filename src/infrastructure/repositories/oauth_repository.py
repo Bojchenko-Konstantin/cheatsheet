@@ -16,7 +16,12 @@ from src.infrastructure.database.models import (
     RegisteredUserModel,
     UserModel,
 )
-from src.infrastructure.dto import OAuthService, OAuthUserAccount, OAuthUserCreationData
+from src.infrastructure.dto import (
+    OAuthAccountLinkingData,
+    OAuthService,
+    OAuthUserAccount,
+    OAuthUserCreationData,
+)
 from src.infrastructure.exceptions.oauth import (
     OAuthAccountCreationError,
     OAuthServiceLinkageError,
@@ -83,7 +88,7 @@ class SQLAlchemyOAuthRepo:
             raise OAuthTokenRotationError from e
 
     async def link_new_service(
-        self, user_id: UUID, refresh_token_hash: str, save_data: OAuthUserCreationData
+        self, user_id: UUID, refresh_token_hash: str, save_data: OAuthAccountLinkingData
     ):
         try:
             model = OAuthAccountModel(

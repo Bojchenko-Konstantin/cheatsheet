@@ -6,6 +6,7 @@ from cryptography.fernet import Fernet
 from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.dto import (
+    OAuthAccountLinkingData,
     OAuthService,
     OAuthUserAccount,
     OAuthUserCreationData,
@@ -134,9 +135,10 @@ class OAuthAccountService:
     async def _link_new_service(
         self, user_id: UUID, refresh_token_hash: str, save_data: OAuthUserCreationData
     ):
+        linking_data = self._map_creation_to_linking(save_data)
         async with self._unit_of_work as uow:
             await uow.oauth_repo.link_new_service(
-                user_id, refresh_token_hash, save_data
+                user_id, refresh_token_hash, linking_data
             )
 
     async def _can_unlink_account(self, user_id: UUID) -> bool:
@@ -156,3 +158,11 @@ class OAuthAccountService:
     ) -> None:
         async with self._unit_of_work as uow:
             await uow.oauth_repo.unlink_account(user_id, oauth_service_id)
+
+    @staticmethod
+    def _map_creation_to_linking(creation_data: OAuthUserCreationData):
+        return OAuthAccountLinkingData(
+            provider_user_id=creation_data.provider_user_id,
+            provider_psuid=creation_data.provider_psuid,
+            oauth_service_id=creation_data.oauth_service_id,
+        )
