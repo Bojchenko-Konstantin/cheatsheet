@@ -93,7 +93,7 @@ class SQLAlchemyUserRepo(IUserRepo):
         except Exception as e:
             raise UserCreationError from e
 
-        return UserPayload.create(model.user_id, model.registered_user.is_superuser)
+        return UserPayload.create(model.user_id, model.is_superuser)
 
     async def update(self, update_data: dict[str, Any]):
         pass
@@ -122,8 +122,8 @@ class SQLAlchemyUserRepo(IUserRepo):
                     UserModel.user_name,
                     RegisteredUserModel.hashed_password,
                     UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
+                    UserModel.is_superuser,
+                    UserModel.is_verified,
                 )
             )
             .join(RegisteredUserModel)
@@ -141,8 +141,8 @@ class SQLAlchemyUserRepo(IUserRepo):
                     UserModel.user_name,
                     RegisteredUserModel.hashed_password,
                     UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
+                    UserModel.is_superuser,
+                    UserModel.is_verified,
                 )
             )
             .join(RegisteredUserModel)
@@ -160,11 +160,11 @@ class SQLAlchemyUserRepo(IUserRepo):
                     UserModel.user_name,
                     RegisteredUserModel.hashed_password,
                     UserModel.is_active,
-                    RegisteredUserModel.is_superuser,
-                    RegisteredUserModel.is_verified,
+                    UserModel.is_superuser,
+                    UserModel.is_verified,
                 )
             )
-            .join(RegisteredUserModel)
+            .outerjoin(RegisteredUserModel)
             .where(UserModel.user_id == user_id)
         )
         result = await self._session.execute(statement)

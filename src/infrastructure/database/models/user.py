@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import UUID, Boolean, String
+from sqlalchemy import UUID, Boolean, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -44,6 +44,18 @@ class UserModel(Base):
         default=True,
         nullable=False,
     )
+    is_superuser: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=text("false"),
+        nullable=False,
+    )
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=text("false"),
+        nullable=False,
+    )
     cheatsheets: Mapped[list[CheatsheetModel]] = relationship(back_populates="user")
     detail: Mapped[UserDetailModel] = relationship(back_populates="user")
     refresh_tokens: Mapped[list[RefreshTokenModel]] = relationship(
@@ -55,4 +67,6 @@ class UserModel(Base):
         cascade="all, delete-orphan",
     )
     registered_user: Mapped[RegisteredUserModel] = relationship(back_populates="user")
-    oauth_account: Mapped[OAuthAccountModel] = relationship(back_populates="user")
+    oauth_accounts: Mapped[list[OAuthAccountModel]] = relationship(
+        back_populates="user"
+    )

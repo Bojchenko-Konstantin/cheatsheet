@@ -127,6 +127,7 @@ async def test_verify_access_token_was_successful(
         payload={
             "user_id": "019b4a71-173e-7f64-a840-9e8b042658cd",
             "is_superuser": False,
+            "provider": "local",
         },
         token_type="access",
         expires_in_minutes=10,

@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import Row, select, update
+from sqlalchemy import Row, delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,9 +13,10 @@ from src.infrastructure.database.models import (
     OAuthAccountModel,
     OAuthRefreshTokenModel,
     OAuthServiceModel,
+    RegisteredUserModel,
     UserModel,
 )
-from src.infrastructure.dto import OAuthUserAccount, OAuthUserCreationData
+from src.infrastructure.dto import OAuthService, OAuthUserAccount, OAuthUserCreationData
 from src.infrastructure.exceptions.oauth import (
     OAuthAccountCreationError,
     OAuthServiceLinkageError,
@@ -35,7 +36,7 @@ class SQLAlchemyOAuthRepo:
     async def save(
         self, refresh_token_hash: str, save_data: OAuthUserCreationData
     ) -> UUID:
-        model = self._build_model(refresh_token_hash, save_data)
+        model = self._to_model(refresh_token_hash, save_data)
 
         try:
             async with self._session.begin_nested():
@@ -49,7 +50,7 @@ class SQLAlchemyOAuthRepo:
                     save_data, user_name=f"{save_data.user_name}_{timestamp_suffix}"
                 )
 
-                new_model = self._build_model(refresh_token_hash, save_data)
+                new_model = self._to_model(refresh_token_hash, save_data)
 
                 self._session.add(new_model)
                 await self._session.flush()
@@ -99,25 +100,56 @@ class SQLAlchemyOAuthRepo:
         except Exception as e:
             raise OAuthServiceLinkageError from e
 
-    def _build_model(
+    async def get_user_with_oauth_accounts(
+        self, user_id: UUID
+    ) -> tuple[str | None, int]:
+        statement = (
+            select(
+                DictBundle(
+                    "account",
+                    RegisteredUserModel.hashed_password,
+                    func.count(OAuthAccountModel.oauth_account_id).label(
+                        "account_count"
+                    ),
+                ),
+            )
+            .select_from(UserModel)
+            .outerjoin(RegisteredUserModel)
+            .outerjoin(OAuthAccountModel)
+            .where(UserModel.user_id == user_id)
+            .group_by(RegisteredUserModel.hashed_password)
+        )
+        result = await self._session.execute(statement)
+        db_row = result.one()
+        return db_row.account["hashed_password"], db_row.account["account_count"]
+
+    async def unlink_account(self, user_id: UUID, oauth_service_id: OAuthService):
+        statement = delete(OAuthAccountModel).where(
+            OAuthAccountModel.user_id == user_id,
+            OAuthAccountModel.oauth_service_id == oauth_service_id,
+        )
+        await self._session.execute(statement)
+
+    def _to_model(
         self, refresh_token_hash: str, save_data: OAuthUserCreationData
     ) -> UserModel:
         model = UserModel(user_name=save_data.user_name, email=save_data.email)
 
         # TODO: save user detail
 
-        model.oauth_account = OAuthAccountModel(
+        oauth_account_model = OAuthAccountModel(
             provider_user_id=save_data.provider_user_id,
             provider_psuid=save_data.provider_psuid,
             oauth_service_id=save_data.oauth_service_id,
         )
-
         refresh_token = OAuthRefreshTokenModel(hashed_token=refresh_token_hash)
-        model.oauth_account.refresh_tokens.append(refresh_token)
+        oauth_account_model.refresh_tokens.append(refresh_token)
+        model.oauth_accounts.append(oauth_account_model)
+
         return model
 
     async def _revoke_old_refresh_token(self, oauth_account_id: UUID) -> None:
-        stmt = (
+        statement = (
             update(OAuthRefreshTokenModel)
             .where(
                 OAuthRefreshTokenModel.oauth_account_id == oauth_account_id,
@@ -125,7 +157,7 @@ class SQLAlchemyOAuthRepo:
             )
             .values(status_id=TokenStatus.REVOKED)
         )
-        await self._session.execute(stmt)
+        await self._session.execute(statement)
 
     async def _get_oauth_account_model_by_email(self, email: str) -> Sequence[Row]:
         statement = (

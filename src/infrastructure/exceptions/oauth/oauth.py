@@ -11,3 +11,7 @@ class OAuthTokenRotationError(OAuthException):
 
 class OAuthServiceLinkageError(OAuthException):
     """Raised when new OAuth service to account linkage fails"""
+
+
+class UnlinkLastOAuthAccountError(OAuthException):
+    """Raised when user tries to unlink the only existing account"""

@@ -54,8 +54,9 @@ async def populate_db_for_cheatsheet_list(session) -> AsyncGenerator[None]:
 
 async def _populate_user(session: AsyncSession, suffix: str = "") -> UUID:
     query = text(
-        """INSERT INTO "user"(user_name, is_active, email)
-           VALUES (:user_name, :is_active, :email)
+        """INSERT INTO "user"(user_name, is_active,
+                              is_verified, is_superuser, email)
+           VALUES (:user_name, :is_active, :is_verified, :is_superuser, :email)
            RETURNING user_id"""
     )
 
@@ -63,6 +64,8 @@ async def _populate_user(session: AsyncSession, suffix: str = "") -> UUID:
         {
             "user_name": f"test{suffix}",
             "is_active": True,
+            "is_verified": True,
+            "is_superuser": False,
             "email": f"test{suffix}@random.mail",
         }
     ]
@@ -75,17 +78,14 @@ async def _populate_user(session: AsyncSession, suffix: str = "") -> UUID:
 
 async def _populate_registered_user(session: AsyncSession, user_id: UUID) -> None:
     query = text(
-        """INSERT INTO registered_user(user_id, is_verified,
-                                       is_superuser, hashed_password)
-        VALUES (:user_id, :is_verified, :is_superuser,:hashed_password)
+        """INSERT INTO registered_user(user_id,  hashed_password)
+        VALUES (:user_id, :hashed_password)
            RETURNING user_id"""
     )
 
     data = [
         {
             "user_id": user_id,
-            "is_verified": True,
-            "is_superuser": False,
             "hashed_password": "hashed_password",
         }
     ]

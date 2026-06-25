@@ -10,6 +10,7 @@ from src.infrastructure.dto import (
     OAuthUserAccount,
     OAuthUserCreationData,
 )
+from src.infrastructure.exceptions import UnlinkLastOAuthAccountError
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,13 @@ class OAuthAccountService:
                 f"Failed to process OAuth login for email {save_data.email}: {str(e)}"
             )
             raise
+
+    async def unlink_oauth_account(self, user_id: UUID, oauth_service_id: OAuthService):
+        """Unlinks a specific OAuth service from the user's account."""
+        if not await self._can_unlink_account(user_id):
+            raise UnlinkLastOAuthAccountError
+
+        await self._unlink_account(user_id, oauth_service_id)
 
     async def _update_existing_provider(
         self, oauth_account_id: UUID, refresh_token_hash: str
@@ -130,3 +138,21 @@ class OAuthAccountService:
             await uow.oauth_repo.link_new_service(
                 user_id, refresh_token_hash, save_data
             )
+
+    async def _can_unlink_account(self, user_id: UUID) -> bool:
+        """
+        Checks if the user has other authentication methods left
+        to allow unlinking.
+        """
+        async with self._unit_of_work.readonly() as uow:
+            (
+                hashed_password,
+                account_count,
+            ) = await uow.oauth_repo.get_user_with_oauth_accounts(user_id)
+            return hashed_password is not None or account_count > 1
+
+    async def _unlink_account(
+        self, user_id: UUID, oauth_service_id: OAuthService
+    ) -> None:
+        async with self._unit_of_work as uow:
+            await uow.oauth_repo.unlink_account(user_id, oauth_service_id)

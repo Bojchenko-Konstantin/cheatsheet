@@ -38,7 +38,7 @@ class OAuthAccountModel(Base):
         ForeignKey("md_oauth_service.oauth_service_id", ondelete="CASCADE"),
         nullable=False,
     )
-    user: Mapped[UserModel] = relationship(back_populates="oauth_account")
+    user: Mapped[UserModel] = relationship(back_populates="oauth_accounts")
     refresh_tokens: Mapped[list[OAuthRefreshTokenModel]] = relationship(
         back_populates="oauth_account"
     )

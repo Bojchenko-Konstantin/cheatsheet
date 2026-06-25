@@ -124,8 +124,9 @@ async def _populate_users_for_auth_test(
     update_password_user: DBUserData,
 ) -> list[UUID]:
     query = text(
-        """INSERT INTO "user"(user_name, is_active, email)
-           VALUES (:user_name, :is_active, :email)
+        """INSERT INTO "user"(user_name, is_active,
+                              is_verified, is_superuser, email)
+           VALUES (:user_name, :is_active, :is_verified, :is_superuser, :email)
            RETURNING user_id"""
     )
 
@@ -133,21 +134,29 @@ async def _populate_users_for_auth_test(
         {
             "user_name": active_user.name,
             "is_active": active_user.is_active,
+            "is_verified": active_user.is_verified,
+            "is_superuser": active_user.is_superuser,
             "email": active_user.email,
         },
         {
             "user_name": inactive_user.name,
             "is_active": inactive_user.is_active,
+            "is_verified": inactive_user.is_verified,
+            "is_superuser": inactive_user.is_superuser,
             "email": inactive_user.email,
         },
         {
             "user_name": update_password_user.name,
             "is_active": update_password_user.is_active,
+            "is_verified": update_password_user.is_verified,
+            "is_superuser": update_password_user.is_superuser,
             "email": update_password_user.email,
         },
         {
             "user_name": unverified_user.name,
             "is_active": unverified_user.is_active,
+            "is_verified": unverified_user.is_verified,
+            "is_superuser": unverified_user.is_superuser,
             "email": unverified_user.email,
         },
     ]
@@ -170,36 +179,26 @@ async def _populate_registered_users_for_auth_test(
     update_password_user: DBUserData,
 ) -> None:
     query = text(
-        """INSERT INTO registered_user(user_id, is_verified,
-                                       is_superuser, hashed_password)
-           VALUES (:user_id, :is_verified,
-                   :is_superuser, :hashed_password)
+        """INSERT INTO registered_user(user_id, hashed_password)
+           VALUES (:user_id, :hashed_password)
            RETURNING user_id"""
     )
 
     users_to_create = [
         {
             "user_id": user_ids[0],
-            "is_verified": active_user.is_verified,
-            "is_superuser": active_user.is_superuser,
             "hashed_password": active_user.hashed_password,
         },
         {
             "user_id": user_ids[1],
-            "is_verified": inactive_user.is_verified,
-            "is_superuser": inactive_user.is_superuser,
             "hashed_password": inactive_user.hashed_password,
         },
         {
             "user_id": user_ids[2],
-            "is_verified": update_password_user.is_verified,
-            "is_superuser": update_password_user.is_superuser,
             "hashed_password": update_password_user.hashed_password,
         },
         {
             "user_id": user_ids[3],
-            "is_verified": unverified_user.is_verified,
-            "is_superuser": unverified_user.is_superuser,
             "hashed_password": unverified_user.hashed_password,
         },
     ]

@@ -2,6 +2,7 @@ __all__ = (
     "OAuthAccountCreationError",
     "OAuthTokenRotationError",
     "OAuthServiceLinkageError",
+    "UnlinkLastOAuthAccountError",
     "YandexOAuthException",
     "YandexTokenRequestError",
     "YandexTokenResponseParseError",
@@ -15,6 +16,7 @@ from .oauth import (
     OAuthAccountCreationError,
     OAuthServiceLinkageError,
     OAuthTokenRotationError,
+    UnlinkLastOAuthAccountError,
 )
 from .yandex import (
     YandexAccessTokenMissingError,

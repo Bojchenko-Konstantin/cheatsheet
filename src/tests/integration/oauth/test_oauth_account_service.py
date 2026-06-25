@@ -58,7 +58,7 @@ async def test_process_oauth_login_when_user_refresh_token(
         hashed_token="old_hashed_token",
         oauth_service_id=OAuthService.YANDEX,
     )
-    oauth_account_id, original_hash = await _prepare_oauth_account(session, data)
+    oauth_account_id, original_hash, _ = await _prepare_oauth_account(session, data)
     await session.commit()
 
     sut = OAuthAccountService()
@@ -104,7 +104,7 @@ async def test_process_oauth_login_existing_user_link_new_provider(
         "oauth_service_id": OAuthService.YANDEX,
     }
 
-    oauth_account_id, _ = await _prepare_oauth_account(session, existing_user_data)
+    oauth_account_id, _, _ = await _prepare_oauth_account(session, existing_user_data)
     await session.commit()
 
     expected_user_id = await _get_user_id_by_account_id(session, oauth_account_id)
@@ -167,6 +167,78 @@ async def test_process_oauth_login_when_user_sign_up_with_existing_user_name(
     assert user_name != test_user_info["login"]
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_unlink_account(session: AsyncSession):
+    # Arrange.
+    user_data_yandex = {
+        "provider_user_id": "yandex_user_id_345",
+        "provider_psuid": "yandex_psuid_abcd",
+        "email": "test@email.com",
+        "user_name": "yandex_login",
+        "hashed_token": "yandex_hashed_token",
+        "oauth_service_id": OAuthService.YANDEX,
+    }
+    user_data_github = {
+        "provider_user_id": "github_user_id_543",
+        "provider_psuid": "github_psuid_dcba",
+        "email": "test@email.com",
+        "user_name": "github_login",
+        "hashed_token": "github_hashed_token",
+        "oauth_service_id": OAuthService.GITHUB,
+    }
+
+    _, _, user_id = await _prepare_oauth_account(session, user_data_yandex)
+    await session.commit()
+
+    await _add_second_oauth_account(session, user_id, user_data_github)
+    await session.commit()
+
+    current_account_amount = await _count_user_accounts(session, user_id)
+    assert current_account_amount == 2
+
+    sut = OAuthAccountService()
+
+    # Act.
+    await sut.unlink_oauth_account(user_id, OAuthService.YANDEX)
+    await session.commit()
+
+    result_account_amount = await _count_user_accounts(session, user_id)
+
+    # Assert.
+    assert result_account_amount == 1
+
+
+async def _count_user_accounts(session: AsyncSession, user_id: UUID) -> int:
+    query = text(
+        """
+        SELECT COUNT(oauth_account_id) AS result
+        FROM "user"
+        JOIN oauth_account USING (user_id)
+        WHERE user_id = :user_id
+        """
+    )
+
+    result = await session.execute(query, {"user_id": user_id})
+    db_row = result.one()
+    return db_row.result
+
+
+async def _add_second_oauth_account(
+    session: AsyncSession, user_id: UUID, data: dict[str, Any]
+):
+    """Add second OAuth account for existing user."""
+    oauth_account_id = await _insert_oauth_account(
+        session=session,
+        user_id=user_id,
+        provider_user_id=data["provider_user_id"],
+        provider_psuid=data["provider_psuid"],
+        oauth_service_id=data["oauth_service_id"],
+    )
+    await _insert_refresh_token(session, oauth_account_id, data["hashed_token"])
+    return user_id
+
+
 async def _get_user_name_by_user_id(session: AsyncSession, user_id: UUID) -> str:
     """Retrieves the internal user ID using their external OAuth provider user ID."""
     query = text(
@@ -219,7 +291,7 @@ async def _prepare_oauth_account(session: AsyncSession, data: dict[str, Any]):
     refresh_token_hash = await _insert_refresh_token(
         session, oauth_account_id, data["hashed_token"]
     )
-    return oauth_account_id, refresh_token_hash
+    return oauth_account_id, refresh_token_hash, user_id
 
 
 async def _insert_user(session: AsyncSession, user_name: str, email: str) -> UUID:

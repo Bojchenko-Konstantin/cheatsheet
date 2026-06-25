@@ -1,10 +1,11 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import (
+    CurrentUserRequiredDep,
     OAuthAccountServiceDep,
     TokenServiceDep,
     YandexOAuthServiceDep,
@@ -12,6 +13,7 @@ from src.api.dependencies import (
 from src.api.schemas import OAuthCallbackParams
 from src.application.dto.auth import UserPayload
 from src.infrastructure.dto import OAuthService
+from src.infrastructure.exceptions.oauth.oauth import UnlinkLastOAuthAccountError
 
 router = APIRouter(tags=["OAuth"])
 
@@ -68,3 +70,20 @@ async def yandex_auth_callback(
     response.delete_cookie("yandex_oauth_state", path="/")
 
     return response
+
+
+@router.delete("auth/yandex/connections")
+async def unlink_yandex_account(
+    current_user: CurrentUserRequiredDep,
+    oauth_account_service: OAuthAccountServiceDep,
+):
+    user_id = current_user.user_id
+
+    try:
+        await oauth_account_service.unlink_oauth_account(user_id, OAuthService.YANDEX)
+    except UnlinkLastOAuthAccountError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unlink the only login way",
+        ) from None
+    # Add possible logout.

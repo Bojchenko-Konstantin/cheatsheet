@@ -54,7 +54,7 @@ class TokenService(ITokenService):
             payload = self._jwt_core.verify_token(
                 token=access_token,
                 expected_type="access",
-                required_claims=["exp"],
+                required_claims=["exp", "provider", "iss", "aud"],
             )
         except jwt.ExpiredSignatureError as e:
             raise AccessTokenExpiredError from e
@@ -63,12 +63,12 @@ class TokenService(ITokenService):
         except Exception as e:
             raise AccessTokenException from e
 
-        user_data = {
-            key: value
-            for key, value in payload.items()
-            if key in ["user_id", "is_superuser", "exp"]
-        }
-        user_payload = UserPayload.create(**user_data)
+        user_payload = UserPayload.create(
+            user_id=payload["user_id"],
+            is_superuser=payload["is_superuser"],
+            exp=payload["exp"],
+            provider=payload["provider"],
+        )
 
         return user_payload
 
@@ -84,7 +84,7 @@ class TokenService(ITokenService):
                 return
             else:
                 await self._verify_token_was_not_compromised(
-                    uow=uow,
+                    uow=self._unit_of_work,
                     user_id=user_id,
                     fingerprint=fingerprint,
                     plain_refresh_token=plain_refresh_token,
@@ -94,13 +94,13 @@ class TokenService(ITokenService):
         self, user_id: UUID, plain_refresh_token: str, fingerprint: str
     ) -> None:
         try:
-            async with self._unit_of_work as uow:
+            async with self._unit_of_work.readonly() as uow:
                 await uow.user_repo.get_by_id(user_id)
         except UserNotFoundError:
             raise
 
         try:
-            async with self._unit_of_work as uow:
+            async with self._unit_of_work.readonly() as uow:
                 token_record = await uow.token_repo.get_device_active_token(
                     user_id, fingerprint
                 )
@@ -133,6 +133,7 @@ class TokenService(ITokenService):
                 payload={
                     "user_id": str(payload.user_id),
                     "is_superuser": payload.is_superuser,
+                    "provider": payload.provider,
                 },
                 token_type="access",
                 expires_in_minutes=self._access_token_expires_in,

@@ -7,10 +7,12 @@ __all__ = (
     "YandexUserInfoRequestError",
     "YandexUserInfoResponseParseError",
     "OAuthAccountCreationError",
+    "UnlinkLastOAuthAccountError",
 )
 
 from .oauth import (
     OAuthAccountCreationError,
+    UnlinkLastOAuthAccountError,
     YandexAccessTokenMissingError,
     YandexOAuthException,
     YandexRefreshTokenMissingError,
