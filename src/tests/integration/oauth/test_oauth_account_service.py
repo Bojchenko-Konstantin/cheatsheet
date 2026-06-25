@@ -174,16 +174,14 @@ async def test_unlink_account(session: AsyncSession):
     user_data_yandex = {
         "provider_user_id": "yandex_user_id_345",
         "provider_psuid": "yandex_psuid_abcd",
-        "email": "test@email.com",
-        "user_name": "yandex_login",
+        "email": "test_unlink@email.com",
+        "user_name": "login_to_be_unlinked",
         "hashed_token": "yandex_hashed_token",
         "oauth_service_id": OAuthService.YANDEX,
     }
     user_data_github = {
         "provider_user_id": "github_user_id_543",
         "provider_psuid": "github_psuid_dcba",
-        "email": "test@email.com",
-        "user_name": "github_login",
         "hashed_token": "github_hashed_token",
         "oauth_service_id": OAuthService.GITHUB,
     }
