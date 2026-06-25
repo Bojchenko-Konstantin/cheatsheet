@@ -81,7 +81,7 @@ class YandexOAuthConfig(BaseModel):
 
 
 class GeneralOAuthConfig(BaseModel):
-    refresh_token_encryption_key: str
+    token_encryption_key: str
 
 
 class Settings(BaseSettings):

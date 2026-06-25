@@ -20,7 +20,7 @@ class OAuthAccountService:
 
     def __init__(self, unit_of_work: SQLAlchemyUnitOfWork | None = None):
         self._unit_of_work = unit_of_work or SQLAlchemyUnitOfWork()
-        self._cipher = Fernet(settings.general_oauth.refresh_token_encryption_key)
+        self._cipher = Fernet(settings.general_oauth.token_encryption_key)
 
     async def process_oauth_login(
         self,
