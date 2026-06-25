@@ -23,12 +23,15 @@ class YandexOAuthService:
         # TODO: add additional settings
         # (retries, max connections, User-Agent header etc.)
         self._client = AsyncClient(timeout=Timeout(connect=5.0, timeout=10.0))
+        self._client_id = settings.yandex_oauth.client_id
+        self._callback_url = settings.yandex_oauth.callback_url
+        self._client_secret = settings.yandex_oauth.client_secret
 
     def generate_authorization_request_url(self, state: str) -> str:
         params = {
             "response_type": "code",
-            "client_id": settings.yandex_oauth.client_id,
-            "redirect_uri": settings.yandex_oauth.callback_url,
+            "client_id": self._client_id,
+            "redirect_uri": self._callback_url,
             "scope": "login:email login:info",
             "state": state,
         }
@@ -45,8 +48,8 @@ class YandexOAuthService:
         request_data = {
             "grant_type": "authorization_code",
             "code": code,
-            "client_id": settings.yandex_oauth.client_id,
-            "client_secret": settings.yandex_oauth.client_secret,
+            "client_id": self._client_id,
+            "client_secret": self._client_secret,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
