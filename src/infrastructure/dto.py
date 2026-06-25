@@ -21,6 +21,13 @@ class OAuthUserCreationData:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class OAuthAccountLinkingData:
+    provider_user_id: str
+    provider_psuid: str
+    oauth_service_id: OAuthService
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OAuthUserAccount:
     oauth_account_id: UUID
     user_id: UUID
