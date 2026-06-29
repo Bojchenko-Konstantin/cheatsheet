@@ -3,11 +3,18 @@ import secrets
 from json import JSONDecodeError
 from urllib.parse import urlencode
 
-from httpx import AsyncClient, Timeout
+from httpx import AsyncClient, Limits, RequestError, Timeout
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from src.core.config import settings
 from src.infrastructure.exceptions.oauth import (
     YandexAccessTokenMissingError,
+    YandexServerRequestError,
     YandexTokenRequestError,
     YandexTokenResponseParseError,
     YandexUserInfoRequestError,
@@ -19,9 +26,18 @@ logger = logging.getLogger(__name__)
 
 class YandexOAuthService:
     def __init__(self):
-        # TODO: add additional settings
-        # (retries, max connections, User-Agent header etc.)
-        self._client = AsyncClient(timeout=Timeout(connect=5.0, timeout=10.0))
+        headers = {
+            "User-Agent": (
+                f"{settings.app_credentials.name} "
+                f"(Contact: {settings.app_credentials.email})"
+            )
+        }
+        limits = Limits(
+            max_keepalive_connections=10, max_connections=50, keepalive_expiry=10.0
+        )
+        timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
+
+        self._client = AsyncClient(timeout=timeout, limits=limits, headers=headers)
         self._client_id = settings.yandex_oauth.client_id
         self._callback_url = settings.yandex_oauth.callback_url
         self._client_secret = settings.yandex_oauth.client_secret
@@ -43,6 +59,12 @@ class YandexOAuthService:
     def generate_state_value(self) -> str:
         return secrets.token_urlsafe(32)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+        retry=retry_if_exception_type((RequestError, YandexServerRequestError)),
+    )
     async def get_access_token(self, code: str) -> str:
         request_data = {
             "grant_type": "authorization_code",
@@ -63,6 +85,10 @@ class YandexOAuthService:
                 response.status_code,
                 response.text,
             )
+
+            if response.status_code >= 500:
+                raise YandexServerRequestError
+
             raise YandexTokenRequestError
 
         try:
@@ -81,6 +107,12 @@ class YandexOAuthService:
 
         return access_token
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
+        retry=retry_if_exception_type((RequestError, YandexServerRequestError)),
+    )
     async def get_user_info(self, access_token: str) -> dict[str, str]:
         headers = {"Authorization": f"OAuth {access_token}"}
         params = {"format": "json"}
@@ -96,6 +128,10 @@ class YandexOAuthService:
                 response.status_code,
                 response.text,
             )
+
+            if response.status_code >= 500:
+                raise YandexServerRequestError
+
             raise YandexUserInfoRequestError
 
         try:
@@ -106,3 +142,7 @@ class YandexOAuthService:
 
         logger.info("user_info was obtained successfully")
         return user_info
+
+    async def aclose(self):
+        """Finish httpx session after application stop."""
+        await self._client.aclose()
