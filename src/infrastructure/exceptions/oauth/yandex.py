@@ -23,3 +23,7 @@ class YandexUserInfoRequestError(YandexOAuthException):
 
 class YandexUserInfoResponseParseError(YandexOAuthException):
     """Raised when the user info response cannot be parsed as valid JSON."""
+
+
+class YandexServerRequestError(YandexOAuthException):
+    """Raised when Yandex server returns 5xx errors"""
