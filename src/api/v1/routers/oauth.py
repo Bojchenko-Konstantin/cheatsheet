@@ -52,11 +52,11 @@ async def yandex_auth_callback(
     if state_from_cookie != params.state:
         raise HTTPException(status_code=400, detail="Invalid state — possible CSRF")
 
-    access_token, refresh_token = await oauth_service.get_tokens(code=params.code)
+    access_token = await oauth_service.get_access_token(code=params.code)
     user_info = await oauth_service.get_user_info(access_token)
 
     user_id = await oauth_account_service.process_oauth_login(
-        refresh_token, user_info, OAuthService.YANDEX
+        user_info, OAuthService.YANDEX
     )
     payload = UserPayload.create(user_id=user_id)
     token_pair = await token_service.generate_tokens(payload)

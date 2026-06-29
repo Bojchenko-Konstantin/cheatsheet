@@ -80,10 +80,6 @@ class YandexOAuthConfig(BaseModel):
     callback_url: str
 
 
-class GeneralOAuthConfig(BaseModel):
-    token_encryption_key: str
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -99,7 +95,6 @@ class Settings(BaseSettings):
     email_template: EmailTemplateConfig = EmailTemplateConfig()
     email_verification: EmailVerificationConfig = EmailVerificationConfig()
     yandex_oauth: YandexOAuthConfig
-    general_oauth: GeneralOAuthConfig
 
 
 settings = Settings()  # type: ignore

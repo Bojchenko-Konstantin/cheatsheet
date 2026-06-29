@@ -8,7 +8,6 @@ from httpx import AsyncClient, Timeout
 from src.core.config import settings
 from src.infrastructure.exceptions.oauth import (
     YandexAccessTokenMissingError,
-    YandexRefreshTokenMissingError,
     YandexTokenRequestError,
     YandexTokenResponseParseError,
     YandexUserInfoRequestError,
@@ -44,7 +43,7 @@ class YandexOAuthService:
     def generate_state_value(self) -> str:
         return secrets.token_urlsafe(32)
 
-    async def get_tokens(self, code: str) -> tuple[str, str]:
+    async def get_access_token(self, code: str) -> str:
         request_data = {
             "grant_type": "authorization_code",
             "code": code,
@@ -73,7 +72,6 @@ class YandexOAuthService:
             raise YandexTokenResponseParseError from e
 
         access_token = response_data.get("access_token")
-        refresh_token = response_data.get("refresh_token")
 
         if access_token is None:
             logger.error("access_token is not present: %s", response_data)
@@ -81,16 +79,7 @@ class YandexOAuthService:
 
         logger.info("Received access_token")
 
-        if refresh_token is None:
-            logger.exception("refresh_token is not present: %s", response_data)
-            raise YandexRefreshTokenMissingError
-
-        logger.info("Received refresh_token")
-
-        return access_token, refresh_token
-
-    async def refresh_a_token(self):
-        pass
+        return access_token
 
     async def get_user_info(self, access_token: str) -> dict[str, str]:
         headers = {"Authorization": f"OAuth {access_token}"}

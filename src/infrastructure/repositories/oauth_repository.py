@@ -4,14 +4,12 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import Row, delete, func, select, update
+from sqlalchemy import Row, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto.token import TokenStatus
 from src.infrastructure.database.models import (
     OAuthAccountModel,
-    OAuthRefreshTokenModel,
     OAuthServiceModel,
     RegisteredUserModel,
     UserModel,
@@ -25,7 +23,6 @@ from src.infrastructure.dto import (
 from src.infrastructure.exceptions.oauth import (
     OAuthAccountCreationError,
     OAuthServiceLinkageError,
-    OAuthTokenRotationError,
 )
 from src.infrastructure.repositories.utils import DictBundle
 
@@ -38,10 +35,8 @@ class SQLAlchemyOAuthRepo:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def save(
-        self, refresh_token_hash: str, save_data: OAuthUserCreationData
-    ) -> UUID:
-        model = self._to_model(refresh_token_hash, save_data)
+    async def save(self, save_data: OAuthUserCreationData) -> UUID:
+        model = self._to_model(save_data)
 
         try:
             async with self._session.begin_nested():
@@ -55,7 +50,7 @@ class SQLAlchemyOAuthRepo:
                     save_data, user_name=f"{save_data.user_name}_{timestamp_suffix}"
                 )
 
-                new_model = self._to_model(refresh_token_hash, save_data)
+                new_model = self._to_model(save_data)
 
                 self._session.add(new_model)
                 await self._session.flush()
@@ -74,22 +69,7 @@ class SQLAlchemyOAuthRepo:
 
         return [OAuthUserAccount(**account.oauth_account) for account in model]
 
-    async def update_refresh_token(
-        self,
-        oauth_account_id: UUID,
-        refresh_token_hash: str,
-    ):
-        try:
-            await self._revoke_old_refresh_token(oauth_account_id)
-            await self._save_new_refresh_token(oauth_account_id, refresh_token_hash)
-            await self._session.flush()
-        except Exception as e:
-            logger.exception("Failed to rotate OAuth refresh token")
-            raise OAuthTokenRotationError from e
-
-    async def link_new_service(
-        self, user_id: UUID, refresh_token_hash: str, save_data: OAuthAccountLinkingData
-    ):
+    async def link_new_service(self, user_id: UUID, save_data: OAuthAccountLinkingData):
         try:
             model = OAuthAccountModel(
                 user_id=user_id,
@@ -97,8 +77,6 @@ class SQLAlchemyOAuthRepo:
                 provider_psuid=save_data.provider_psuid,
                 oauth_service_id=save_data.oauth_service_id,
             )
-            refresh_token = OAuthRefreshTokenModel(hashed_token=refresh_token_hash)
-            model.refresh_tokens.append(refresh_token)
 
             self._session.add(model)
             await self._session.flush()
@@ -135,9 +113,7 @@ class SQLAlchemyOAuthRepo:
         )
         await self._session.execute(statement)
 
-    def _to_model(
-        self, refresh_token_hash: str, save_data: OAuthUserCreationData
-    ) -> UserModel:
+    def _to_model(self, save_data: OAuthUserCreationData) -> UserModel:
         model = UserModel(user_name=save_data.user_name, email=save_data.email)
 
         # TODO: save user detail
@@ -147,22 +123,9 @@ class SQLAlchemyOAuthRepo:
             provider_psuid=save_data.provider_psuid,
             oauth_service_id=save_data.oauth_service_id,
         )
-        refresh_token = OAuthRefreshTokenModel(hashed_token=refresh_token_hash)
-        oauth_account_model.refresh_tokens.append(refresh_token)
         model.oauth_accounts.append(oauth_account_model)
 
         return model
-
-    async def _revoke_old_refresh_token(self, oauth_account_id: UUID) -> None:
-        statement = (
-            update(OAuthRefreshTokenModel)
-            .where(
-                OAuthRefreshTokenModel.oauth_account_id == oauth_account_id,
-                OAuthRefreshTokenModel.status_id == TokenStatus.ACTIVE,
-            )
-            .values(status_id=TokenStatus.REVOKED)
-        )
-        await self._session.execute(statement)
 
     async def _get_oauth_account_model_by_email(self, email: str) -> Sequence[Row]:
         statement = (
@@ -183,11 +146,3 @@ class SQLAlchemyOAuthRepo:
         )
         result = await self._session.execute(statement)
         return result.all()
-
-    async def _save_new_refresh_token(
-        self, oauth_account_id: UUID, refresh_token_hash: str
-    ) -> None:
-        model = OAuthRefreshTokenModel(
-            oauth_account_id=oauth_account_id, hashed_token=refresh_token_hash
-        )
-        self._session.add(model)

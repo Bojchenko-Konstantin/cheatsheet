@@ -17,10 +17,6 @@ class YandexAccessTokenMissingError(YandexOAuthException):
     """Raised when the access token is missing from the token response."""
 
 
-class YandexRefreshTokenMissingError(YandexOAuthException):
-    """Raised when the refresh token is missing from the token response."""
-
-
 class YandexUserInfoRequestError(YandexOAuthException):
     """Raised when the user info request fails with a non‑200 HTTP status."""
 

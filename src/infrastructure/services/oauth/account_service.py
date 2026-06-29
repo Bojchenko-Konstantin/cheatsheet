@@ -1,9 +1,6 @@
 import logging
 from uuid import UUID
 
-from cryptography.fernet import Fernet
-
-from src.core.config import settings
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.dto import (
     OAuthAccountLinkingData,
@@ -17,15 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class OAuthAccountService:
-    """Handles all operations with OAuth refresh tokens."""
+    """Handles all operations with OAuth account."""
 
     def __init__(self, unit_of_work: SQLAlchemyUnitOfWork | None = None):
         self._unit_of_work = unit_of_work or SQLAlchemyUnitOfWork()
-        self._cipher = Fernet(settings.general_oauth.token_encryption_key)
 
     async def process_oauth_login(
         self,
-        plain_refresh_token: str,
         user_info: dict[str, str],
         oauth_service_id: OAuthService,
     ) -> UUID:
@@ -33,13 +28,10 @@ class OAuthAccountService:
         Process the OAuth authentication flow for a user.
 
         This method orchestrates the entire login/registration workflow via OAuth:
-        1. Encrypts the raw refresh token received from the provider.
         2. Normalizes user profile data.
         3. Identifies whether the user already exists by their email.
-        4. Rotates the token (if the service is already linked), links a new service
-        to the existing user, or registers a brand new user.
+        4. Links a new service to the existing user, or registers a brand new user.
         """
-        refresh_token_hash = self._generate_refresh_token_hash(plain_refresh_token)
         save_data = self._get_data_to_save(user_info, oauth_service_id)
 
         try:
@@ -49,10 +41,10 @@ class OAuthAccountService:
 
             if existing_accounts:
                 return await self._process_existing_user(
-                    existing_accounts, oauth_service_id, refresh_token_hash, save_data
+                    existing_accounts, oauth_service_id, save_data
                 )
 
-            return await self._register_new_user(refresh_token_hash, save_data)
+            return await self._register_new_user(save_data)
         except Exception as e:
             logger.exception(
                 f"Failed to process OAuth login for email {save_data.email}: {str(e)}"
@@ -65,17 +57,6 @@ class OAuthAccountService:
             raise UnlinkLastOAuthAccountError
 
         await self._unlink_account(user_id, oauth_service_id)
-
-    async def _update_existing_provider(
-        self, oauth_account_id: UUID, refresh_token_hash: str
-    ):
-        async with self._unit_of_work as uow:
-            await uow.oauth_repo.update_refresh_token(
-                oauth_account_id, refresh_token_hash
-            )
-
-    def _generate_refresh_token_hash(self, plain_refresh_token: str) -> str:
-        return self._cipher.encrypt(plain_refresh_token.encode()).decode()
 
     def _get_data_to_save(
         self, user_info: dict[str, str], oauth_service_id: OAuthService
@@ -99,11 +80,10 @@ class OAuthAccountService:
         self,
         existing_accounts: list[OAuthUserAccount],
         oauth_service_id: OAuthService,
-        refresh_token_hash: str,
         save_data: OAuthUserCreationData,
     ):
         """
-        Update current account refresh token or link new account to existing user.
+        Link new account to existing user.
         """
         user_id = existing_accounts[0].user_id
 
@@ -116,30 +96,20 @@ class OAuthAccountService:
             None,
         )
 
-        if matched_account:
-            await self._update_existing_provider(
-                matched_account.oauth_account_id, refresh_token_hash
-            )
-        else:
-            await self._link_new_service(user_id, refresh_token_hash, save_data)
+        if not matched_account:
+            await self._link_new_service(user_id, save_data)
 
         return user_id
 
-    async def _register_new_user(
-        self, refresh_token_hash: str, save_data: OAuthUserCreationData
-    ):
+    async def _register_new_user(self, save_data: OAuthUserCreationData):
         async with self._unit_of_work as uow:
-            user_id = await uow.oauth_repo.save(refresh_token_hash, save_data)
+            user_id = await uow.oauth_repo.save(save_data)
             return user_id
 
-    async def _link_new_service(
-        self, user_id: UUID, refresh_token_hash: str, save_data: OAuthUserCreationData
-    ):
+    async def _link_new_service(self, user_id: UUID, save_data: OAuthUserCreationData):
         linking_data = self._map_creation_to_linking(save_data)
         async with self._unit_of_work as uow:
-            await uow.oauth_repo.link_new_service(
-                user_id, refresh_token_hash, linking_data
-            )
+            await uow.oauth_repo.link_new_service(user_id, linking_data)
 
     async def _can_unlink_account(self, user_id: UUID) -> bool:
         """
