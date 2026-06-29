@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.application.dto import User
@@ -239,8 +239,8 @@ async def get_current_user_optional(
         return None
 
 
-async def get_yandex_oauth_service() -> YandexOAuthService:
-    return YandexOAuthService()
+async def get_yandex_oauth_service(request: Request) -> YandexOAuthService:
+    return request.app.state.yandex_oauth_service
 
 
 async def get_oauth_account_service() -> OAuthAccountService:

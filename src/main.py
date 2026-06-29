@@ -14,17 +14,23 @@ from src.application.exceptions.user import UserNotVerifiedError
 from src.core.logging_config import setup_logging
 from src.infrastructure.background_tasks.broker import BROKER
 from src.infrastructure.database import dispose
+from src.infrastructure.services.oauth.yandex import YandexOAuthService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     setup_logging()
+    yandex_oauth_service = YandexOAuthService()
+    app.state.yandex_oauth_service = yandex_oauth_service
+
     if not BROKER.is_worker_process:
         await BROKER.startup()
     yield
     if not BROKER.is_worker_process:
         await BROKER.shutdown()
+
     await dispose()
+    await yandex_oauth_service.aclose()
 
 
 app = FastAPI(
