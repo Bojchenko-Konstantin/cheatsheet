@@ -32,6 +32,11 @@ class LoggingConfig(BaseModel):
     log_level: str = "ERROR"
 
 
+class AppCredentialsConfig(BaseModel):
+    name: str
+    email: str
+
+
 class JWTConfig(BaseModel):
     access_token_expires_in: int
     refresh_token_expires_in: int
@@ -88,6 +93,7 @@ class Settings(BaseSettings):
     )
     database: DatabaseConfig
     logging: LoggingConfig = LoggingConfig()
+    app_credentials: AppCredentialsConfig
     jwt: JWTConfig
     notification: NotificationConfig
     broker: BrokerConfig
