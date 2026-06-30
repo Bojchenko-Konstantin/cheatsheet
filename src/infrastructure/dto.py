@@ -1,11 +1,7 @@
 from dataclasses import dataclass
-from enum import IntEnum
 from uuid import UUID
 
-
-class OAuthService(IntEnum):
-    YANDEX = 1
-    GITHUB = 2
+from src.application.dto.oauth import OAuthService
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

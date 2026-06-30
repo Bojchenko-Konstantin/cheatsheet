@@ -1,10 +1,11 @@
 import logging
 from uuid import UUID
 
+from src.application.dto.oauth import OAuthService
+from src.application.interfaces.services.account_service import IOAuthAccountService
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.dto import (
     OAuthAccountLinkingData,
-    OAuthService,
     OAuthUserAccount,
     OAuthUserCreationData,
 )
@@ -13,7 +14,7 @@ from src.infrastructure.exceptions import UnlinkLastOAuthAccountError
 logger = logging.getLogger(__name__)
 
 
-class OAuthAccountService:
+class OAuthAccountService(IOAuthAccountService):
     """Handles all operations with OAuth account."""
 
     def __init__(self, unit_of_work: SQLAlchemyUnitOfWork | None = None):

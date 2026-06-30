@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import TextClause, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.dto import OAuthService
+from src.application.dto.oauth import OAuthService
 from src.infrastructure.services.oauth import OAuthAccountService
 
 

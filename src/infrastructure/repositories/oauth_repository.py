@@ -8,6 +8,7 @@ from sqlalchemy import Row, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dto.oauth import OAuthService
 from src.infrastructure.database.models import (
     OAuthAccountModel,
     OAuthServiceModel,
@@ -16,7 +17,6 @@ from src.infrastructure.database.models import (
 )
 from src.infrastructure.dto import (
     OAuthAccountLinkingData,
-    OAuthService,
     OAuthUserAccount,
     OAuthUserCreationData,
 )
