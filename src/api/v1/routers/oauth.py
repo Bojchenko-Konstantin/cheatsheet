@@ -77,4 +77,4 @@ async def unlink_yandex_account(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot unlink the only login way",
         ) from None
-    # Add possible logout.
+    # TODO: add force logout.
