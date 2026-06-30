@@ -11,7 +11,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from src.application.interfaces.services.oauth_service import IOAuthService
+from src.application.interfaces import IOAuthProviderService
 from src.core.config import settings
 from src.infrastructure.exceptions.oauth import (
     YandexAccessTokenMissingError,
@@ -25,7 +25,7 @@ from src.infrastructure.exceptions.oauth import (
 logger = logging.getLogger(__name__)
 
 
-class YandexOAuthService(IOAuthService):
+class YandexOAuthService(IOAuthProviderService):
     def __init__(self):
         headers = {
             "User-Agent": (

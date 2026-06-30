@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 
-class IOAuthService:
+class IOAuthProviderService:
     @abstractmethod
     def generate_authorization_request_url(self, state: str) -> str:
         pass

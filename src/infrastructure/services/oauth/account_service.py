@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 
 from src.application.dto.oauth import OAuthService
-from src.application.interfaces.services.account_service import IOAuthAccountService
+from src.application.interfaces import IOAuthAccountService
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.dto import (
     OAuthAccountLinkingData,

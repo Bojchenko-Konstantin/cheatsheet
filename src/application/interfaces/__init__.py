@@ -6,7 +6,9 @@ __all__ = (
     "ITokenService",
     "IUserService",
     "INotificationService",
+    "IOAuthAccountService",
     "IEmailTemplateService",
+    "IOAuthProviderService",
     "IPasswordResetService",
     "IVerificationService",
 )
@@ -15,6 +17,8 @@ from .repositories import ICheatsheetRepo, ITokenRepo, IUserRepo
 from .services import (
     IEmailTemplateService,
     INotificationService,
+    IOAuthAccountService,
+    IOAuthProviderService,
     IPasswordResetService,
     ITokenService,
     IUserService,
