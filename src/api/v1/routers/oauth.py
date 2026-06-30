@@ -6,12 +6,10 @@ from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import (
     CurrentUserRequiredDep,
-    OAuthAccountServiceDep,
-    TokenServiceDep,
+    OAuthUseCaseDep,
     YandexOAuthServiceDep,
 )
 from src.api.schemas import OAuthCallbackParams
-from src.application.dto.auth import UserPayload
 from src.application.dto.oauth import OAuthService
 from src.infrastructure.exceptions.oauth.oauth import UnlinkLastOAuthAccountError
 
@@ -21,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/auth/yandex/login")
-async def login_with_yandex(oauth_service: YandexOAuthServiceDep):
-    state = oauth_service.generate_state_value()
-    url = oauth_service.generate_authorization_request_url(state)
+async def login_with_yandex(oauth_provider_service: YandexOAuthServiceDep):
+    state = oauth_provider_service.generate_state_value()
+    url = oauth_provider_service.generate_authorization_request_url(state)
     response = RedirectResponse(url=url)
 
     response.set_cookie(
@@ -42,9 +40,7 @@ async def login_with_yandex(oauth_service: YandexOAuthServiceDep):
 @router.get("/auth/yandex/callback")
 async def yandex_auth_callback(
     request: Request,
-    oauth_service: YandexOAuthServiceDep,
-    account_service: OAuthAccountServiceDep,
-    token_service: TokenServiceDep,
+    oauth_use_case: OAuthUseCaseDep,
     params: Annotated[OAuthCallbackParams, Query()],
 ):
     state_from_cookie = request.cookies.get("yandex_oauth_state")
@@ -52,12 +48,9 @@ async def yandex_auth_callback(
     if state_from_cookie != params.state:
         raise HTTPException(status_code=400, detail="Invalid state — possible CSRF")
 
-    access_token = await oauth_service.get_access_token(code=params.code)
-    user_info = await oauth_service.get_user_info(access_token)
-
-    user_id = await account_service.process_oauth_login(user_info, OAuthService.YANDEX)
-    payload = UserPayload.create(user_id=user_id)
-    token_pair = await token_service.generate_tokens(payload)
+    token_pair = await oauth_use_case.authenticate(
+        code=params.code, oauth_service=OAuthService.YANDEX
+    )
 
     redirect_url = (
         f"/cheatsheet#access_token={token_pair['access_token']}"
@@ -73,12 +66,12 @@ async def yandex_auth_callback(
 @router.delete("auth/yandex/connections")
 async def unlink_yandex_account(
     current_user: CurrentUserRequiredDep,
-    account_service: OAuthAccountServiceDep,
+    oauth_use_case: OAuthUseCaseDep,
 ):
     user_id = current_user.user_id
 
     try:
-        await account_service.unlink_oauth_account(user_id, OAuthService.YANDEX)
+        await oauth_use_case.unlink_account(user_id, OAuthService.YANDEX)
     except UnlinkLastOAuthAccountError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
