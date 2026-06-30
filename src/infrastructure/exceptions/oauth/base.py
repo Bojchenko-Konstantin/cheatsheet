@@ -1,2 +1,2 @@
-class OAuthException(Exception):
-    """Base exception class for OAuth-related errors."""
+class ProviderServiceException(Exception):
+    """Base exception class for provider OAuth-related errors."""

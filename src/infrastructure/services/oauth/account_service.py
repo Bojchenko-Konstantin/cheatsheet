@@ -2,6 +2,7 @@ import logging
 from uuid import UUID
 
 from src.application.dto.oauth import OAuthService
+from src.application.exceptions import UnlinkLastOAuthAccountError
 from src.application.interfaces import IOAuthAccountService
 from src.infrastructure.database.unit_of_work import SQLAlchemyUnitOfWork
 from src.infrastructure.dto import (
@@ -9,7 +10,6 @@ from src.infrastructure.dto import (
     OAuthUserAccount,
     OAuthUserCreationData,
 )
-from src.infrastructure.exceptions import UnlinkLastOAuthAccountError
 
 logger = logging.getLogger(__name__)
 

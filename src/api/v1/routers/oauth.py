@@ -11,7 +11,7 @@ from src.api.dependencies import (
 )
 from src.api.schemas import OAuthCallbackParams
 from src.application.dto.oauth import OAuthService
-from src.infrastructure.exceptions.oauth.oauth import UnlinkLastOAuthAccountError
+from src.application.exceptions import UnlinkLastOAuthAccountError
 
 router = APIRouter(tags=["OAuth"])
 

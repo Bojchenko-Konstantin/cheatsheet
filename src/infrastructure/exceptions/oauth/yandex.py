@@ -1,7 +1,7 @@
-from src.infrastructure.exceptions.oauth.base import OAuthException
+from src.infrastructure.exceptions.oauth.base import ProviderServiceException
 
 
-class YandexOAuthException(OAuthException):
+class YandexOAuthException(ProviderServiceException):
     """Base exception class for Yandex OAuth-related errors."""
 
 

@@ -38,6 +38,9 @@ __all__ = (
     "CursorException",
     "InvalidCursorError",
     "SearchException",
+    "OAuthAccountCreationError",
+    "OAuthServiceLinkageError",
+    "UnlinkLastOAuthAccountError",
 )
 
 from .access_token import (
@@ -62,6 +65,11 @@ from .email_verification import (
     InvalidEmailVerificationTokenError,
 )
 from .notification import NotificationException, SendEmailError
+from .oauth import (
+    OAuthAccountCreationError,
+    OAuthServiceLinkageError,
+    UnlinkLastOAuthAccountError,
+)
 from .password_reset import (
     ExpiredPasswordResetTokenError,
     InvalidPasswordResetTokenError,

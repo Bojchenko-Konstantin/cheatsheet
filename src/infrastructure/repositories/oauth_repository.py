@@ -9,6 +9,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto.oauth import OAuthService
+from src.application.exceptions import (
+    OAuthAccountCreationError,
+    OAuthServiceLinkageError,
+)
 from src.infrastructure.database.models import (
     OAuthAccountModel,
     OAuthServiceModel,
@@ -19,10 +23,6 @@ from src.infrastructure.dto import (
     OAuthAccountLinkingData,
     OAuthUserAccount,
     OAuthUserCreationData,
-)
-from src.infrastructure.exceptions.oauth import (
-    OAuthAccountCreationError,
-    OAuthServiceLinkageError,
 )
 from src.infrastructure.repositories.utils import DictBundle
 
