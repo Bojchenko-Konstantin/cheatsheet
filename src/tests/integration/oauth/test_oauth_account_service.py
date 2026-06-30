@@ -6,6 +6,7 @@ from sqlalchemy import TextClause, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto.oauth import OAuthService
+from src.application.exceptions.oauth import UnlinkLastOAuthAccountError
 from src.infrastructure.services.oauth import OAuthAccountService
 
 
@@ -188,6 +189,28 @@ async def test_unlink_account(session: AsyncSession):
 
     # Assert.
     assert result_account_amount == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio(loop_scope="session")
+async def test_unlink_fails_when_only_account_exists(session: AsyncSession):
+    # Arrange.
+    user_data_yandex = {
+        "provider_user_id": "single_user_id_345",
+        "provider_psuid": "single_psuid_abcd",
+        "email": "test_unlink_fails@email.com",
+        "user_name": "single_login",
+        "oauth_service_id": OAuthService.YANDEX,
+    }
+
+    _, user_id = await _prepare_oauth_account(session, user_data_yandex)
+    await session.commit()
+
+    sut = OAuthAccountService()
+
+    # Act + assert.
+    with pytest.raises(UnlinkLastOAuthAccountError):
+        await sut.unlink_oauth_account(user_id, OAuthService.YANDEX)
 
 
 async def _count_user_accounts(session: AsyncSession, user_id: UUID) -> int:
