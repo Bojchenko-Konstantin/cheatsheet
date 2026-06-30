@@ -43,7 +43,7 @@ async def login_with_yandex(oauth_service: YandexOAuthServiceDep):
 async def yandex_auth_callback(
     request: Request,
     oauth_service: YandexOAuthServiceDep,
-    oauth_account_service: OAuthAccountServiceDep,
+    account_service: OAuthAccountServiceDep,
     token_service: TokenServiceDep,
     params: Annotated[OAuthCallbackParams, Query()],
 ):
@@ -55,9 +55,7 @@ async def yandex_auth_callback(
     access_token = await oauth_service.get_access_token(code=params.code)
     user_info = await oauth_service.get_user_info(access_token)
 
-    user_id = await oauth_account_service.process_oauth_login(
-        user_info, OAuthService.YANDEX
-    )
+    user_id = await account_service.process_oauth_login(user_info, OAuthService.YANDEX)
     payload = UserPayload.create(user_id=user_id)
     token_pair = await token_service.generate_tokens(payload)
 
@@ -75,12 +73,12 @@ async def yandex_auth_callback(
 @router.delete("auth/yandex/connections")
 async def unlink_yandex_account(
     current_user: CurrentUserRequiredDep,
-    oauth_account_service: OAuthAccountServiceDep,
+    account_service: OAuthAccountServiceDep,
 ):
     user_id = current_user.user_id
 
     try:
-        await oauth_account_service.unlink_oauth_account(user_id, OAuthService.YANDEX)
+        await account_service.unlink_oauth_account(user_id, OAuthService.YANDEX)
     except UnlinkLastOAuthAccountError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
