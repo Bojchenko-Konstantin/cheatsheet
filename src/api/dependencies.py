@@ -7,6 +7,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from src.application.dto import User
 from src.application.exceptions import UserNotVerifiedError
 from src.application.interfaces import (
+    IOAuthAccountService,
+    IOAuthProviderService,
     IPasswordResetService,
     ITokenService,
     IUnitOfWork,
@@ -16,6 +18,7 @@ from src.application.interfaces import (
 from src.application.interfaces.services import ICheatsheetSearchService
 from src.application.use_cases import CheatsheetUseCase
 from src.application.use_cases.auth import AuthUseCase
+from src.application.use_cases.oauth import OAuthUseCase
 from src.application.use_cases.password import PasswordUseCase
 from src.application.use_cases.verification import VerificationUseCase
 from src.core.config import settings
@@ -132,6 +135,14 @@ def get_email_verification_service(
     )
 
 
+async def get_yandex_oauth_service(request: Request) -> YandexOAuthService:
+    return request.app.state.yandex_oauth_service
+
+
+async def get_oauth_account_service() -> OAuthAccountService:
+    return OAuthAccountService()
+
+
 def get_auth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     user_service: IUserService = Depends(get_user_service),
@@ -163,6 +174,18 @@ def get_verification_use_case(
     return VerificationUseCase(
         user_service=user_service,
         email_verification_service=email_verification_service,
+    )
+
+
+def get_yandex_oauth_use_case(
+    token_service: ITokenService = Depends(get_token_service),
+    oauth_service: IOAuthProviderService = Depends(get_yandex_oauth_service),
+    account_service: IOAuthAccountService = Depends(get_oauth_account_service),
+) -> OAuthUseCase:
+    return OAuthUseCase(
+        token_service=token_service,
+        oauth_service=oauth_service,
+        account_service=account_service,
     )
 
 
@@ -239,14 +262,6 @@ async def get_current_user_optional(
         return None
 
 
-async def get_yandex_oauth_service(request: Request) -> YandexOAuthService:
-    return request.app.state.yandex_oauth_service
-
-
-async def get_oauth_account_service() -> OAuthAccountService:
-    return OAuthAccountService()
-
-
 # Type aliases for dependencies.
 OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 OAuth2SchemeRequiredDep = Annotated[str, Depends(oauth2_scheme)]
@@ -274,3 +289,4 @@ YandexOAuthServiceDep = Annotated[YandexOAuthService, Depends(get_yandex_oauth_s
 OAuthAccountServiceDep = Annotated[
     OAuthAccountService, Depends(get_oauth_account_service)
 ]
+OAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_yandex_oauth_use_case)]
