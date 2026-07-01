@@ -52,12 +52,21 @@ async def yandex_auth_callback(
         code=params.code, oauth_service=OAuthService.YANDEX
     )
 
-    redirect_url = (
-        f"/cheatsheet#access_token={token_pair['access_token']}"
-        f"&refresh_token={token_pair['refresh_token']}"
+    response = RedirectResponse(url="/cheatsheet", status_code=303)
+    cookie_params = {
+        "httponly": False,
+        "secure": True,
+        "samesite": "lax",
+        "max_age": 30,
+        "path": "/",
+    }
+    response.set_cookie(
+        key="tmp_access_token", value=token_pair["access_token"], **cookie_params
+    )
+    response.set_cookie(
+        key="tmp_refresh_token", value=token_pair["refresh_token"], **cookie_params
     )
 
-    response = RedirectResponse(url=redirect_url, status_code=303)
     response.delete_cookie("yandex_oauth_state", path="/")
 
     return response
@@ -77,4 +86,3 @@ async def unlink_yandex_account(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot unlink the only login way",
         ) from None
-    # TODO: add force logout.
