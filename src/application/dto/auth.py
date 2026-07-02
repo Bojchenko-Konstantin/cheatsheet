@@ -76,6 +76,12 @@ class UserPayload:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class TokenPair:
+    access_token: str
+    refresh_token: str
+
+
 @dataclass(slots=True)
 class RefreshTokenRecord:
     """Refresh token data for persistence."""

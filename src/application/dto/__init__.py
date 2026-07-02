@@ -7,6 +7,7 @@ __all__ = (
     "PasswordResetEmailData",
     "PasswordResetTokenPayload",
     "RefreshTokenRecord",
+    "TokenPair",
     "TokenStatus",
     "User",
     "UserPayload",
@@ -18,6 +19,7 @@ __all__ = (
 
 from .auth import (
     RefreshTokenRecord,
+    TokenPair,
     User,
     UserPayload,
 )
