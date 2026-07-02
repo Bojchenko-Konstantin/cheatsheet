@@ -21,10 +21,12 @@ class OAuthUseCase:
         self._oauth_provider_service = oauth_provider_service
 
     async def authenticate(
-        self, code: str, oauth_service: OAuthService
+        self, code: str, code_verifier: str, oauth_service: OAuthService
     ) -> dict[str, str]:
         """Executes the full OAuth authentication flow for a user."""
-        access_token = await self._oauth_provider_service.get_access_token(code)
+        access_token = await self._oauth_provider_service.get_access_token(
+            code, code_verifier
+        )
         user_info = await self._oauth_provider_service.get_user_info(access_token)
 
         user_id = await self._oauth_account_service.process_oauth_login(

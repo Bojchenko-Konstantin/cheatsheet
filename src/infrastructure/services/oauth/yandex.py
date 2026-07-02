@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import logging
 import secrets
 from json import JSONDecodeError
@@ -43,13 +45,17 @@ class YandexOAuthService(IOAuthProviderService):
         self._callback_url = settings.yandex_oauth.callback_url
         self._client_secret = settings.yandex_oauth.client_secret
 
-    def generate_authorization_request_url(self, state: str) -> str:
+    def generate_authorization_request_url(
+        self, state: str, code_challenge: str
+    ) -> str:
         params = {
             "response_type": "code",
             "client_id": self._client_id,
             "redirect_uri": self._callback_url,
             "scope": "login:email login:info",
             "state": state,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
         }
 
         authorize_url = "https://oauth.yandex.ru/authorize"
@@ -60,18 +66,28 @@ class YandexOAuthService(IOAuthProviderService):
     def generate_state_value(self) -> str:
         return secrets.token_urlsafe(32)
 
+    def generate_pkce_pair(self) -> tuple[str, str]:
+        """Generates a (code_verifier, code_challenge) tuple for PKCE flow."""
+        code_verifier = secrets.token_urlsafe(64)
+        code_challenge_bytes = hashlib.sha256(code_verifier.encode("ascii")).digest()
+        code_challenge = (
+            base64.urlsafe_b64encode(code_challenge_bytes).decode("ascii").rstrip("=")
+        )
+        return code_verifier, code_challenge
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True,
         retry=retry_if_exception_type((RequestError, YandexServerRequestError)),
     )
-    async def get_access_token(self, code: str) -> str:
+    async def get_access_token(self, code: str, code_verifier: str) -> str:
         request_data = {
             "grant_type": "authorization_code",
             "code": code,
             "client_id": self._client_id,
             "client_secret": self._client_secret,
+            "code_verifier": code_verifier,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 

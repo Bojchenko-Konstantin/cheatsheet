@@ -3,7 +3,9 @@ from abc import abstractmethod
 
 class IOAuthProviderService:
     @abstractmethod
-    def generate_authorization_request_url(self, state: str) -> str:
+    def generate_authorization_request_url(
+        self, state: str, code_challenge: str
+    ) -> str:
         pass
 
     @abstractmethod
@@ -11,7 +13,7 @@ class IOAuthProviderService:
         pass
 
     @abstractmethod
-    async def get_access_token(self, code: str) -> str:
+    async def get_access_token(self, code: str, code_verifier: str) -> str:
         pass
 
     @abstractmethod
