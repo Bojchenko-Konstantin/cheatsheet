@@ -103,7 +103,7 @@ async def test_generate_tokens_was_successful(token_service: TokenService):
     public_key_der = base64.b64decode(settings.jwt.public_key)
     public_key = serialization.load_der_public_key(public_key_der)
     payload = jwt.decode(
-        jwt=result["access_token"],
+        jwt=result.access_token,
         key=public_key,  # type: ignore
         algorithms=[settings.jwt.algorithm],
         issuer=settings.jwt.issuer,
@@ -111,8 +111,7 @@ async def test_generate_tokens_was_successful(token_service: TokenService):
         options={"require": ["exp"]},
     )
 
-    assert result.keys() == {"access_token", "refresh_token"}
-    assert _is_uuid(result["refresh_token"])
+    assert _is_uuid(result.refresh_token)
     assert UUID(payload["user_id"]) == expected_payload.user_id
     assert payload["is_superuser"] == expected_payload.is_superuser
 

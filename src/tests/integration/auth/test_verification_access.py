@@ -110,7 +110,7 @@ async def test_login_by_unverified_user_was_successful(
     # Assert.
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response_data
-    assert "refresh_token" in response_data
+    assert "refresh_token" in response.cookies
 
 
 @pytest.mark.integration
@@ -125,14 +125,17 @@ async def test_refresh_token_by_unverified_user_was_successful(
     login_response = await async_client.post(
         "/login", data=data_to_login_unverified_user
     )
-    tokens = login_response.json()
+    refresh_token = login_response.cookies.get("refresh_token")
+
+    assert refresh_token is not None
+
+    async_client.cookies["refresh_token"] = refresh_token
 
     user_id = await _get_user_id_from_db_by_username(
         data_to_login_unverified_user["username"], session
     )
 
     refresh_data = {
-        "refresh_token": tokens["refresh_token"],
         "fingerprint": "mobile phone",
         "user_id": user_id,
     }
@@ -142,6 +145,7 @@ async def test_refresh_token_by_unverified_user_was_successful(
 
     # Assert.
     assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
 
 
 @pytest.mark.integration
@@ -156,7 +160,11 @@ async def test_logout_by_unverified_user_was_successful(
     login_response = await async_client.post(
         "/login", data=data_to_login_unverified_user
     )
-    tokens = login_response.json()
+    refresh_token = login_response.cookies.get("refresh_token")
+
+    assert refresh_token is not None
+
+    async_client.cookies["refresh_token"] = refresh_token
 
     user_id = await _get_user_id_from_db_by_username(
         data_to_login_unverified_user["username"], session
@@ -164,7 +172,6 @@ async def test_logout_by_unverified_user_was_successful(
 
     logout_data = {
         "user_id": user_id,
-        "refresh_token": tokens["refresh_token"],
         "fingerprint": "mobile phone",
     }
 

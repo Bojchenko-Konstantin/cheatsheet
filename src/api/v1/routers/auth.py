@@ -1,7 +1,7 @@
 import contextlib
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from src.api.dependencies import (
     AuthUseCaseDep,
@@ -21,7 +21,7 @@ from src.api.schemas import (
     PasswordResetResponse,
     PasswordUpdate,
     PasswordUpdateResponse,
-    TokenPair,
+    Token,
     TokenVerification,
     UserCreate,
 )
@@ -43,6 +43,7 @@ from src.application.exceptions import (
     UserInactiveError,
     UserNotFoundError,
 )
+from src.core.config import settings
 from src.infrastructure.background_tasks import (
     send_email_verification,
     send_password_changed_email,
@@ -51,61 +52,73 @@ from src.infrastructure.background_tasks import (
 )
 
 router = APIRouter(tags=["Authentication"])
-
 logger = logging.getLogger(__name__)
 
+COOKIE_PARAMS = {
+    "max_age": settings.jwt.refresh_token_expires_in - 10,
+    "httponly": True,
+    "secure": True,
+    "samesite": "strict",
+    "path": "/",
+}
 
-@router.post("/login", response_model=TokenPair)
+
+@router.post("/login", response_model=Token)
 async def login(
+    response: Response,
     user_form: OAuth2FormDep,
     auth_use_case: AuthUseCaseDep,
 ):
+    user_name = user_form.username
     try:
         token_pair = await auth_use_case.authenticate(
-            user_form.username, user_form.password
+            user_login=user_name, password=user_form.password
         )
     except UserNotFoundError as e:
-        logger.debug("User with username %s was not found", user_form.username)
+        logger.debug("User with username %s was not found", user_name)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
         ) from e
     except UserAuthenticationError as e:
-        logger.debug("Failed login attempt for username: %s", user_form.username)
+        logger.debug("Failed login attempt for username: %s", user_name)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Invalid username or password",
         ) from e
     except UserInactiveError as e:
-        logger.warning("Inactive user attempted login: %s", user_form.username)
+        logger.warning("Inactive user attempted login: %s", user_name)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Account is inactive",
         ) from e
-
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
     except AccessTokenException as e:
-        logger.exception(
-            "Failed to generate access token for username: %s", user_form.username
-        )
+        logger.exception("Failed to generate access token for username: %s", user_name)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
+    else:
+        response.set_cookie(
+            key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
+        )
 
-    return token_pair
+        return {"access_token": token_pair.access_token}
 
 
-@router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(
+    response: Response,
     user_form: UserCreate,
     auth_use_case: AuthUseCaseDep,
     verification_use_case: VerificationUseCaseDep,
@@ -114,7 +127,6 @@ async def register(
 
     try:
         token_pair = await auth_use_case.register(create_data)
-
         email = create_data.get("email")
         user_name = create_data.get("username")
 
@@ -124,8 +136,9 @@ async def register(
                     email=email,
                     user_name=user_name,
                 )
+
             with contextlib.suppress(Exception):
-                user = await auth_use_case.get_current_user(token_pair["access_token"])
+                user = await auth_use_case.get_current_user(token_pair.access_token)
                 verification_data = (
                     await verification_use_case.request_email_verification(user.user_id)
                 )
@@ -134,6 +147,7 @@ async def register(
                     user_name=verification_data["user_name"],
                     verification_url=verification_data["verification_url"],
                 )
+
                 await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
 
     except DuplicateUserError as e:
@@ -171,40 +185,46 @@ async def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
-    return token_pair
+    else:
+        response.set_cookie(
+            key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
+        )
+
+        return {"access_token": token_pair.access_token}
 
 
 @router.post("/refresh")
 async def refresh(
+    request: Request,
+    response: Response,
     token_verification: TokenVerification,
     auth_use_case: AuthUseCaseDep,
 ):
     refresh_data = token_verification.model_dump(exclude_unset=True)
+    user_id = refresh_data["user_id"]
+
+    refresh_token = request.cookies.get("refresh_token")
+    refresh_data["refresh_token"] = refresh_token
 
     try:
         token_pair = await auth_use_case.refresh(refresh_data)
     except RefreshTokenNotFoundError as e:
-        logger.exception(
-            "Refresh token not found for user_id: %s", token_verification.user_id
-        )
+        logger.exception("Refresh token not found for user_id: %s", user_id)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
     except RefreshTokenCompromisedError:
-        logger.info(
-            "Refresh token was compromised for user_id: %s", token_verification.user_id
-        )
+        logger.info("Refresh token was compromised for user_id: %s", user_id)
+        response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
         # TODO: add force logout.
-
     except UserNotFoundError as e:
-        logger.debug("User with id %s was not found", token_verification.user_id)
+        logger.debug("User with id %s was not found", user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
         ) from e
-
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
@@ -214,51 +234,62 @@ async def refresh(
         ) from e
     except AccessTokenException as e:
         logger.exception(
-            "Failed to generate access token for user with id: %s",
-            token_verification.user_id,
+            "Failed to generate access token for user with id: %s", user_id
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
         ) from e
     else:
-        return token_pair
+        response.set_cookie(
+            key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
+        )
+
+        return {"access_token": token_pair.access_token}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
+    request: Request,
+    response: Response,
     logout_request: LogoutRequest,
     auth_use_case: AuthUseCaseDep,
 ):
+    logout_data = logout_request.model_dump(exclude_unset=True)
+    user_id = logout_data["user_id"]
+
+    refresh_token = request.cookies.get("refresh_token")
+
     try:
         # TODO: remove refresh_token from logout method and
         # remove all tokens for required device.
+
         await auth_use_case.logout(
-            user_id=logout_request.user_id,
-            refresh_token=logout_request.refresh_token,
+            user_id=user_id,
+            refresh_token=refresh_token,
             fingerprint=logout_request.fingerprint,
         )
     except UserNotFoundError as e:
-        logger.debug("User %s not found during logout", logout_request.user_id)
+        logger.debug("User %s not found during logout", user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         ) from e
     except RefreshTokenNotFoundError:
-        logger.debug(
-            "Refresh token not found for user %s during logout", logout_request.user_id
-        )
+        logger.debug("Refresh token not found for user %s during logout", user_id)
         return None
     except RevokeRefreshTokenError as e:
         logger.exception(
             "Failed to revoke refresh token for user %s: %s",
-            logout_request.user_id,
+            user_id,
             str(e),
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout due to a technical issue. Please try again later.",
         ) from e
+    finally:
+        response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
 
 
 @router.put("/password", response_model=PasswordUpdateResponse)
@@ -283,6 +314,7 @@ async def update_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
         ) from e
+
     return PasswordUpdateResponse(message="Password has been successfully updated.")
 
 
@@ -395,12 +427,14 @@ async def confirm_email_verification(
         )
     except InvalidEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with invalid token")
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification token.",
         ) from e
     except ExpiredEmailVerificationTokenError as e:
         logger.debug("Email verification attempt with expired token")
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification token has expired.",

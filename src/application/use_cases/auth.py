@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from src.application.dto import User, UserPayload
+from src.application.dto import TokenPair, User, UserPayload
 from src.application.interfaces import (
     ITokenService,
     IUserService,
@@ -17,7 +17,7 @@ class AuthUseCase:
         self._token_service = token_service
         self._user_service = user_service
 
-    async def authenticate(self, user_login: str, password: str) -> dict[str, str]:
+    async def authenticate(self, user_login: str, password: str) -> TokenPair:
         """Authenticate user and generate token pair."""
         user = await self._user_service.authenticate_user(user_login, password)
         payload = UserPayload.create(
@@ -26,7 +26,7 @@ class AuthUseCase:
         token_pair = await self._token_service.generate_tokens(payload)
         return token_pair
 
-    async def register(self, create_data: dict[str, Any]) -> dict[str, str]:
+    async def register(self, create_data: dict[str, Any]) -> TokenPair:
         """Register new user and generate token pair."""
         user_payload = await self._user_service.create(create_data)
 
@@ -39,7 +39,7 @@ class AuthUseCase:
 
         return token_pair
 
-    async def refresh(self, refresh_data: dict[str, Any]) -> dict[str, str]:
+    async def refresh(self, refresh_data: dict[str, Any]) -> TokenPair:
         """Refresh access token using refresh token."""
         user_id = refresh_data["user_id"]
 

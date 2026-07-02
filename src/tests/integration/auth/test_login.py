@@ -28,8 +28,9 @@ async def test_login_was_successful(
     response_data = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert {"access_token", "refresh_token", "token_type"} == response_data.keys()
+    assert {"access_token", "token_type"} == response_data.keys()
     assert response_data["token_type"] == "bearer"
+    assert "refresh_token" in response.cookies
 
 
 @pytest.mark.integration

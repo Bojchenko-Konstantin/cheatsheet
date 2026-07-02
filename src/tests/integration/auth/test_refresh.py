@@ -24,13 +24,16 @@ async def test_refresh_token_was_successful(
 
     login_response = await async_client.post("/login", data=data_to_login_active_user)
     login_response_data = login_response.json()
-    old_refresh_token = login_response_data["refresh_token"]
     old_access_token = login_response_data["access_token"]
+    refresh_token = login_response.cookies.get("refresh_token")
+
+    assert refresh_token is not None
+
+    async_client.cookies["refresh_token"] = refresh_token
 
     await asyncio.sleep(1)
 
     refresh_request_data = {
-        "refresh_token": old_refresh_token,
         "fingerprint": "mobile phone",
         "user_id": user_id,
     }
@@ -38,15 +41,13 @@ async def test_refresh_token_was_successful(
     # Act.
     response = await async_client.post("/refresh", json=refresh_request_data)
     response_data = response.json()
-    new_refresh_token = response_data["refresh_token"]
     new_access_token = response_data["access_token"]
 
     # Assert.
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response_data
-    assert "refresh_token" in response_data
     assert old_access_token != new_access_token
-    assert old_refresh_token != new_refresh_token
+    assert "refresh_token" in response.cookies
 
 
 @pytest.mark.integration
@@ -64,10 +65,10 @@ async def test_refresh_token_was_not_found_when_token_does_not_exist(
     user_id = user_data["user_id"]
 
     refresh_request_data = {
-        "refresh_token": "non-existent-token",
         "fingerprint": "mobile phone",
         "user_id": user_id,
     }
+    async_client.cookies.clear()
 
     # Act.
     response = await async_client.post("/refresh", json=refresh_request_data)

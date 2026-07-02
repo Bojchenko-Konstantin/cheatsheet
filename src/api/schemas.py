@@ -153,21 +153,18 @@ class UserUpdate(Schema):
     network_url: list[str] | None = None
 
 
-class TokenPair(Schema):
+class Token(Schema):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
 
 
 class TokenVerification(Schema):
-    refresh_token: str
     fingerprint: str
     user_id: UUID
 
 
 class LogoutRequest(Schema):
     user_id: UUID
-    refresh_token: str
     fingerprint: str
 
 

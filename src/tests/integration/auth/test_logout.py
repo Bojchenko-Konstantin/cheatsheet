@@ -20,9 +20,9 @@ async def test_logout_was_successful(
 ):
     # Arrange.
     login_response = await async_client.post("/login", data=data_to_login_active_user)
+    refresh_token = login_response.cookies.get("refresh_token")
 
-    tokens = login_response.json()
-    refresh_token = tokens["refresh_token"]
+    assert refresh_token is not None
 
     user = await _get_user_from_db_by_username(
         data_to_login_active_user["username"], session
@@ -30,11 +30,11 @@ async def test_logout_was_successful(
 
     logout_data = {
         "user_id": str(user["user_id"]),
-        "refresh_token": refresh_token,
         "fingerprint": "mobile phone",
     }
 
     # Act.
+    async_client.cookies["refresh_token"] = refresh_token
     response = await async_client.post("/logout", json=logout_data)
 
     active_token = await _get_refresh_token_from_db(
@@ -60,7 +60,6 @@ async def test_logout_with_nonexistent_user_was_unsuccessful(
 ):
     logout_data = {
         "user_id": "00000000-0000-0000-0000-000000000000",
-        "refresh_token": "some-token",
         "fingerprint": "mobile phone",
     }
 
@@ -85,7 +84,6 @@ async def test_logout_with_invalid_refresh_token_was_successful(
 
     logout_data = {
         "user_id": str(user["user_id"]),
-        "refresh_token": "invalid-token-that-doesnt-exist",
         "fingerprint": "mobile phone",
     }
 

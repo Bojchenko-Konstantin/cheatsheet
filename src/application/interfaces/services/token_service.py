@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from src.application.dto import UserPayload
+from src.application.dto import TokenPair, UserPayload
 
 
 class ITokenService(ABC):
     """Handles all operations with tokens."""
 
     @abstractmethod
-    async def generate_tokens(self, payload: UserPayload) -> dict[str, str]:
+    async def generate_tokens(self, payload: UserPayload) -> TokenPair:
         """Generate access and refresh token pair."""
         pass
 

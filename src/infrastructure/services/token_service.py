@@ -5,7 +5,7 @@ import jwt
 from pwdlib import PasswordHash
 from uuid_extensions import uuid7
 
-from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
+from src.application.dto import RefreshTokenRecord, TokenPair, TokenStatus, UserPayload
 from src.application.exceptions import (
     AccessTokenException,
     AccessTokenExpiredError,
@@ -38,13 +38,13 @@ class TokenService(ITokenService):
         self._refresh_token_expires_in = refresh_token_expires_in
         self._hasher = hasher
 
-    async def generate_tokens(self, payload: UserPayload) -> dict[str, str]:
+    async def generate_tokens(self, payload: UserPayload) -> TokenPair:
         """Create tokens and save refresh token to database."""
         access_token = self._generate_access_token(payload)
         refresh_token = self._generate_refresh_token()
         await self._save_refresh_token_hash(payload.user_id, refresh_token)
 
-        return dict(access_token=access_token, refresh_token=refresh_token)
+        return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
     def _generate_refresh_token(self) -> str:
         return str(uuid7())
