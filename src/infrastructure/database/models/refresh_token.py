@@ -40,6 +40,7 @@ class RefreshTokenModel(Base):
     hashed_token: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+        unique=True,
     )
     hashed_fingerprint: Mapped[str] = mapped_column(
         Text,
