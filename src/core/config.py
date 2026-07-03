@@ -45,6 +45,7 @@ class JWTConfig(BaseModel):
     public_key: str
     issuer: str
     audience: list[str]
+    refresh_token_secret: str
 
 
 class NotificationConfig(BaseModel):
