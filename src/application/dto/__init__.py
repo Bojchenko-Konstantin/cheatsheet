@@ -3,6 +3,7 @@ __all__ = (
     "EmailType",
     "EmailVerificationData",
     "EmailVerificationTokenPayload",
+    "OAuthService",
     "PasswordResetData",
     "PasswordResetEmailData",
     "PasswordResetTokenPayload",
@@ -31,6 +32,7 @@ from .email import (
     PasswordResetEmailData,
     WelcomeEmailData,
 )
+from .oauth import OAuthService
 from .password_reset import (
     PasswordResetData,
     PasswordResetTokenPayload,

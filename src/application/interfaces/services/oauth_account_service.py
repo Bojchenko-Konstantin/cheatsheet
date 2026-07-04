@@ -12,5 +12,7 @@ class IOAuthAccountService:
         pass
 
     @abstractmethod
-    async def unlink_oauth_account(self, user_id: UUID, oauth_service_id: OAuthService):
+    async def unlink_oauth_account(
+        self, user_id: UUID, oauth_service_id: OAuthService
+    ) -> None:
         pass

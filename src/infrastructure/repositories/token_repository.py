@@ -317,14 +317,13 @@ class SQLAlchemyTokenRepo(ITokenRepo):
     ) -> list[RefreshTokenBlacklistModel]:
         blacklisted_models = []
         current_time = datetime.now(timezone.utc)
+        status_id = TokenStatus.REVOKED
+        revoked_at = None
 
         for model in deleted_models:
             if model.expires_at <= current_time:
                 status_id = TokenStatus.EXPIRED
                 revoked_at = current_time
-            else:
-                status_id = TokenStatus.REVOKED
-                revoked_at = None
 
             blacklisted_models.append(
                 RefreshTokenBlacklistModel(

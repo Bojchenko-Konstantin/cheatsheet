@@ -16,8 +16,6 @@ from src.infrastructure.hasher import HASHER
 
 
 class UserService(IUserService):
-    _EMAIL_IDENTIFIER = "@"
-
     def __init__(
         self,
         hasher: PasswordHash = HASHER,
@@ -61,9 +59,11 @@ class UserService(IUserService):
             user_payload = await uow.user_repo.create(create_data)
             return user_payload
 
-    async def authenticate_user(self, user_login: str, password: str) -> User:
+    async def authenticate_user(self, user_login: str, password: str) -> UserPayload:
         # user_login may be username or email.
-        if self._EMAIL_IDENTIFIER in user_login:
+        email_identifier = "@"
+
+        if email_identifier in user_login:
             user = await self.get_by_email(user_login)
         else:
             user = await self.get_by_user_name(user_login)
@@ -74,7 +74,7 @@ class UserService(IUserService):
         if not user.is_active:
             raise UserInactiveError
 
-        return user
+        return UserPayload(user_id=user.user_id, is_superuser=user.is_superuser)
 
     async def update_password(
         self, user_id: UUID, old_password: str, new_password: str

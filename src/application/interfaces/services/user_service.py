@@ -33,7 +33,7 @@ class IUserService(ABC):
         pass
 
     @abstractmethod
-    async def authenticate_user(self, user_login: str, password: str) -> User:
+    async def authenticate_user(self, user_login: str, password: str) -> UserPayload:
         pass
 
     @abstractmethod

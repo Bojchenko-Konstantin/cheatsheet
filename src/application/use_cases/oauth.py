@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from src.application.dto.auth import UserPayload
-from src.application.dto.oauth import OAuthService
+from src.application.dto import OAuthService, TokenPair, UserPayload
 from src.application.interfaces import (
     IOAuthAccountService,
     IOAuthProviderService,
@@ -22,13 +21,12 @@ class OAuthUseCase:
 
     async def authenticate(
         self, code: str, code_verifier: str, oauth_service: OAuthService
-    ) -> dict[str, str]:
+    ) -> TokenPair:
         """Executes the full OAuth authentication flow for a user."""
         access_token = await self._oauth_provider_service.get_access_token(
             code, code_verifier
         )
         user_info = await self._oauth_provider_service.get_user_info(access_token)
-
         user_id = await self._oauth_account_service.process_oauth_login(
             user_info, oauth_service
         )
@@ -37,5 +35,5 @@ class OAuthUseCase:
 
         return token_pair
 
-    async def unlink_account(self, user_id: UUID, oauth_service: OAuthService):
+    async def unlink_account(self, user_id: UUID, oauth_service: OAuthService) -> None:
         await self._oauth_account_service.unlink_oauth_account(user_id, oauth_service)

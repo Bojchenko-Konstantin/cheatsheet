@@ -193,7 +193,7 @@ async def register(
         return {"access_token": token_pair.access_token}
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=Token)
 async def refresh(
     request: Request,
     response: Response,
@@ -254,6 +254,10 @@ async def logout(
     logout_data = logout_request.model_dump(exclude_unset=True)
     refresh_token = request.cookies.get("refresh_token")
 
+    if not refresh_token:
+        logger.debug("Refresh token is missing in cookies during logout request")
+        return
+
     try:
         # TODO: remove refresh_token from logout method and
         # remove all tokens for required device.
@@ -264,7 +268,7 @@ async def logout(
         )
     except RefreshTokenNotFoundError:
         logger.debug("Refresh token not found during logout")
-        return None
+        return
     except RevokeRefreshTokenError as e:
         logger.exception("Failed to revoke refresh token: %s", str(e))
         raise HTTPException(
@@ -309,12 +313,13 @@ async def request_password_reset(
     result = await password_use_case.request_password_reset(request_data.email)
 
     if result is not None:
+        email_data = PasswordResetEmailData(
+            email=result["email"],
+            user_name=result["user_name"],
+            reset_url=result["reset_url"],
+        )
+
         with contextlib.suppress(Exception):
-            email_data = PasswordResetEmailData(
-                email=result["email"],
-                user_name=result["user_name"],
-                reset_url=result["reset_url"],
-            )
             await send_password_reset_email.kiq(email_data)  # type: ignore[call-overload]
 
     return PasswordResetResponse(message="Password has been successfully reset.")
@@ -365,13 +370,13 @@ async def send_verification_email(
         verification_data = await verification_use_case.request_email_verification(
             current_user.user_id
         )
+        email_data = EmailVerificationData(
+            email=verification_data["email"],
+            user_name=verification_data["user_name"],
+            verification_url=verification_data["verification_url"],
+        )
 
         with contextlib.suppress(Exception):
-            email_data = EmailVerificationData(
-                email=verification_data["email"],
-                user_name=verification_data["user_name"],
-                verification_url=verification_data["verification_url"],
-            )
             await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
     except EmailAlreadyVerifiedError as e:
         logger.debug(

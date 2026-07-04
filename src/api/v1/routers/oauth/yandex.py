@@ -13,13 +13,13 @@ from src.api.schemas import OAuthCallbackParams
 from src.application.dto.oauth import OAuthService
 from src.application.exceptions import UnlinkLastOAuthAccountError
 
-router = APIRouter(tags=["OAuth"])
+router = APIRouter(tags=["Yandex OAuth"])
 
 logger = logging.getLogger(__name__)
 
 
 @router.get("/auth/yandex/login")
-async def login_with_yandex(oauth_provider_service: YandexOAuthServiceDep):
+async def login(oauth_provider_service: YandexOAuthServiceDep):
     state = oauth_provider_service.generate_state_value()
     code_verifier, code_challenge = oauth_provider_service.generate_pkce_pair()
 
@@ -44,7 +44,7 @@ async def login_with_yandex(oauth_provider_service: YandexOAuthServiceDep):
 
 
 @router.get("/auth/yandex/callback")
-async def yandex_auth_callback(
+async def callback(
     request: Request,
     oauth_use_case: OAuthUseCaseDep,
     params: Annotated[OAuthCallbackParams, Query()],
@@ -73,10 +73,10 @@ async def yandex_auth_callback(
         "path": "/",
     }
     response.set_cookie(
-        key="tmp_access_token", value=token_pair["access_token"], **cookie_params
+        key="tmp_access_token", value=token_pair.access_token, **cookie_params
     )
     response.set_cookie(
-        key="tmp_refresh_token", value=token_pair["refresh_token"], **cookie_params
+        key="tmp_refresh_token", value=token_pair.refresh_token, **cookie_params
     )
 
     response.delete_cookie("yandex_oauth_state", path="/")
@@ -86,7 +86,7 @@ async def yandex_auth_callback(
 
 
 @router.delete("auth/yandex/connections")
-async def unlink_yandex_account(
+async def unlink(
     current_user: CurrentUserRequiredDep,
     oauth_use_case: OAuthUseCaseDep,
 ):
