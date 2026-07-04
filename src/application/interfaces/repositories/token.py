@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 from uuid import UUID
 
-from src.application.dto import RefreshTokenRecord
+from src.application.dto import RefreshTokenRecord, UserPayload
 
 
 class ITokenRepo(ABC):
@@ -13,32 +13,28 @@ class ITokenRepo(ABC):
         pass
 
     @abstractmethod
-    async def get_device_active_token(
-        self, user_id: UUID, fingerprint: str
-    ) -> RefreshTokenRecord:
-        """Retrieve the current active refresh token for a specific device."""
+    async def get_user_payload_by_hash(
+        self, hashed_token: str, fingerprint: str
+    ) -> UserPayload | None:
+        """Retrieve the current active refresh token."""
         pass
 
     @abstractmethod
-    async def get_device_blacklisted_token_family(
-        self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshTokenRecord] | None:
+    async def is_token_in_blacklist(self, hashed_token: str, fingerprint: str) -> bool:
         """Retrieve all revoked or expired tokens for a device family."""
         pass
 
     @abstractmethod
-    async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> Any:
+    async def mark_as_compromised(self, hashed_token: str, fingerprint: str) -> Any:
         """Mark all tokens in the device family as compromised."""
         pass
 
     @abstractmethod
-    async def revoke_token(
-        self, user_id: UUID, fingerprint: str, hashed_token: str
-    ) -> None:
+    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
         """Revoke a specific active refresh token."""
         pass
 
     @abstractmethod
-    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+    async def revoke_all_tokens(self, user_id: UUID) -> None:
         """Revoke all active refresh tokens for a user."""
         pass

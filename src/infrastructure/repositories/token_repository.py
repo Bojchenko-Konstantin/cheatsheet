@@ -3,23 +3,23 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import Row, delete, select, update
+from sqlalchemy import Row, delete, exists, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.dto import RefreshTokenRecord, TokenStatus
+from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
 from src.application.exceptions import (
     AddRefreshTokenToBlacklistError,
     MarkRefreshTokenAsCompromisedError,
     RefreshTokenNotFoundError,
     RevokeRefreshTokenError,
 )
-from src.application.interfaces.repositories import ITokenRepo
+from src.application.interfaces import ITokenRepo
 from src.infrastructure.database.models import (
     RefreshTokenBlacklistModel,
     RefreshTokenModel,
+    UserModel,
 )
-from src.infrastructure.repositories.utils import DictBundle
 
 logger = logging.getLogger(__name__)
 
@@ -46,48 +46,37 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         )
         self._session.add(model)
 
-    async def get_device_active_token(
-        self, user_id: UUID, fingerprint: str
-    ) -> RefreshTokenRecord:
-        """
-        Retrieves the current active refresh token record for a specific device.
-        Raises RefreshTokenNotFoundError if no active token is found.
-        """
-        raw_token = await self._fetch_active_token_data(user_id, fingerprint)
+    async def get_user_payload_by_hash(
+        self, hashed_token: str, fingerprint: str
+    ) -> UserPayload | None:
+        raw_token = await self._fetch_user_data(hashed_token, fingerprint)
 
         if not raw_token:
-            raise RefreshTokenNotFoundError
+            return None
 
-        token_record = self._map_to_token_record(user_id, raw_token.refresh_token)
-        return token_record
-
-    async def get_device_blacklisted_token_family(
-        self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshTokenRecord]:
-        """
-        Retrieves the family (history) of blacklisted tokens for a specific device.
-        Raises RefreshTokenNotFoundError if no blacklisted tokens exist.
-        """
-        raw_token_records = await self._fetch_blacklisted_family_data(
-            user_id, fingerprint
+        return UserPayload(
+            user_id=raw_token.user_id, is_superuser=raw_token.is_superuser
         )
 
-        if not raw_token_records:
-            raise RefreshTokenNotFoundError
-
-        return [
-            self._map_to_token_record(user_id, token_data.refresh_token)
-            for token_data in raw_token_records
-        ]
-
-    async def revoke_token(
-        self, user_id: UUID, fingerprint: str, hashed_token: str
-    ) -> None:
+    async def is_token_in_blacklist(self, hashed_token: str, fingerprint: str) -> bool:
         """
-        Revokes a specific active refresh token and moves it to the blacklist.
+        Checks if received token is in the blacklisted family for a specific device.
         """
-        token_model = await self._get_active_refresh_token(
-            user_id, fingerprint, hashed_token
+        statement = select(
+            exists().where(
+                RefreshTokenBlacklistModel.hashed_token == hashed_token,
+                RefreshTokenBlacklistModel.hashed_fingerprint == fingerprint,
+            )
+        )
+        return await self._session.scalar(statement) or False
+
+    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
+        """
+        Revokes active refresh token for a specific device
+        and moves it to the blacklist.
+        """
+        token_model = await self._fetch_active_refresh_token_model(
+            hashed_token, fingerprint
         )
 
         if not token_model:
@@ -101,7 +90,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         except IntegrityError as e:
             raise RevokeRefreshTokenError from e
 
-    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+    async def revoke_all_tokens(self, user_id: UUID) -> None:
         """
         Revokes all active refresh tokens for a given user across all devices.
         Note: This updates tokens in place and does not move them to the blacklist.
@@ -116,23 +105,44 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         )
         await self._session.execute(statement)
 
-    async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
+    async def mark_as_compromised(self, hashed_token: str, fingerprint: str) -> None:
         """
         Marks all active and previously blacklisted tokens for a specific device
-        as compromised due to a security breach (e.g., token reuse).
+        as compromised due to a security breach (e.g. token reuse).
         """
         time_revealed = datetime.now(timezone.utc)
+        user_id = await self._get_user_id_by_blacklisted_hash(hashed_token)
 
+        try:
+            async with self._session.begin_nested():
+                await self._revoke_active_tokens_with_fallback(
+                    user_id, fingerprint, time_revealed
+                )
+
+                await self._update_blacklisted_tokens_status(user_id, fingerprint)
+        except Exception as e:
+            logger.exception("Failed to mark tokens as compromised")
+            raise MarkRefreshTokenAsCompromisedError from e
+
+    async def _revoke_active_tokens_with_fallback(
+        self, user_id: UUID, fingerprint: str, time_revealed: datetime
+    ) -> None:
+        """
+        Attempts to delete compromised tokens and move them to the blacklist.
+        If a DB error occurs, falls back to a simple status update.
+        """
         try:
             async with self._session.begin_nested():
                 deleted_models = await self._delete_compromised_tokens(
                     user_id, fingerprint, time_revealed
                 )
+
                 if deleted_models:
                     blacklisted_models = self._map_to_compromised_blacklist_models(
                         deleted_models
                     )
                     self._session.add_all(blacklisted_models)
+
         except Exception:
             logger.exception(
                 "Failed to delete compromised tokens, falling back to update"
@@ -141,66 +151,68 @@ class SQLAlchemyTokenRepo(ITokenRepo):
                 user_id, fingerprint, time_revealed
             )
 
+    async def _delete_or_mark_tokens(
+        self, user_id: UUID, fingerprint: str, time_revealed: datetime
+    ) -> None:
         try:
-            await self._update_blacklisted_tokens_status(user_id, fingerprint)
-        except Exception as e:
-            logger.exception("Failed to mark tokens as compromised")
-            raise MarkRefreshTokenAsCompromisedError from e
-
-    async def _fetch_active_token_data(
-        self, user_id: UUID, fingerprint: str
-    ) -> Row | None:
-        statement = select(
-            DictBundle(
-                "refresh_token",
-                RefreshTokenModel.hashed_token,
-                RefreshTokenModel.expires_at,
-                RefreshTokenModel.status_id,
+            deleted_models = await self._delete_compromised_tokens(
+                user_id, fingerprint, time_revealed
             )
-        ).where(
-            RefreshTokenModel.user_id == user_id,
-            RefreshTokenModel.hashed_fingerprint == fingerprint,
-            RefreshTokenModel.status_id == TokenStatus.ACTIVE,
-            RefreshTokenModel.expires_at > datetime.now(timezone.utc),
-        )
-        result = await self._session.execute(statement)
-        return result.one_or_none()
-
-    async def _fetch_blacklisted_family_data(
-        self, user_id: UUID, fingerprint: str
-    ) -> Sequence[Row]:
-        statement = (
-            select(
-                DictBundle(
-                    "refresh_token",
-                    RefreshTokenBlacklistModel.hashed_token,
-                    RefreshTokenBlacklistModel.expires_at,
-                    RefreshTokenBlacklistModel.status_id,
+            if deleted_models:
+                blacklisted_models = self._map_to_compromised_blacklist_models(
+                    deleted_models
                 )
+                self._session.add_all(blacklisted_models)
+        except Exception:
+            logger.exception(
+                "Failed to delete compromised tokens, falling back to update"
             )
-            .where(
-                RefreshTokenBlacklistModel.user_id == user_id,
-                RefreshTokenBlacklistModel.hashed_fingerprint == fingerprint,
+            await self._fallback_update_compromised_tokens(
+                user_id, fingerprint, time_revealed
             )
-            .order_by(
-                RefreshTokenBlacklistModel.status_id,
-                RefreshTokenBlacklistModel.expires_at,
-            )
+
+    async def _get_user_id_by_blacklisted_hash(self, hashed_token: str) -> UUID:
+        statement = select(
+            RefreshTokenBlacklistModel.user_id,
+        ).where(
+            RefreshTokenBlacklistModel.hashed_token == hashed_token,
         )
         result = await self._session.execute(statement)
-        return result.all()
+        db_row = result.one_or_none()
 
-    async def _get_active_refresh_token(
-        self, user_id: UUID, fingerprint: str, hashed_token: str
+        if db_row is None:
+            raise RefreshTokenNotFoundError
+
+        return db_row.user_id
+
+    async def _fetch_active_refresh_token_model(
+        self, hashed_token: str, fingerprint: str
     ) -> RefreshTokenModel | None:
         statement = select(RefreshTokenModel).where(
-            RefreshTokenModel.user_id == user_id,
-            RefreshTokenModel.hashed_fingerprint == fingerprint,
             RefreshTokenModel.hashed_token == hashed_token,
+            RefreshTokenModel.hashed_fingerprint == fingerprint,
             RefreshTokenModel.status_id == TokenStatus.ACTIVE,
         )
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def _fetch_user_data(self, hashed_token: str, fingerprint: str) -> Row | None:
+        statement = (
+            select(
+                UserModel.user_id,
+                UserModel.is_superuser,
+            )
+            .select_from(RefreshTokenModel)
+            .join(UserModel)
+            .where(
+                RefreshTokenModel.hashed_token == hashed_token,
+                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.status_id == TokenStatus.ACTIVE,
+                RefreshTokenModel.expires_at > datetime.now(timezone.utc),
+            )
+        )
+        result = await self._session.execute(statement)
+        return result.one_or_none()
 
     async def _move_older_refresh_token_to_blacklist(
         self, user_id: UUID, fingerprint: str
@@ -286,10 +298,6 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         await self._session.execute(update_statement)
 
     @staticmethod
-    def _map_to_token_record(user_id: UUID, raw_token_dict: dict) -> RefreshTokenRecord:
-        return RefreshTokenRecord(user_id=user_id, **raw_token_dict)
-
-    @staticmethod
     def _map_to_revoked_blacklist_model(
         token_model: RefreshTokenModel,
     ) -> RefreshTokenBlacklistModel:
@@ -312,10 +320,10 @@ class SQLAlchemyTokenRepo(ITokenRepo):
 
         for model in deleted_models:
             if model.expires_at <= current_time:
-                status_id = TokenStatus.REVOKED
+                status_id = TokenStatus.EXPIRED
                 revoked_at = current_time
             else:
-                status_id = TokenStatus.EXPIRED
+                status_id = TokenStatus.REVOKED
                 revoked_at = None
 
             blacklisted_models.append(

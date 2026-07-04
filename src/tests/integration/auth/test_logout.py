@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from typing import Any
 
 import pytest
@@ -7,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dto.token import TokenStatus
-from src.infrastructure.hasher import HASHER
+from src.core.config import settings
 
 
 @pytest.mark.integration
@@ -29,7 +31,6 @@ async def test_logout_was_successful(
     )
 
     logout_data = {
-        "user_id": str(user["user_id"]),
         "fingerprint": "mobile phone",
     }
 
@@ -50,46 +51,6 @@ async def test_logout_was_successful(
     assert revoked_token is not None
     assert revoked_token["status_id"] == TokenStatus.REVOKED
     assert revoked_token["user_id"] == user["user_id"]
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="session")
-async def test_logout_with_nonexistent_user_was_unsuccessful(
-    populate_db_for_multiple_users: None,
-    async_client: AsyncClient,
-):
-    logout_data = {
-        "user_id": "00000000-0000-0000-0000-000000000000",
-        "fingerprint": "mobile phone",
-    }
-
-    response = await async_client.post("/logout", json=logout_data)
-    response_data = response.json()
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response_data["detail"] == "User not found"
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio(loop_scope="session")
-async def test_logout_with_invalid_refresh_token_was_successful(
-    populate_db_for_multiple_users: None,
-    async_client: AsyncClient,
-    session: AsyncSession,
-    data_to_login_active_user: dict[str, str],
-):
-    user = await _get_user_from_db_by_username(
-        data_to_login_active_user["username"], session
-    )
-
-    logout_data = {
-        "user_id": str(user["user_id"]),
-        "fingerprint": "mobile phone",
-    }
-
-    response = await async_client.post("/logout", json=logout_data)
-
-    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 async def _get_user_from_db_by_username(
@@ -118,6 +79,7 @@ async def _get_user_from_db_by_username(
 async def _get_refresh_token_from_db(
     refresh_token: str, user_id: str, session: AsyncSession
 ) -> dict[str, Any] | None:
+    hashed_token = _hash_refresh_token(refresh_token)
     async with session:
         query = text(
             """
@@ -130,7 +92,7 @@ async def _get_refresh_token_from_db(
         rows = result.all()
 
         for row in rows:
-            if HASHER.verify(refresh_token, row.hashed_token):
+            if hashed_token == row.hashed_token:
                 return {
                     "user_id": row.user_id,
                     "hashed_token": row.hashed_token,
@@ -143,6 +105,7 @@ async def _get_refresh_token_from_db(
 async def _get_blacklisted_token_from_db(
     refresh_token: str, user_id: str, session: AsyncSession
 ) -> dict[str, Any] | None:
+    hashed_token = _hash_refresh_token(refresh_token)
     async with session:
         query = text(
             """
@@ -155,7 +118,7 @@ async def _get_blacklisted_token_from_db(
         rows = result.all()
 
         for row in rows:
-            if HASHER.verify(refresh_token, row.hashed_token):
+            if hashed_token == row.hashed_token:
                 return {
                     "user_id": row.user_id,
                     "hashed_token": row.hashed_token,
@@ -164,3 +127,11 @@ async def _get_blacklisted_token_from_db(
                     "revoked_at": row.revoked_at,
                 }
         return None
+
+
+def _hash_refresh_token(plain_token: str) -> str:
+    return hmac.new(
+        key=settings.jwt.refresh_token_secret.encode(),
+        msg=plain_token.encode(),
+        digestmod=hashlib.sha256,
+    ).hexdigest()

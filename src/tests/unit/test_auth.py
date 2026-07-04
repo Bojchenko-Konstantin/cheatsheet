@@ -5,6 +5,7 @@ import pytest
 
 from src.application.dto import (
     PasswordResetData,
+    TokenPair,
     User,
     UserPayload,
 )
@@ -13,8 +14,8 @@ from src.application.use_cases import AuthUseCase
 
 
 class FakeTokenService(ITokenService):
-    async def generate_tokens(self, payload: UserPayload) -> dict[str, str]:
-        return dict(
+    async def generate_tokens(self, payload: UserPayload) -> TokenPair:
+        return TokenPair(
             access_token=(
                 "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
                 "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
@@ -32,12 +33,14 @@ class FakeTokenService(ITokenService):
         )
 
     async def verify_refresh_token(
-        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
-    ) -> None:
-        pass
+        self, plain_refresh_token: str, fingerprint: str
+    ) -> UserPayload:
+        return UserPayload(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
+        )
 
     async def revoke_refresh_token(
-        self, user_id: UUID, plain_refresh_token: str, fingerprint: str
+        self, plain_refresh_token: str, fingerprint: str
     ) -> None:
         pass
 
@@ -127,7 +130,7 @@ async def test_authenticate_was_successful(auth_use_case: AuthUseCase):
     user_name = "test"
     password = "password"
     result = await sut.authenticate(user_name, password)
-    expected_result = dict(
+    expected_result = TokenPair(
         access_token=(
             "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
             "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
@@ -153,7 +156,7 @@ async def test_register_was_successful(auth_use_case: AuthUseCase):
     }
 
     result = await sut.register(create_data)
-    expected_result = dict(
+    expected_result = TokenPair(
         access_token=(
             "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
             "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"
@@ -178,7 +181,7 @@ async def test_refresh_was_successful(auth_use_case: AuthUseCase):
     }
 
     result = await sut.refresh(refresh_data)
-    expected_result = dict(
+    expected_result = TokenPair(
         access_token=(
             "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9."
             "eyJ1c2VyX2lkIjoiMDE5YjRhNzEtMTczZS03Z"

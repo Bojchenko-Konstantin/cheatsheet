@@ -21,11 +21,11 @@ from taskiq import (
     async_shared_broker,
 )
 
-from infrastructure.database.database import DEFAULT_SESSION_FACTORY
 from src.api.exception_handlers import email_not_verified_handler
 from src.api.middleware.unhandled_error_middleware import UnhandledExceptionMiddleware
 from src.application.exceptions import UserNotVerifiedError
 from src.core.config import settings
+from src.infrastructure.database import DEFAULT_SESSION_FACTORY
 from src.main import router_auth, router_cheatsheet
 
 

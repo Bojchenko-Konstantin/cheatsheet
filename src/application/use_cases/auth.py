@@ -1,5 +1,4 @@
 from typing import Any
-from uuid import UUID
 
 from src.application.dto import TokenPair, User, UserPayload
 from src.application.interfaces import (
@@ -28,37 +27,23 @@ class AuthUseCase:
 
     async def register(self, create_data: dict[str, Any]) -> TokenPair:
         """Register new user and generate token pair."""
-        user_payload = await self._user_service.create(create_data)
-
-        user = await self._user_service.get_by_id(user_payload.user_id)
-
-        payload = UserPayload.create(
-            user_id=user.user_id, is_superuser=user.is_superuser
-        )
+        payload = await self._user_service.create(create_data)
         token_pair = await self._token_service.generate_tokens(payload)
 
         return token_pair
 
     async def refresh(self, refresh_data: dict[str, Any]) -> TokenPair:
         """Refresh access token using refresh token."""
-        user_id = refresh_data["user_id"]
-
-        await self._token_service.verify_refresh_token(
-            user_id=user_id,
+        payload = await self._token_service.verify_refresh_token(
             plain_refresh_token=refresh_data["refresh_token"],
             fingerprint=refresh_data["fingerprint"],
-        )
-        user = await self._user_service.get_by_id(user_id)
-        payload = UserPayload.create(
-            user_id=user.user_id, is_superuser=user.is_superuser
         )
         token_pair = await self._token_service.generate_tokens(payload)
         return token_pair
 
-    async def logout(self, user_id: UUID, refresh_token: str, fingerprint: str) -> None:
+    async def logout(self, refresh_token: str, fingerprint: str) -> None:
         """Logout user by revoking refresh token."""
         await self._token_service.revoke_refresh_token(
-            user_id=user_id,
             plain_refresh_token=refresh_token,
             fingerprint=fingerprint,
         )

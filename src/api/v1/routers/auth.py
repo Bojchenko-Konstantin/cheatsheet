@@ -201,26 +201,24 @@ async def refresh(
     auth_use_case: AuthUseCaseDep,
 ):
     refresh_data = token_verification.model_dump(exclude_unset=True)
-    user_id = refresh_data["user_id"]
-
     refresh_token = request.cookies.get("refresh_token")
     refresh_data["refresh_token"] = refresh_token
 
     try:
         token_pair = await auth_use_case.refresh(refresh_data)
     except RefreshTokenNotFoundError as e:
-        logger.exception("Refresh token not found for user_id: %s", user_id)
+        logger.exception("Refresh token not found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
     except RefreshTokenCompromisedError:
-        logger.info("Refresh token was compromised for user_id: %s", user_id)
+        logger.info("Refresh token was compromised")
         response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
         # TODO: add force logout.
     except UserNotFoundError as e:
-        logger.debug("User with id %s was not found", user_id)
+        logger.debug("User with id %s was not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
@@ -233,9 +231,7 @@ async def refresh(
             detail="Failed to authorize",
         ) from e
     except AccessTokenException as e:
-        logger.exception(
-            "Failed to generate access token for user with id: %s", user_id
-        )
+        logger.exception("Failed to generate access token")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
@@ -256,8 +252,6 @@ async def logout(
     auth_use_case: AuthUseCaseDep,
 ):
     logout_data = logout_request.model_dump(exclude_unset=True)
-    user_id = logout_data["user_id"]
-
     refresh_token = request.cookies.get("refresh_token")
 
     try:
@@ -265,25 +259,14 @@ async def logout(
         # remove all tokens for required device.
 
         await auth_use_case.logout(
-            user_id=user_id,
             refresh_token=refresh_token,
-            fingerprint=logout_request.fingerprint,
+            fingerprint=logout_data["fingerprint"],
         )
-    except UserNotFoundError as e:
-        logger.debug("User %s not found during logout", user_id)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        ) from e
     except RefreshTokenNotFoundError:
-        logger.debug("Refresh token not found for user %s during logout", user_id)
+        logger.debug("Refresh token not found during logout")
         return None
     except RevokeRefreshTokenError as e:
-        logger.exception(
-            "Failed to revoke refresh token for user %s: %s",
-            user_id,
-            str(e),
-        )
+        logger.exception("Failed to revoke refresh token: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout due to a technical issue. Please try again later.",

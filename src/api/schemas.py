@@ -160,11 +160,9 @@ class Token(Schema):
 
 class TokenVerification(Schema):
     fingerprint: str
-    user_id: UUID
 
 
 class LogoutRequest(Schema):
-    user_id: UUID
     fingerprint: str
 
 

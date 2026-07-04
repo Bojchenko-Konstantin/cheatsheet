@@ -7,7 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 
-from src.application.dto import RefreshTokenRecord, TokenStatus, UserPayload
+from src.application.dto import RefreshTokenRecord, UserPayload
 from src.application.interfaces import ITokenRepo, IUnitOfWork
 from src.core.config import settings
 from src.infrastructure.hasher import HASHER
@@ -16,36 +16,26 @@ from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 
 class FakeTokenRepo(ITokenRepo):
-    async def get_device_active_token(
-        self, user_id: UUID, fingerprint: str
-    ) -> RefreshTokenRecord:
-        hashed_refresh_token = HASHER.hash("18f47b4-5c2a-7b80-8f3c-92a1d4e6f8b0")
-        return RefreshTokenRecord(
-            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-            hashed_token=hashed_refresh_token,
-            # Expiration time must be greater than (now - leeway).
-            expires_at=datetime(7049, 1, 1, tzinfo=timezone.utc),
-            hashed_fingerprint="mobile_phone",
-            status_id=TokenStatus.ACTIVE,
+    async def get_user_payload_by_hash(
+        self, hashed_token: str, fingerprint: str
+    ) -> UserPayload:
+        return UserPayload(
+            user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
         )
 
     async def save(self, token_record: RefreshTokenRecord) -> None:
         pass
 
-    async def mark_tokens_as_compromised(self, user_id: UUID, fingerprint: str) -> None:
+    async def mark_as_compromised(self, hashed_token: str, fingerprint: str) -> None:
         pass
 
-    async def get_device_blacklisted_token_family(
-        self, user_id: UUID, fingerprint: str
-    ) -> list[RefreshTokenRecord] | None:
-        return None
+    async def is_token_in_blacklist(self, hashed_token: str, fingerprint: str) -> bool:
+        return False
 
-    async def revoke_token(
-        self, user_id: UUID, fingerprint: str, hashed_token: str
-    ) -> None:
+    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
         pass
 
-    async def revoke_all_tokens_for_user(self, user_id: UUID) -> None:
+    async def revoke_all_tokens(self, user_id: UUID) -> None:
         pass
 
 

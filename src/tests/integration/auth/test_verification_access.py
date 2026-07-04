@@ -1,8 +1,6 @@
 import pytest
 from fastapi import status
 from httpx import AsyncClient
-from sqlalchemy import Row, TextClause, text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.integration
@@ -118,7 +116,6 @@ async def test_login_by_unverified_user_was_successful(
 async def test_refresh_token_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
-    session: AsyncSession,
     data_to_login_unverified_user: dict[str, str],
 ):
     # Arrange.
@@ -130,14 +127,8 @@ async def test_refresh_token_by_unverified_user_was_successful(
     assert refresh_token is not None
 
     async_client.cookies["refresh_token"] = refresh_token
-
-    user_id = await _get_user_id_from_db_by_username(
-        data_to_login_unverified_user["username"], session
-    )
-
     refresh_data = {
         "fingerprint": "mobile phone",
-        "user_id": user_id,
     }
 
     # Act.
@@ -153,7 +144,6 @@ async def test_refresh_token_by_unverified_user_was_successful(
 async def test_logout_by_unverified_user_was_successful(
     populate_db_for_multiple_users: None,
     async_client: AsyncClient,
-    session: AsyncSession,
     data_to_login_unverified_user: dict[str, str],
 ):
     # Arrange.
@@ -166,12 +156,7 @@ async def test_logout_by_unverified_user_was_successful(
 
     async_client.cookies["refresh_token"] = refresh_token
 
-    user_id = await _get_user_id_from_db_by_username(
-        data_to_login_unverified_user["username"], session
-    )
-
     logout_data = {
-        "user_id": user_id,
         "fingerprint": "mobile phone",
     }
 
@@ -265,27 +250,3 @@ async def test_create_cheatsheet_by_guest_was_unsuccessful(
 
     # Assert.
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-
-async def _get_user_id_from_db_by_username(username: str, session: AsyncSession) -> str:
-    async with session:
-        query = _build_user_id_query()
-        result = await session.execute(query, {"user_name": username})
-        db_row = result.one()
-        user_from_db = _create_user_id_from_db_row(db_row)
-
-        return user_from_db
-
-
-def _build_user_id_query() -> TextClause:
-    return text(
-        """
-    SELECT user_id
-    FROM "user"
-    WHERE user_name = :user_name
-    """
-    )
-
-
-def _create_user_id_from_db_row(db_row: Row) -> str:
-    return str(db_row.user_id)

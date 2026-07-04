@@ -68,7 +68,7 @@ class UserService(IUserService):
         else:
             user = await self.get_by_user_name(user_login)
 
-        if not self._verify_password(password, user.hashed_password):
+        if not self._verify_password(password, user.hashed_password):  # type: ignore
             raise UserAuthenticationError
 
         if not user.is_active:
@@ -80,7 +80,7 @@ class UserService(IUserService):
         self, user_id: UUID, old_password: str, new_password: str
     ) -> None:
         user = await self.get_by_id(user_id)
-        if not self._verify_password(old_password, user.hashed_password):
+        if not self._verify_password(old_password, user.hashed_password):  # type: ignore
             raise UserAuthenticationError
 
         new_hashed_password = self._create_hashed_password(new_password)
