@@ -85,8 +85,9 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         blacklisted_model = self._map_to_revoked_blacklist_model(token_model)
 
         try:
-            await self._session.delete(token_model)
-            self._session.add(blacklisted_model)
+            async with self._session.begin_nested():
+                await self._session.delete(token_model)
+                self._session.add(blacklisted_model)
         except IntegrityError as e:
             raise RevokeRefreshTokenError from e
 
@@ -115,7 +116,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
 
         try:
             async with self._session.begin_nested():
-                await self._revoke_active_tokens_with_fallback(
+                await self._delete_active_tokens_with_fallback(
                     user_id, fingerprint, time_revealed
                 )
 
@@ -124,7 +125,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             logger.exception("Failed to mark tokens as compromised")
             raise MarkRefreshTokenAsCompromisedError from e
 
-    async def _revoke_active_tokens_with_fallback(
+    async def _delete_active_tokens_with_fallback(
         self, user_id: UUID, fingerprint: str, time_revealed: datetime
     ) -> None:
         """

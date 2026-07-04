@@ -213,10 +213,14 @@ async def refresh(
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
         ) from e
-    except RefreshTokenCompromisedError:
+    except RefreshTokenCompromisedError as e:
         logger.info("Refresh token was compromised")
         response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
-        # TODO: add force logout.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+            detail="Failed to authorize",
+        ) from e
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found")
         raise HTTPException(
@@ -259,9 +263,6 @@ async def logout(
         return
 
     try:
-        # TODO: remove refresh_token from logout method and
-        # remove all tokens for required device.
-
         await auth_use_case.logout(
             refresh_token=refresh_token,
             fingerprint=logout_data["fingerprint"],

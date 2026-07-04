@@ -44,11 +44,8 @@ class PasswordUseCase:
     ) -> dict[str, Any]:
         """Verify reset token and update password."""
         payload = self._password_reset_service.verify_reset_token(token)
-
         await self._user_service.reset_password(payload.user_id, new_password)
-
         await self._token_service.revoke_all_user_tokens(payload.user_id)
-
         user = await self._user_service.get_by_id(payload.user_id)
 
         return {
