@@ -177,13 +177,13 @@ async def test_authenticate_user_was_successful(user_service: UserService):
     user_name = "test"
     plain_password = "password"
     sut = user_service
-    expected_user = User(
+    expected_user = UserPayload(
         user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
-        user_name="test",
-        hashed_password=PASSWORD_HASH,
-        is_active=True,
+        # user_name="test",
+        # hashed_password=PASSWORD_HASH,
+        # is_active=True,
         is_superuser=False,
-        is_verified=False,
+        # is_verified=False,
     )
 
     user = await sut.authenticate_user(user_name, plain_password)

@@ -20,12 +20,12 @@ class ITokenRepo(ABC):
         pass
 
     @abstractmethod
-    async def is_token_in_blacklist(self, hashed_token: str, fingerprint: str) -> bool:
+    async def is_token_in_blacklist(self, hashed_token: str) -> bool:
         """Retrieve all revoked or expired tokens for a device family."""
         pass
 
     @abstractmethod
-    async def mark_as_compromised(self, hashed_token: str, fingerprint: str) -> Any:
+    async def mark_as_compromised(self, hashed_token: str) -> Any:
         """Mark all tokens in the device family as compromised."""
         pass
 

@@ -84,10 +84,7 @@ class TokenService(ITokenService):
             )
 
         if not payload:
-            await self._verify_token_was_not_compromised(
-                hashed_token=hashed_token,
-                fingerprint=fingerprint,
-            )
+            await self._verify_token_was_not_compromised(hashed_token=hashed_token)
 
         return payload
 
@@ -159,19 +156,13 @@ class TokenService(ITokenService):
     async def _verify_token_was_not_compromised(
         self,
         hashed_token: str,
-        fingerprint: str,
     ) -> NoReturn:
         async with self._unit_of_work.readonly() as uow:
-            is_blacklisted = await uow.token_repo.is_token_in_blacklist(
-                hashed_token, fingerprint
-            )
+            is_blacklisted = await uow.token_repo.is_token_in_blacklist(hashed_token)
 
         if not is_blacklisted:
             raise RefreshTokenNotFoundError
 
         async with self._unit_of_work as uow:
-            await uow.token_repo.mark_as_compromised(
-                hashed_token=hashed_token,
-                fingerprint=fingerprint,
-            )
+            await uow.token_repo.mark_as_compromised(hashed_token=hashed_token)
         raise RefreshTokenCompromisedError

@@ -252,6 +252,7 @@ async def test_list_cheatsheets_minimum_page_size_was_successful(
     assert response_data["next_cursor"] is not None
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio(loop_scope="session")
 async def test_list_cheatsheets_maximum_page_size_was_successful(
     populate_db_for_cheatsheet_list: None,
