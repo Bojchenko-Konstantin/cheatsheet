@@ -174,4 +174,4 @@ class TokenService(ITokenService):
                 hashed_token=hashed_token,
                 fingerprint=fingerprint,
             )
-            raise RefreshTokenCompromisedError
+        raise RefreshTokenCompromisedError
