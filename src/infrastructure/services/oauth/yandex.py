@@ -63,15 +63,6 @@ class YandexOAuthService(IOAuthProviderService):
         logger.debug("Generated Yandex authorization request URL: %s", url)
         return url
 
-    def generate_pkce_pair(self) -> tuple[str, str]:
-        """Generates a (code_verifier, code_challenge) tuple for PKCE flow."""
-        code_verifier = secrets.token_urlsafe(64)
-        code_challenge_bytes = hashlib.sha256(code_verifier.encode("ascii")).digest()
-        code_challenge = (
-            base64.urlsafe_b64encode(code_challenge_bytes).decode("ascii").rstrip("=")
-        )
-        return code_verifier, code_challenge
-
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -164,3 +155,13 @@ class YandexOAuthService(IOAuthProviderService):
     @staticmethod
     def generate_state_value() -> str:
         return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def generate_pkce_pair() -> tuple[str, str]:
+        """Generates a (code_verifier, code_challenge) tuple for PKCE flow."""
+        code_verifier = secrets.token_urlsafe(64)
+        code_challenge_bytes = hashlib.sha256(code_verifier.encode("ascii")).digest()
+        code_challenge = (
+            base64.urlsafe_b64encode(code_challenge_bytes).decode("ascii").rstrip("=")
+        )
+        return code_verifier, code_challenge
