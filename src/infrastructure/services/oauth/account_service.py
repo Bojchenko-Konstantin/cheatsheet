@@ -83,9 +83,7 @@ class OAuthAccountService(IOAuthAccountService):
         oauth_service_id: OAuthService,
         save_data: OAuthUserCreationData,
     ):
-        """
-        Link new account to existing user.
-        """
+        """Link new account to existing user."""
         user_id = existing_accounts[0].user_id
 
         matched_account = next(
