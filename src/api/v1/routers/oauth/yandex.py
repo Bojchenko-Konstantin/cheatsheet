@@ -12,6 +12,7 @@ from src.api.dependencies import (
 from src.api.schemas import OAuthCallbackParams
 from src.application.dto import OAuthService
 from src.application.exceptions import UnlinkLastOAuthAccountError
+from src.infrastructure.exceptions import YandexOAuthException
 from src.infrastructure.services.oauth import generate_pkce_pair, generate_state_value
 
 router = APIRouter(tags=["Yandex OAuth"])
@@ -59,11 +60,17 @@ async def callback(
     if not code_verifier_from_cookie:
         raise HTTPException(status_code=400, detail="Missing PKCE code verifier")
 
-    token_pair = await oauth_use_case.authenticate(
-        code=params.code,
-        code_verifier=code_verifier_from_cookie,
-        oauth_service=OAuthService.YANDEX,
-    )
+    try:
+        token_pair = await oauth_use_case.authenticate(
+            code=params.code,
+            code_verifier=code_verifier_from_cookie,
+            oauth_service=OAuthService.YANDEX,
+        )
+    except YandexOAuthException as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Yandex OAuth error: {str(e)}",
+        ) from None
 
     response = RedirectResponse(url="/cheatsheet", status_code=303)
     cookie_params = {
