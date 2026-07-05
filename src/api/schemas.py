@@ -106,8 +106,8 @@ class CheatsheetUpdatePartial(Schema):
 class UserBase(Schema):
     username: str
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: str | None
+    last_name: str | None
     profile_description: str | None = None
     image_url: str | None = None
     social_network_id: PositiveListInt
