@@ -9,19 +9,19 @@ from src.api.exception_handlers import email_not_verified_handler
 from src.api.middleware import UnhandledExceptionMiddleware
 from src.api.v1.routers.auth import router as router_auth
 from src.api.v1.routers.cheatsheet import router as router_cheatsheet
-from src.api.v1.routers.oauth import router_oauth_yandex
+from src.api.v1.routers.oauth import router_oauth_github, router_oauth_yandex
 from src.application.exceptions.user import UserNotVerifiedError
 from src.core.logging_config import setup_logging
+from src.infrastructure import ASYNC_CLIENT
 from src.infrastructure.background_tasks.broker import BROKER
 from src.infrastructure.database import dispose
-from src.infrastructure.services.oauth.yandex import YandexOAuthService
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator:
     setup_logging()
-    yandex_oauth_service = YandexOAuthService()
-    app.state.yandex_oauth_service = yandex_oauth_service
+
+    app.state.async_client = ASYNC_CLIENT
 
     if not BROKER.is_worker_process:
         await BROKER.startup()
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator:
         await BROKER.shutdown()
 
     await dispose()
-    await yandex_oauth_service.aclose()
+    await ASYNC_CLIENT.aclose()
 
 
 app = FastAPI(
@@ -44,6 +44,7 @@ app.add_exception_handler(UserNotVerifiedError, email_not_verified_handler)  # t
 app.include_router(router_cheatsheet)
 app.include_router(router_auth)
 app.include_router(router_oauth_yandex)
+app.include_router(router_oauth_github)
 
 if __name__ == "__main__":
     uvicorn.run(

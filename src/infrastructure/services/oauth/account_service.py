@@ -67,8 +67,8 @@ class OAuthAccountService(IOAuthAccountService):
         return OAuthUserCreationData(
             provider_user_id=user_info["id"],
             oauth_service_id=oauth_service_id,
-            provider_psuid=user_info["psuid"],
-            email=user_info["default_email"],
+            provider_psuid=user_info.get("psuid"),
+            email=user_info["email"],
             user_name=user_info["login"],
             name=user_info.get("name"),
             first_name=user_info.get("first_name"),

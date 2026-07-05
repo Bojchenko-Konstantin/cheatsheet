@@ -1,4 +1,12 @@
 __all__ = (
+    "GithubAccessTokenMissingError",
+    "GithubOAuthException",
+    "GithubServerRequestError",
+    "GithubTokenRequestError",
+    "GithubTokenResponseParseError",
+    "GithubUserEmailAbsentError",
+    "GithubUserInfoRequestError",
+    "GithubUserInfoResponseParseError",
     "YandexAccessTokenMissingError",
     "YandexOAuthException",
     "YandexServerRequestError",
@@ -9,6 +17,14 @@ __all__ = (
 )
 
 from .oauth import (
+    GithubAccessTokenMissingError,
+    GithubOAuthException,
+    GithubServerRequestError,
+    GithubTokenRequestError,
+    GithubTokenResponseParseError,
+    GithubUserEmailAbsentError,
+    GithubUserInfoRequestError,
+    GithubUserInfoResponseParseError,
     YandexAccessTokenMissingError,
     YandexOAuthException,
     YandexServerRequestError,

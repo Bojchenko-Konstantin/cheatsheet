@@ -2,7 +2,7 @@ import logging
 from json import JSONDecodeError
 from urllib.parse import urlencode
 
-from httpx import AsyncClient, Limits, RequestError, Timeout
+from httpx import AsyncClient, RequestError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -25,19 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class YandexOAuthService(IOAuthProviderService):
-    def __init__(self):
-        headers = {
-            "User-Agent": (
-                f"{settings.app_credentials.name} "
-                f"(Contact: {settings.app_credentials.email})"
-            )
-        }
-        limits = Limits(
-            max_keepalive_connections=10, max_connections=50, keepalive_expiry=10.0
-        )
-        timeout = Timeout(connect=5.0, read=10.0, write=10.0, pool=5.0)
-
-        self._client = AsyncClient(timeout=timeout, limits=limits, headers=headers)
+    def __init__(self, async_client: AsyncClient):
+        self._client = async_client
         self._client_id = settings.yandex_oauth.client_id
         self._callback_url = settings.yandex_oauth.callback_url
         self._client_secret = settings.yandex_oauth.client_secret

@@ -1,4 +1,14 @@
 __all__ = (
+    "GithubAccessTokenMissingError",
+    "GithubOAuthException",
+    "GithubServerRequestError",
+    "GithubTokenRequestError",
+    "GithubTokenResponseParseError",
+    "GithubUserEmailAbsentError",
+    "GithubUserEmailRequestError",
+    "GithubUserEmailResponseParseError",
+    "GithubUserInfoRequestError",
+    "GithubUserInfoResponseParseError",
     "YandexOAuthException",
     "YandexServerRequestError",
     "YandexTokenRequestError",
@@ -8,6 +18,18 @@ __all__ = (
     "YandexUserInfoResponseParseError",
 )
 
+from .github import (
+    GithubAccessTokenMissingError,
+    GithubOAuthException,
+    GithubServerRequestError,
+    GithubTokenRequestError,
+    GithubTokenResponseParseError,
+    GithubUserEmailAbsentError,
+    GithubUserEmailRequestError,
+    GithubUserEmailResponseParseError,
+    GithubUserInfoRequestError,
+    GithubUserInfoResponseParseError,
+)
 from .yandex import (
     YandexAccessTokenMissingError,
     YandexOAuthException,

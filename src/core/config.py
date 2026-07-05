@@ -66,6 +66,10 @@ class BrokerConfig(BaseModel):
     password: str
 
 
+class CookieConfig(BaseModel):
+    secure: bool
+
+
 class PasswordResetConfig(BaseModel):
     token_expires_in_minutes: int = 10
     frontend_url: str = "http://localhost:3000/reset-password"
@@ -86,6 +90,16 @@ class YandexOAuthConfig(BaseModel):
     callback_url: str
 
 
+class GithubOAuthConfig(BaseModel):
+    client_id: str
+    client_secret: str
+    callback_url: str
+
+
+class OAuthConfig(BaseModel):
+    psuid_secret: str
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(f"{BASE_DIR}/{ENV_FILE}"),
@@ -102,6 +116,9 @@ class Settings(BaseSettings):
     email_template: EmailTemplateConfig = EmailTemplateConfig()
     email_verification: EmailVerificationConfig = EmailVerificationConfig()
     yandex_oauth: YandexOAuthConfig
+    github_oauth: GithubOAuthConfig
+    cookie: CookieConfig
+    oauth: OAuthConfig
 
 
 settings = Settings()  # type: ignore

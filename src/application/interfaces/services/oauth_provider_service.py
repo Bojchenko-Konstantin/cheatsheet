@@ -15,7 +15,3 @@ class IOAuthProviderService:
     @abstractmethod
     async def get_user_info(self, access_token: str) -> dict[str, str]:
         pass
-
-    @abstractmethod
-    async def aclose(self):
-        pass

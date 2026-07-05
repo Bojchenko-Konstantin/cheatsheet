@@ -28,6 +28,7 @@ from src.infrastructure.services import (
     CheatsheetSearchService,
     CursorService,
     EmailVerificationService,
+    GithubOAuthService,
     JWTCoreService,
     OAuthAccountService,
     PasswordResetService,
@@ -136,7 +137,11 @@ def get_email_verification_service(
 
 
 async def get_yandex_oauth_service(request: Request) -> YandexOAuthService:
-    return request.app.state.yandex_oauth_service
+    return YandexOAuthService(async_client=request.app.state.async_client)
+
+
+async def get_github_oauth_service(request: Request) -> GithubOAuthService:
+    return GithubOAuthService(async_client=request.app.state.async_client)
 
 
 async def get_oauth_account_service() -> OAuthAccountService:
@@ -180,6 +185,18 @@ def get_verification_use_case(
 def get_yandex_oauth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     oauth_provider_service: IOAuthProviderService = Depends(get_yandex_oauth_service),
+    oauth_account_service: IOAuthAccountService = Depends(get_oauth_account_service),
+) -> OAuthUseCase:
+    return OAuthUseCase(
+        token_service=token_service,
+        oauth_provider_service=oauth_provider_service,
+        oauth_account_service=oauth_account_service,
+    )
+
+
+def get_github_oauth_use_case(
+    token_service: ITokenService = Depends(get_token_service),
+    oauth_provider_service: IOAuthProviderService = Depends(get_github_oauth_service),
     oauth_account_service: IOAuthAccountService = Depends(get_oauth_account_service),
 ) -> OAuthUseCase:
     return OAuthUseCase(
@@ -286,7 +303,9 @@ CurrentVerifiedUserDep = Annotated[User, Depends(get_current_verified_user)]
 CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optional)]
 
 YandexOAuthServiceDep = Annotated[YandexOAuthService, Depends(get_yandex_oauth_service)]
+GithubOAuthServiceDep = Annotated[GithubOAuthService, Depends(get_github_oauth_service)]
 OAuthAccountServiceDep = Annotated[
     OAuthAccountService, Depends(get_oauth_account_service)
 ]
-OAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_yandex_oauth_use_case)]
+YandexOAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_yandex_oauth_use_case)]
+GithubOAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_github_oauth_use_case)]

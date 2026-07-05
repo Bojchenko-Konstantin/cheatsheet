@@ -17,7 +17,7 @@ async def test_process_oauth_login_new_user_sign_up(session: AsyncSession):
     test_user_info = dict(
         id="1234567890",
         psuid="test_psuid",
-        default_email="test@email.com",
+        email="test@email.com",
         login="test",
         first_name="test",
         last_name="test",
@@ -46,7 +46,7 @@ async def test_process_oauth_login_for_existing_user(
     test_user_info = dict(
         id="987654321",
         psuid="update_hash_test_psuid",
-        default_email="test_existing_user@email.com",
+        email="test_existing_user@email.com",
         login="test_existing_user",
     )
     data = dict(
@@ -84,7 +84,7 @@ async def test_process_oauth_login_existing_user_link_new_provider(
     test_user_info = dict(
         id="github_user_id_123",
         psuid="github_psuid_abc",
-        default_email=shared_email,
+        email=shared_email,
         login="github_login",
     )
 
@@ -128,7 +128,7 @@ async def test_process_oauth_login_when_user_sign_up_with_existing_user_name(
     test_user_info = dict(
         id="1234567890",
         psuid="test_psuid",
-        default_email="test@email.com",
+        email="test@email.com",
         login="repeated_login",
     )
     existing_user_data = dict(

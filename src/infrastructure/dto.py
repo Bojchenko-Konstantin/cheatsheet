@@ -1,13 +1,16 @@
+import hashlib
+import hmac
 from dataclasses import dataclass
 from uuid import UUID
 
 from src.application.dto.oauth import OAuthService
+from src.core.config import settings
 
 
 @dataclass(slots=True, kw_only=True)
 class OAuthUserCreationData:
-    provider_user_id: str
-    provider_psuid: str
+    provider_user_id: str | int
+    provider_psuid: str | None = None
     user_name: str
     email: str
     oauth_service_id: OAuthService
@@ -17,8 +20,29 @@ class OAuthUserCreationData:
     image_url: str | None = None
 
     def __post_init__(self):
-        if self.name:
-            self.first_name, self.last_name = self.name.split(maxsplit=1)
+        if self.name and self.name.strip():
+            name_parts = self.name.split(maxsplit=1)
+
+            if len(name_parts) > 1:
+                self.first_name, self.last_name = name_parts
+            else:
+                self.first_name = name_parts[0]
+
+        if not self.provider_psuid and self.oauth_service_id == OAuthService.GITHUB:
+            message = (
+                f"{self.provider_user_id}:{settings.github_oauth.client_id}".encode()
+            )
+            self.provider_psuid = self._hash(message)
+
+        self.provider_user_id = str(self.provider_user_id)
+
+    @staticmethod
+    def _hash(message: bytes):
+        return hmac.new(
+            key=settings.oauth.psuid_secret.encode(),
+            msg=message,
+            digestmod=hashlib.sha256,
+        ).hexdigest()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
