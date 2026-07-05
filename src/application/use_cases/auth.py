@@ -35,17 +35,17 @@ class AuthUseCase:
     async def refresh(self, refresh_data: dict[str, Any]) -> TokenPair:
         """Refresh access token using refresh token."""
         payload = await self._token_service.verify_refresh_token(
-            plain_refresh_token=refresh_data["refresh_token"],
-            fingerprint=refresh_data["fingerprint"],
+            plain_token=refresh_data["refresh_token"],
+            hashed_fingerprint=refresh_data["hashed_fingerprint"],
         )
         token_pair = await self._token_service.generate_tokens(payload)
         return token_pair
 
-    async def logout(self, refresh_token: str, fingerprint: str) -> None:
+    async def logout(self, refresh_token: str, hashed_fingerprint: str) -> None:
         """Logout user by revoking refresh token."""
         await self._token_service.revoke_refresh_token(
-            plain_refresh_token=refresh_token,
-            fingerprint=fingerprint,
+            plain_token=refresh_token,
+            hashed_fingerprint=hashed_fingerprint,
         )
 
     async def get_current_user(self, access_token: str) -> User:

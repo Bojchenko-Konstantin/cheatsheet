@@ -69,26 +69,26 @@ async def login(
     user_form: OAuth2FormDep,
     auth_use_case: AuthUseCaseDep,
 ):
-    user_name = user_form.username
+    user_login = user_form.username
     try:
         token_pair = await auth_use_case.authenticate(
-            user_login=user_name, password=user_form.password
+            user_login=user_login, password=user_form.password
         )
     except UserNotFoundError as e:
-        logger.debug("User with username %s was not found", user_name)
+        logger.debug("User with username %s was not found", user_login)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
         ) from e
     except UserAuthenticationError as e:
-        logger.debug("Failed login attempt for username: %s", user_name)
+        logger.debug("Failed login attempt for username: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Invalid username or password",
         ) from e
     except UserInactiveError as e:
-        logger.warning("Inactive user attempted login: %s", user_name)
+        logger.warning("Inactive user attempted login: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             headers={"WWW-Authenticate": "Bearer"},
@@ -103,7 +103,7 @@ async def login(
             detail="Failed to authorize",
         ) from e
     except AccessTokenException as e:
-        logger.exception("Failed to generate access token for username: %s", user_name)
+        logger.exception("Failed to generate access token for username: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
@@ -265,7 +265,7 @@ async def logout(
     try:
         await auth_use_case.logout(
             refresh_token=refresh_token,
-            fingerprint=logout_data["fingerprint"],
+            hashed_fingerprint=logout_data["hashed_fingerprint"],
         )
     except RefreshTokenNotFoundError:
         logger.debug("Refresh token not found during logout")

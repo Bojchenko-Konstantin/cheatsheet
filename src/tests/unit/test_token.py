@@ -17,7 +17,7 @@ from src.infrastructure.services.jwt_core_service import JWTCoreService
 
 class FakeTokenRepo(ITokenRepo):
     async def get_user_payload_by_hash(
-        self, hashed_token: str, fingerprint: str
+        self, hashed_token: str, hashed_fingerprint: str
     ) -> UserPayload:
         return UserPayload(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
@@ -26,13 +26,13 @@ class FakeTokenRepo(ITokenRepo):
     async def save(self, token_record: RefreshTokenRecord) -> None:
         pass
 
-    async def mark_as_compromised(self, hashed_token: str, fingerprint: str) -> None:
+    async def mark_as_compromised(self, hashed_token: str) -> None:
         pass
 
-    async def is_token_in_blacklist(self, hashed_token: str, fingerprint: str) -> bool:
+    async def is_token_in_blacklist(self, hashed_token: str) -> bool:
         return False
 
-    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
+    async def revoke_token(self, hashed_token: str, hashed_fingerprint: str) -> None:
         pass
 
     async def revoke_all_tokens(self, user_id: UUID) -> None:

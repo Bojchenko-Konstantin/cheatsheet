@@ -46,9 +46,9 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         self._session.add(model)
 
     async def get_user_payload_by_hash(
-        self, hashed_token: str, fingerprint: str
+        self, hashed_token: str, hashed_fingerprint: str
     ) -> UserPayload | None:
-        raw_token = await self._fetch_user_data(hashed_token, fingerprint)
+        raw_token = await self._fetch_user_data(hashed_token, hashed_fingerprint)
 
         if not raw_token:
             return None
@@ -66,13 +66,13 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         )
         return await self._session.scalar(statement) or False
 
-    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
+    async def revoke_token(self, hashed_token: str, hashed_fingerprint: str) -> None:
         """
         Revokes active refresh token for a specific device
         and moves it to the blacklist.
         """
         token_model = await self._fetch_active_refresh_token_model(
-            hashed_token, fingerprint
+            hashed_token, hashed_fingerprint
         )
 
         if not token_model:
@@ -173,17 +173,19 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         return db_row.user_id
 
     async def _fetch_active_refresh_token_model(
-        self, hashed_token: str, fingerprint: str
+        self, hashed_token: str, hashed_fingerprint: str
     ) -> RefreshTokenModel | None:
         statement = select(RefreshTokenModel).where(
             RefreshTokenModel.hashed_token == hashed_token,
-            RefreshTokenModel.hashed_fingerprint == fingerprint,
+            RefreshTokenModel.hashed_fingerprint == hashed_fingerprint,
             RefreshTokenModel.status_id == TokenStatus.ACTIVE,
         )
         result = await self._session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def _fetch_user_data(self, hashed_token: str, fingerprint: str) -> Row | None:
+    async def _fetch_user_data(
+        self, hashed_token: str, hashed_fingerprint: str
+    ) -> Row | None:
         statement = (
             select(
                 UserModel.user_id,
@@ -193,7 +195,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             .join(UserModel)
             .where(
                 RefreshTokenModel.hashed_token == hashed_token,
-                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.hashed_fingerprint == hashed_fingerprint,
                 RefreshTokenModel.status_id == TokenStatus.ACTIVE,
                 RefreshTokenModel.expires_at > datetime.now(timezone.utc),
             )
@@ -202,11 +204,11 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         return result.one_or_none()
 
     async def _move_older_refresh_token_to_blacklist(
-        self, user_id: UUID, fingerprint: str
+        self, user_id: UUID, hashed_fingerprint: str
     ) -> None:
         try:
             deleted_models = await self._delete_and_return_old_tokens(
-                user_id, fingerprint
+                user_id, hashed_fingerprint
             )
 
             if deleted_models:
@@ -216,12 +218,14 @@ class SQLAlchemyTokenRepo(ITokenRepo):
             logger.exception("Failed to move refresh token to blacklist")
             raise AddRefreshTokenToBlacklistError from e
 
-    async def _delete_and_return_old_tokens(self, user_id: UUID, fingerprint: str):
+    async def _delete_and_return_old_tokens(
+        self, user_id: UUID, hashed_fingerprint: str
+    ):
         statement = (
             delete(RefreshTokenModel)
             .where(
                 RefreshTokenModel.user_id == user_id,
-                RefreshTokenModel.hashed_fingerprint == fingerprint,
+                RefreshTokenModel.hashed_fingerprint == hashed_fingerprint,
             )
             .returning(
                 RefreshTokenModel.user_id,

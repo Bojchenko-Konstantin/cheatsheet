@@ -33,14 +33,14 @@ class FakeTokenService(ITokenService):
         )
 
     async def verify_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> UserPayload:
         return UserPayload(
             user_id=UUID("019b4a71-173e-7f64-a840-9e8b042658cd"), is_superuser=False
         )
 
     async def revoke_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> None:
         pass
 
@@ -177,7 +177,7 @@ async def test_refresh_was_successful(auth_use_case: AuthUseCase):
     refresh_data = {
         "user_id": UUID("019b4a71-173e-7f64-a840-9e8b042658cd"),
         "refresh_token": "019c958f-82e1-7eca-b4c0-a68043ac5ec5",
-        "fingerprint": "test_fingerprint",
+        "hashed_fingerprint": "test_fingerprint",
     }
 
     result = await sut.refresh(refresh_data)

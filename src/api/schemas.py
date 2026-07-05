@@ -159,11 +159,11 @@ class Token(Schema):
 
 
 class TokenVerification(Schema):
-    fingerprint: str
+    hashed_fingerprint: str
 
 
 class LogoutRequest(Schema):
-    fingerprint: str
+    hashed_fingerprint: str
 
 
 class PasswordResetRequest(Schema):

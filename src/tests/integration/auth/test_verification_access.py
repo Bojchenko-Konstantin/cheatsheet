@@ -128,7 +128,7 @@ async def test_refresh_token_by_unverified_user_was_successful(
 
     async_client.cookies["refresh_token"] = refresh_token
     refresh_data = {
-        "fingerprint": "mobile phone",
+        "hashed_fingerprint": "mobile phone",
     }
 
     # Act.
@@ -157,7 +157,7 @@ async def test_logout_by_unverified_user_was_successful(
     async_client.cookies["refresh_token"] = refresh_token
 
     logout_data = {
-        "fingerprint": "mobile phone",
+        "hashed_fingerprint": "mobile phone",
     }
 
     # Act.

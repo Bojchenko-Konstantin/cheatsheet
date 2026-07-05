@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 from uuid import UUID
 
 from src.application.dto import RefreshTokenRecord, UserPayload
@@ -14,7 +13,7 @@ class ITokenRepo(ABC):
 
     @abstractmethod
     async def get_user_payload_by_hash(
-        self, hashed_token: str, fingerprint: str
+        self, hashed_token: str, hashed_fingerprint: str
     ) -> UserPayload | None:
         """Retrieve the current active refresh token."""
         pass
@@ -25,12 +24,12 @@ class ITokenRepo(ABC):
         pass
 
     @abstractmethod
-    async def mark_as_compromised(self, hashed_token: str) -> Any:
+    async def mark_as_compromised(self, hashed_token: str) -> None:
         """Mark all tokens in the device family as compromised."""
         pass
 
     @abstractmethod
-    async def revoke_token(self, hashed_token: str, fingerprint: str) -> None:
+    async def revoke_token(self, hashed_token: str, hashed_fingerprint: str) -> None:
         """Revoke a specific active refresh token."""
         pass
 

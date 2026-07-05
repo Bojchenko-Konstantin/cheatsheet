@@ -74,13 +74,13 @@ class TokenService(ITokenService):
         return user_payload
 
     async def verify_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> UserPayload:
-        hashed_token = self._hash_refresh_token(plain_refresh_token)
+        hashed_token = self._hash_refresh_token(plain_token)
 
         async with self._unit_of_work.readonly() as uow:
             payload = await uow.token_repo.get_user_payload_by_hash(
-                hashed_token, fingerprint
+                hashed_token, hashed_fingerprint
             )
 
         if not payload:
@@ -89,14 +89,14 @@ class TokenService(ITokenService):
         return payload
 
     async def revoke_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> None:
-        hashed_token = self._hash_refresh_token(plain_refresh_token)
+        hashed_token = self._hash_refresh_token(plain_token)
 
         try:
             async with self._unit_of_work as uow:
                 await uow.token_repo.revoke_token(
-                    hashed_token=hashed_token, fingerprint=fingerprint
+                    hashed_token=hashed_token, hashed_fingerprint=hashed_fingerprint
                 )
         except (RevokeRefreshTokenError, RefreshTokenNotFoundError):
             raise
@@ -129,8 +129,8 @@ class TokenService(ITokenService):
 
         return access_token
 
-    async def _save_refresh_token_hash(self, user_id: UUID, refresh_token: str) -> None:
-        refresh_token_hash = self._hash_refresh_token(refresh_token)
+    async def _save_refresh_token_hash(self, user_id: UUID, plain_token: str) -> None:
+        hashed_token = self._hash_refresh_token(plain_token)
         expiration_time = datetime.now(tz=timezone.utc) + timedelta(
             minutes=self._refresh_token_expires_in
         )
@@ -138,7 +138,7 @@ class TokenService(ITokenService):
         # TODO: Add real fingerprint hash.
         token_record = RefreshTokenRecord(
             user_id=user_id,
-            hashed_token=refresh_token_hash,
+            hashed_token=hashed_token,
             hashed_fingerprint="mobile phone",
             expires_at=expiration_time,
         )

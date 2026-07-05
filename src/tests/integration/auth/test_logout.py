@@ -31,7 +31,7 @@ async def test_logout_was_successful(
     )
 
     logout_data = {
-        "fingerprint": "mobile phone",
+        "hashed_fingerprint": "mobile phone",
     }
 
     # Act.

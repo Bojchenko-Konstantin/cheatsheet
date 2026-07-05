@@ -30,7 +30,7 @@ async def test_refresh_token_was_successful(
     await asyncio.sleep(1)
 
     refresh_request_data = {
-        "fingerprint": "mobile phone",
+        "hashed_fingerprint": "mobile phone",
     }
 
     async_client.cookies["refresh_token"] = refresh_token
@@ -59,7 +59,7 @@ async def test_token_was_marked_compromised_successfully(
     login_response = await async_client.post("/login", data=data_to_login_active_user)
     refresh_token = login_response.cookies.get("refresh_token")
     refresh_request_data = {
-        "fingerprint": "mobile phone",
+        "hashed_fingerprint": "mobile phone",
     }
     assert refresh_token is not None
 

@@ -19,14 +19,14 @@ class ITokenService(ABC):
 
     @abstractmethod
     async def verify_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> UserPayload:
         """Verify refresh token validity and detect token reuse."""
         pass
 
     @abstractmethod
     async def revoke_refresh_token(
-        self, plain_refresh_token: str, fingerprint: str
+        self, plain_token: str, hashed_fingerprint: str
     ) -> None:
         """Revoke a specific refresh token."""
         pass
