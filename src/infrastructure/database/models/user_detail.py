@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     UUID,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     String,
@@ -32,17 +33,19 @@ class UserDetailModel(Base):
     )
     first_name: Mapped[str] = mapped_column(
         String(50),
-        nullable=False,
+        nullable=True,
     )
     last_name: Mapped[str] = mapped_column(
         String(50),
-        nullable=False,
+        nullable=True,
     )
     profile_description: Mapped[str] = mapped_column(
         Text,
+        nullable=True,
     )
     image_url: Mapped[str] = mapped_column(
         String(500),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
@@ -57,4 +60,11 @@ class UserDetailModel(Base):
         secondary="user_to_social_network",
         back_populates="user_details",
         viewonly=True,
+    )
+    __table_args__ = (
+        CheckConstraint("first_name != ''", name="ck_first_name_not_empty"),
+        CheckConstraint("last_name != ''", name="ck_last_name_not_empty"),
+        CheckConstraint(
+            "profile_description != ''", name="ck_profile_description_not_empty"
+        ),
     )
