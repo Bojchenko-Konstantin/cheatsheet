@@ -113,7 +113,7 @@ class GithubOAuthService(IOAuthProviderService):
     async def get_user_info(self, access_token: str) -> dict[str, str]:
         headers = {
             "Authorization": f"Bearer {access_token}",
-            "X-GitHub-Api-Version": "2022-11-28",
+            "X-GitHub-Api-Version": "2026-03-10",
             "Accept": "application/vnd.github+json",
         }
         user_info_url = "https://api.github.com/user"
