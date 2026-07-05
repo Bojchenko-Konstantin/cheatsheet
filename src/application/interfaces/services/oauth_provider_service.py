@@ -9,7 +9,8 @@ class IOAuthProviderService:
         pass
 
     @abstractmethod
-    def generate_state_value(self) -> str:
+    @staticmethod
+    def generate_state_value() -> str:
         pass
 
     @abstractmethod

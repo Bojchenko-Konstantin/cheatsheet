@@ -63,9 +63,6 @@ class YandexOAuthService(IOAuthProviderService):
         logger.debug("Generated Yandex authorization request URL: %s", url)
         return url
 
-    def generate_state_value(self) -> str:
-        return secrets.token_urlsafe(32)
-
     def generate_pkce_pair(self) -> tuple[str, str]:
         """Generates a (code_verifier, code_challenge) tuple for PKCE flow."""
         code_verifier = secrets.token_urlsafe(64)
@@ -163,3 +160,7 @@ class YandexOAuthService(IOAuthProviderService):
     async def aclose(self):
         """Finish httpx session after application stop."""
         await self._client.aclose()
+
+    @staticmethod
+    def generate_state_value() -> str:
+        return secrets.token_urlsafe(32)
