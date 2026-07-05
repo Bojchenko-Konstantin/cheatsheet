@@ -74,26 +74,26 @@ async def login(
         token_pair = await auth_use_case.authenticate(
             user_login=user_login, password=user_form.password
         )
-    except UserNotFoundError as e:
+    except UserNotFoundError:
         logger.debug("User with username %s was not found", user_login)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Failed to authorize",
-        ) from e
-    except UserAuthenticationError as e:
+        ) from None
+    except UserAuthenticationError:
         logger.debug("Failed login attempt for username: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Invalid username or password",
-        ) from e
-    except UserInactiveError as e:
+        ) from None
+    except UserInactiveError:
         logger.warning("Inactive user attempted login: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Account is inactive",
-        ) from e
+        ) from None
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
 
@@ -101,13 +101,13 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from e
-    except AccessTokenException as e:
+        ) from None
+    except AccessTokenException:
         logger.exception("Failed to generate access token for username: %s", user_login)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
-        ) from e
+        ) from None
     else:
         response.set_cookie(
             key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
@@ -150,7 +150,7 @@ async def register(
 
                 await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
 
-    except DuplicateUserError as e:
+    except DuplicateUserError:
         logger.debug(
             "User registration failed - username '%s' already exists.",
             user_form.username,
@@ -159,8 +159,8 @@ async def register(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User with username '{user_form.username}' already exists. "
             "Please choose another one.",
-        ) from e
-    except UserCreationError as e:
+        ) from None
+    except UserCreationError:
         logger.exception(
             "Unexpected error during user registration for username: %s",
             user_form.username,
@@ -169,22 +169,22 @@ async def register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during registration. "
             "Please try again later.",
-        ) from e
+        ) from None
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from e
-    except AccessTokenException as e:
+        ) from None
+    except AccessTokenException:
         logger.exception(
             "Failed to generate access token for username: %s", user_form.username
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to authorize. Please try again later.",
-        ) from e
+        ) from None
     else:
         response.set_cookie(
             key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
@@ -206,40 +206,40 @@ async def refresh(
 
     try:
         token_pair = await auth_use_case.refresh(refresh_data)
-    except RefreshTokenNotFoundError as e:
+    except RefreshTokenNotFoundError:
         logger.exception("Refresh token not found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from e
-    except RefreshTokenCompromisedError as e:
+        ) from None
+    except RefreshTokenCompromisedError:
         logger.info("Refresh token was compromised")
         response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from e
+        ) from None
     except UserNotFoundError as e:
         logger.debug("User with id %s was not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Failed to authorize",
-        ) from e
+            detail=f"Failed to authorize. Error: {str(e)}",
+        ) from None
     except AccessTokenExpiredError as e:
         logger.exception("Access token expired: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
             detail="Failed to authorize",
-        ) from e
+        ) from None
     except AccessTokenException as e:
         logger.exception("Failed to generate access token")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to authorize. Please try again later.",
-        ) from e
+            detail=f"Failed to authorize. Please try again later. Error: {str(e)}",
+        ) from None
     else:
         response.set_cookie(
             key="refresh_token", value=token_pair.refresh_token, **COOKIE_PARAMS
@@ -274,8 +274,11 @@ async def logout(
         logger.exception("Failed to revoke refresh token: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to logout due to a technical issue. Please try again later.",
-        ) from e
+            detail=(
+                "Failed to logout due to a technical issue. "
+                f"Please try again later. Error: {str(e)}",
+            ),
+        ) from None
     finally:
         response.delete_cookie("refresh_token", path=COOKIE_PARAMS["path"])
 
@@ -293,7 +296,7 @@ async def update_password(
             old_password=password_data.old_password,
             new_password=password_data.new_password,
         )
-    except UserAuthenticationError as e:
+    except UserAuthenticationError:
         logger.exception(
             "Password change failed for user %s: incorrect current password",
             current_user.user_id,
@@ -301,7 +304,7 @@ async def update_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
-        ) from e
+        ) from None
 
     return PasswordUpdateResponse(message="Password has been successfully updated.")
 
@@ -342,18 +345,18 @@ async def confirm_password_reset(
                 email=result["email"],
                 user_name=result["user_name"],
             )
-    except InvalidPasswordResetTokenError as e:
+    except InvalidPasswordResetTokenError:
         logger.exception("Password reset attempt with invalid token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid password reset token",
-        ) from e
-    except ExpiredPasswordResetTokenError as e:
+        ) from None
+    except ExpiredPasswordResetTokenError:
         logger.exception("Password reset attempt with expired token")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password reset token has expired. Please request a new one.",
-        ) from e
+        ) from None
 
     return PasswordResetResponse(message="Password has been successfully reset.")
 
@@ -379,7 +382,7 @@ async def send_verification_email(
 
         with contextlib.suppress(Exception):
             await send_email_verification.kiq(email_data)  # type: ignore[call-overload]
-    except EmailAlreadyVerifiedError as e:
+    except EmailAlreadyVerifiedError:
         logger.debug(
             "User %s attempted to verify already verified email",
             current_user.user_id,
@@ -387,7 +390,7 @@ async def send_verification_email(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email is already verified.",
-        ) from e
+        ) from None
     except Exception as e:
         logger.exception(
             "Failed to send verification email for user %s",
@@ -395,8 +398,8 @@ async def send_verification_email(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification email.",
-        ) from e
+            detail=f"Failed to send verification email. Error: {str(e)}",
+        ) from None
 
     return EmailVerificationSendResponse(message="Verification email has been sent.")
 
@@ -414,31 +417,30 @@ async def confirm_email_verification(
         await verification_use_case.confirm_email_verification(
             verification_request.token
         )
-    except InvalidEmailVerificationTokenError as e:
+    except InvalidEmailVerificationTokenError:
         logger.debug("Email verification attempt with invalid token")
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid verification token.",
-        ) from e
-    except ExpiredEmailVerificationTokenError as e:
+        ) from None
+    except ExpiredEmailVerificationTokenError:
         logger.debug("Email verification attempt with expired token")
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification token has expired.",
-        ) from e
-    except EmailAlreadyVerifiedError as e:
+        ) from None
+    except EmailAlreadyVerifiedError:
         logger.debug("Email verification attempt for already verified email")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email is already verified.",
-        ) from e
+        ) from None
     except Exception as e:
         logger.exception("Unexpected error during email verification")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Email verification failed.",
-        ) from e
-
+            detail=f"Email verification failed. Error: {str(e)}",
+        ) from None
     return EmailVerificationResponse(message="Email has been successfully verified.")
