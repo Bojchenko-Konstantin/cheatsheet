@@ -13,10 +13,12 @@ from src.application.exceptions import (
     UserCreationError,
     UserNotFoundError,
 )
-from src.application.interfaces.repositories import IUserRepo
-from src.infrastructure.database.models import UserModel
-from src.infrastructure.database.models.registered_user import RegisteredUserModel
-from src.infrastructure.database.models.user_detail import UserDetailModel
+from src.application.interfaces import IUserRepo
+from src.infrastructure.database.models import (
+    RegisteredUserModel,
+    UserDetailModel,
+    UserModel,
+)
 from src.infrastructure.repositories.utils import DictBundle
 
 logger = logging.getLogger(__name__)
