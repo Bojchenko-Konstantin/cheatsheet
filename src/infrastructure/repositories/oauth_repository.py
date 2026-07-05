@@ -17,6 +17,7 @@ from src.infrastructure.database.models import (
     OAuthAccountModel,
     OAuthServiceModel,
     RegisteredUserModel,
+    UserDetailModel,
     UserModel,
 )
 from src.infrastructure.dto import (
@@ -115,6 +116,9 @@ class SQLAlchemyOAuthRepo:
 
     def _to_model(self, save_data: OAuthUserCreationData) -> UserModel:
         model = UserModel(user_name=save_data.user_name, email=save_data.email)
+        model.detail = UserDetailModel(
+            first_name=save_data.first_name, last_name=save_data.last_name
+        )
 
         # TODO: save user detail
 

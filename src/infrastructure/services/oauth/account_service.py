@@ -68,6 +68,9 @@ class OAuthAccountService(IOAuthAccountService):
             provider_psuid=user_info["psuid"],
             email=user_info["default_email"],
             user_name=user_info["login"],
+            name=user_info.get("name"),
+            first_name=user_info.get("first_name"),
+            last_name=user_info.get("last_name"),
         )
 
     async def _try_to_get_existing_accounts(

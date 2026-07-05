@@ -19,6 +19,8 @@ async def test_process_oauth_login_new_user_sign_up(session: AsyncSession):
         psuid="test_psuid",
         default_email="test@email.com",
         login="test",
+        first_name="test",
+        last_name="test",
     )
     sut = OAuthAccountService()
 
@@ -79,20 +81,20 @@ async def test_process_oauth_login_existing_user_link_new_provider(
     shared_email = "shared_user@email.com"
     new_oauth_service = OAuthService.GITHUB
 
-    test_user_info = {
-        "id": "github_user_id_123",
-        "psuid": "github_psuid_abc",
-        "default_email": shared_email,
-        "login": "github_login",
-    }
+    test_user_info = dict(
+        id="github_user_id_123",
+        psuid="github_psuid_abc",
+        default_email=shared_email,
+        login="github_login",
+    )
 
-    existing_user_data = {
-        "provider_user_id": "yandex_user_id_789",
-        "provider_psuid": "yandex_psuid_xyz",
-        "email": shared_email,
-        "user_name": "yandex_login",
-        "oauth_service_id": OAuthService.YANDEX,
-    }
+    existing_user_data = dict(
+        provider_user_id="yandex_user_id_789",
+        provider_psuid="yandex_psuid_xyz",
+        email=shared_email,
+        user_name="yandex_login",
+        oauth_service_id=OAuthService.YANDEX,
+    )
 
     oauth_account_id, _ = await _prepare_oauth_account(session, existing_user_data)
     await session.commit()
@@ -129,13 +131,13 @@ async def test_process_oauth_login_when_user_sign_up_with_existing_user_name(
         default_email="test@email.com",
         login="repeated_login",
     )
-    existing_user_data = {
-        "provider_user_id": "yandex_user_id",
-        "provider_psuid": "yandex_psuid",
-        "email": "different@email.com",
-        "user_name": "repeated_login",
-        "oauth_service_id": OAuthService.YANDEX,
-    }
+    existing_user_data = dict(
+        provider_user_id="yandex_user_id",
+        provider_psuid="yandex_psuid",
+        email="different@email.com",
+        user_name="repeated_login",
+        oauth_service_id=OAuthService.YANDEX,
+    )
 
     await _prepare_oauth_account(session, existing_user_data)
     await session.commit()
@@ -157,18 +159,18 @@ async def test_process_oauth_login_when_user_sign_up_with_existing_user_name(
 @pytest.mark.asyncio(loop_scope="session")
 async def test_unlink_account(session: AsyncSession):
     # Arrange.
-    user_data_yandex = {
-        "provider_user_id": "yandex_user_id_345",
-        "provider_psuid": "yandex_psuid_abcd",
-        "email": "test_unlink@email.com",
-        "user_name": "login_to_be_unlinked",
-        "oauth_service_id": OAuthService.YANDEX,
-    }
-    user_data_github = {
-        "provider_user_id": "github_user_id_543",
-        "provider_psuid": "github_psuid_dcba",
-        "oauth_service_id": OAuthService.GITHUB,
-    }
+    user_data_yandex = dict(
+        provider_user_id="yandex_user_id_345",
+        provider_psuid="yandex_psuid_abcd",
+        email="test_unlink@email.com",
+        user_name="login_to_be_unlinked",
+        oauth_service_id=OAuthService.YANDEX,
+    )
+    user_data_github = dict(
+        provider_user_id="github_user_id_543",
+        provider_psuid="github_psuid_dcba",
+        oauth_service_id=OAuthService.GITHUB,
+    )
 
     _, user_id = await _prepare_oauth_account(session, user_data_yandex)
     await session.commit()
@@ -195,13 +197,13 @@ async def test_unlink_account(session: AsyncSession):
 @pytest.mark.asyncio(loop_scope="session")
 async def test_unlink_fails_when_only_account_exists(session: AsyncSession):
     # Arrange.
-    user_data_yandex = {
-        "provider_user_id": "single_user_id_345",
-        "provider_psuid": "single_psuid_abcd",
-        "email": "test_unlink_fails@email.com",
-        "user_name": "single_login",
-        "oauth_service_id": OAuthService.YANDEX,
-    }
+    user_data_yandex = dict(
+        provider_user_id="single_user_id_345",
+        provider_psuid="single_psuid_abcd",
+        email="test_unlink_fails@email.com",
+        user_name="single_login",
+        oauth_service_id=OAuthService.YANDEX,
+    )
 
     _, user_id = await _prepare_oauth_account(session, user_data_yandex)
     await session.commit()

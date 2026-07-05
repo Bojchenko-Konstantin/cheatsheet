@@ -4,16 +4,21 @@ from uuid import UUID
 from src.application.dto.oauth import OAuthService
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(slots=True, kw_only=True)
 class OAuthUserCreationData:
     provider_user_id: str
     provider_psuid: str
     user_name: str
     email: str
     oauth_service_id: OAuthService
+    name: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     image_url: str | None = None
+
+    def __post_init__(self):
+        if self.name:
+            self.first_name, self.last_name = self.name.split(maxsplit=1)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
