@@ -179,13 +179,13 @@ def get_verification_use_case(
 
 def get_yandex_oauth_use_case(
     token_service: ITokenService = Depends(get_token_service),
-    oauth_service: IOAuthProviderService = Depends(get_yandex_oauth_service),
-    account_service: IOAuthAccountService = Depends(get_oauth_account_service),
+    oauth_provider_service: IOAuthProviderService = Depends(get_yandex_oauth_service),
+    oauth_account_service: IOAuthAccountService = Depends(get_oauth_account_service),
 ) -> OAuthUseCase:
     return OAuthUseCase(
         token_service=token_service,
-        oauth_service=oauth_service,
-        account_service=account_service,
+        oauth_provider_service=oauth_provider_service,
+        oauth_account_service=oauth_account_service,
     )
 
 
