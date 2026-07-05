@@ -35,6 +35,8 @@ class OAuthAccountService(IOAuthAccountService):
         """
         save_data = self._get_data_to_save(user_info, oauth_service_id)
 
+        # TODO: add image url processing (download and save).
+
         try:
             existing_accounts = await self._try_to_get_existing_accounts(
                 save_data.email
