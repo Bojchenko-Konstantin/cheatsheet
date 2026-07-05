@@ -58,9 +58,7 @@ class SQLAlchemyTokenRepo(ITokenRepo):
         )
 
     async def is_token_in_blacklist(self, hashed_token: str) -> bool:
-        """
-        Checks if received token is in the blacklisted family for a specific device.
-        """
+        """Checks if received token is in the blacklisted family."""
         statement = select(
             exists().where(RefreshTokenBlacklistModel.hashed_token == hashed_token)
         )
@@ -107,8 +105,8 @@ class SQLAlchemyTokenRepo(ITokenRepo):
 
     async def mark_as_compromised(self, hashed_token: str) -> None:
         """
-        Marks all active and previously blacklisted tokens for a specific device
-        as compromised due to a security breach (e.g. token reuse).
+        Marks all active and previously blacklisted user tokens as compromised
+        due to a security breach (e.g. token reuse).
         """
         time_revealed = datetime.now(timezone.utc)
         user_id = await self._get_user_id_by_blacklisted_hash(hashed_token)

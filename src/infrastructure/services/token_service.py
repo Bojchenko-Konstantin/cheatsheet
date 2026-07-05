@@ -108,9 +108,6 @@ class TokenService(ITokenService):
             await uow.token_repo.revoke_all_tokens(user_id)
             await uow._commit()
 
-    def _generate_refresh_token(self) -> str:
-        return str(uuid7())
-
     def _generate_access_token(self, payload: UserPayload) -> str:
         try:
             access_token = self._jwt_core.generate_token(
@@ -166,3 +163,7 @@ class TokenService(ITokenService):
         async with self._unit_of_work as uow:
             await uow.token_repo.mark_as_compromised(hashed_token=hashed_token)
         raise RefreshTokenCompromisedError
+
+    @staticmethod
+    def _generate_refresh_token() -> str:
+        return str(uuid7())
