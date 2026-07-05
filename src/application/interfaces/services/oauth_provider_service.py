@@ -19,13 +19,3 @@ class IOAuthProviderService:
     @abstractmethod
     async def aclose(self):
         pass
-
-    @abstractmethod
-    @staticmethod
-    def generate_state_value() -> str:
-        pass
-
-    @abstractmethod
-    @staticmethod
-    def generate_pkce_pair() -> tuple[str, str]:
-        pass

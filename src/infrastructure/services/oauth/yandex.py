@@ -1,7 +1,4 @@
-import base64
-import hashlib
 import logging
-import secrets
 from json import JSONDecodeError
 from urllib.parse import urlencode
 
@@ -151,17 +148,3 @@ class YandexOAuthService(IOAuthProviderService):
     async def aclose(self):
         """Finish httpx session after application stop."""
         await self._client.aclose()
-
-    @staticmethod
-    def generate_state_value() -> str:
-        return secrets.token_urlsafe(32)
-
-    @staticmethod
-    def generate_pkce_pair() -> tuple[str, str]:
-        """Generates a (code_verifier, code_challenge) tuple for PKCE flow."""
-        code_verifier = secrets.token_urlsafe(64)
-        code_challenge_bytes = hashlib.sha256(code_verifier.encode("ascii")).digest()
-        code_challenge = (
-            base64.urlsafe_b64encode(code_challenge_bytes).decode("ascii").rstrip("=")
-        )
-        return code_verifier, code_challenge

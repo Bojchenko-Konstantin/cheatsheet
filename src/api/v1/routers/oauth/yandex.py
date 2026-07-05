@@ -10,8 +10,9 @@ from src.api.dependencies import (
     YandexOAuthServiceDep,
 )
 from src.api.schemas import OAuthCallbackParams
-from src.application.dto.oauth import OAuthService
+from src.application.dto import OAuthService
 from src.application.exceptions import UnlinkLastOAuthAccountError
+from src.infrastructure.services.oauth import generate_pkce_pair, generate_state_value
 
 router = APIRouter(tags=["Yandex OAuth"])
 
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 @router.get("/auth/yandex/login")
 async def login(oauth_provider_service: YandexOAuthServiceDep):
-    state = oauth_provider_service.generate_state_value()
-    code_verifier, code_challenge = oauth_provider_service.generate_pkce_pair()
+    state = generate_state_value()
+    code_verifier, code_challenge = generate_pkce_pair()
 
     url = oauth_provider_service.generate_authorization_request_url(
         state, code_challenge
