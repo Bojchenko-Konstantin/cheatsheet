@@ -82,10 +82,10 @@ async def callback(
         "path": "/",
     }
     response.set_cookie(
-        key="tmp_access_token", value=token_pair.access_token, **cookie_params
+        key="access_token", value=token_pair.access_token, **cookie_params
     )
     response.set_cookie(
-        key="tmp_refresh_token", value=token_pair.refresh_token, **cookie_params
+        key="refresh_token", value=token_pair.refresh_token, **cookie_params
     )
 
     response.delete_cookie("yandex_oauth_state", path="/")
