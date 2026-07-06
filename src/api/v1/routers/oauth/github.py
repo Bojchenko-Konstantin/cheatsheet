@@ -75,7 +75,7 @@ async def callback(
 
     response = RedirectResponse(url="/cheatsheet", status_code=303)
     cookie_params = {
-        "httponly": False,
+        "httponly": True,
         "secure": True,
         "samesite": "lax",
         "max_age": 30,
