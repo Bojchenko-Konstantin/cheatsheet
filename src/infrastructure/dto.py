@@ -11,7 +11,7 @@ from src.core.config import settings
 class OAuthUserCreationData:
     provider_user_id: str | int
     provider_psuid: str | None = None
-    user_name: str
+    user_name: str | None
     email: str
     oauth_service_id: OAuthService
     name: str | None = None
@@ -28,13 +28,19 @@ class OAuthUserCreationData:
             else:
                 self.first_name = name_parts[0]
 
-        if not self.provider_psuid and self.oauth_service_id == OAuthService.GITHUB:
+        if not self.provider_psuid and self.oauth_service_id in (
+            OAuthService.GITHUB,
+            OAuthService.GOOGLE,
+        ):
             message = (
                 f"{self.provider_user_id}:{settings.github_oauth.client_id}".encode()
             )
             self.provider_psuid = self._hash(message)
 
         self.provider_user_id = str(self.provider_user_id)
+
+        if not self.user_name:
+            self.user_name = self.email.split("@")[0]
 
     @staticmethod
     def _hash(message: bytes):

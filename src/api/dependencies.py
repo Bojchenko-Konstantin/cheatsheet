@@ -29,6 +29,7 @@ from src.infrastructure.services import (
     CursorService,
     EmailVerificationService,
     GithubOAuthService,
+    GoogleOAuthService,
     JWTCoreService,
     OAuthAccountService,
     PasswordResetService,
@@ -144,6 +145,10 @@ async def get_github_oauth_service(request: Request) -> GithubOAuthService:
     return GithubOAuthService(async_client=request.app.state.async_client)
 
 
+async def get_google_oauth_service(request: Request) -> GoogleOAuthService:
+    return GoogleOAuthService(async_client=request.app.state.async_client)
+
+
 async def get_oauth_account_service() -> OAuthAccountService:
     return OAuthAccountService()
 
@@ -197,6 +202,18 @@ def get_yandex_oauth_use_case(
 def get_github_oauth_use_case(
     token_service: ITokenService = Depends(get_token_service),
     oauth_provider_service: IOAuthProviderService = Depends(get_github_oauth_service),
+    oauth_account_service: IOAuthAccountService = Depends(get_oauth_account_service),
+) -> OAuthUseCase:
+    return OAuthUseCase(
+        token_service=token_service,
+        oauth_provider_service=oauth_provider_service,
+        oauth_account_service=oauth_account_service,
+    )
+
+
+def get_google_oauth_use_case(
+    token_service: ITokenService = Depends(get_token_service),
+    oauth_provider_service: IOAuthProviderService = Depends(get_google_oauth_service),
     oauth_account_service: IOAuthAccountService = Depends(get_oauth_account_service),
 ) -> OAuthUseCase:
     return OAuthUseCase(
@@ -304,8 +321,10 @@ CurrentUserOptionalDep = Annotated[User | None, Depends(get_current_user_optiona
 
 YandexOAuthServiceDep = Annotated[YandexOAuthService, Depends(get_yandex_oauth_service)]
 GithubOAuthServiceDep = Annotated[GithubOAuthService, Depends(get_github_oauth_service)]
+GoogleOAuthServiceDep = Annotated[GoogleOAuthService, Depends(get_google_oauth_service)]
 OAuthAccountServiceDep = Annotated[
     OAuthAccountService, Depends(get_oauth_account_service)
 ]
 YandexOAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_yandex_oauth_use_case)]
 GithubOAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_github_oauth_use_case)]
+GoogleOAuthUseCaseDep = Annotated[OAuthUseCase, Depends(get_google_oauth_use_case)]

@@ -10,6 +10,7 @@ __all__ = (
     "Cursor",
     "CheatsheetSearchService",
     "GithubOAuthService",
+    "GoogleOAuthService",
     "OAuthAccountService",
     "YandexOAuthService",
 )
@@ -20,7 +21,12 @@ from .email_template_service import EmailTemplateService
 from .email_verification_service import EmailVerificationService
 from .jwt_core_service import JWTCoreService
 from .notification_service import NotiSendNotificationService
-from .oauth import GithubOAuthService, OAuthAccountService, YandexOAuthService
+from .oauth import (
+    GithubOAuthService,
+    GoogleOAuthService,
+    OAuthAccountService,
+    YandexOAuthService,
+)
 from .password_reset_service import PasswordResetService
 from .token_service import TokenService
 from .user_service import UserService

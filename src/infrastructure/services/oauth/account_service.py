@@ -65,11 +65,11 @@ class OAuthAccountService(IOAuthAccountService):
         self, user_info: dict[str, str], oauth_service_id: OAuthService
     ) -> OAuthUserCreationData:
         return OAuthUserCreationData(
-            provider_user_id=user_info["id"],
+            provider_user_id=user_info.get("id") or user_info["sub"],
             oauth_service_id=oauth_service_id,
             provider_psuid=user_info.get("psuid"),
             email=user_info["email"],
-            user_name=user_info["login"],
+            user_name=user_info.get("login"),
             name=user_info.get("name"),
             first_name=user_info.get("first_name"),
             last_name=user_info.get("last_name"),

@@ -246,6 +246,10 @@ def _validate_password_strength(password: str) -> None:
 class OAuthCallbackParams(Schema):
     code: str
     state: str
+    iss: str | None = None
+    scope: str | None = None
+    authuser: str | None = None
+    prompt: str | None = None
     cid: str | None = None
     error: str | None = None
     error_description: str | None = None

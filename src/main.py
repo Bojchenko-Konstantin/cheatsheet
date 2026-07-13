@@ -9,7 +9,11 @@ from src.api.exception_handlers import email_not_verified_handler
 from src.api.middleware import UnhandledExceptionMiddleware
 from src.api.v1.routers.auth import router as router_auth
 from src.api.v1.routers.cheatsheet import router as router_cheatsheet
-from src.api.v1.routers.oauth import router_oauth_github, router_oauth_yandex
+from src.api.v1.routers.oauth import (
+    router_oauth_github,
+    router_oauth_google,
+    router_oauth_yandex,
+)
 from src.application.exceptions.user import UserNotVerifiedError
 from src.core.logging_config import setup_logging
 from src.infrastructure import ASYNC_CLIENT
@@ -45,6 +49,7 @@ app.include_router(router_cheatsheet)
 app.include_router(router_auth)
 app.include_router(router_oauth_yandex)
 app.include_router(router_oauth_github)
+app.include_router(router_oauth_google)
 
 if __name__ == "__main__":
     uvicorn.run(
