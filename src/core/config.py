@@ -96,6 +96,12 @@ class GithubOAuthConfig(BaseModel):
     callback_url: str
 
 
+class GoogleOAuthConfig(BaseModel):
+    client_id: str
+    client_secret: str
+    callback_url: str
+
+
 class OAuthConfig(BaseModel):
     psuid_secret: str
 
@@ -117,6 +123,7 @@ class Settings(BaseSettings):
     email_verification: EmailVerificationConfig = EmailVerificationConfig()
     yandex_oauth: YandexOAuthConfig
     github_oauth: GithubOAuthConfig
+    google_oauth: GoogleOAuthConfig
     cookie: CookieConfig
     oauth: OAuthConfig
 
