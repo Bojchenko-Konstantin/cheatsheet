@@ -133,7 +133,3 @@ class YandexOAuthService(IOAuthProviderService):
 
         logger.info("user_info was obtained successfully")
         return user_info
-
-    async def aclose(self):
-        """Finish httpx session after application stop."""
-        await self._client.aclose()
