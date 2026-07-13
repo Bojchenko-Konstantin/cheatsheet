@@ -84,6 +84,11 @@ class GithubOAuthService(IOAuthProviderService):
             )
 
             if response.status_code >= 500:
+                logger.exception(
+                    "Failed to receive tokens: status_code=%s, body=%s",
+                    response.status_code,
+                    response.text,
+                )
                 raise GithubServerRequestError
 
             raise GithubTokenRequestError
@@ -127,6 +132,11 @@ class GithubOAuthService(IOAuthProviderService):
             )
 
             if response.status_code >= 500:
+                logger.exception(
+                    "Failed to receive user_info: status_code=%s, body=%s",
+                    response.status_code,
+                    response.text,
+                )
                 raise GithubServerRequestError
 
             raise GithubUserInfoRequestError
