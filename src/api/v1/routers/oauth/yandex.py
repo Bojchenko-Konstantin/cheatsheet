@@ -12,7 +12,7 @@ from src.api.dependencies import (
 from src.api.schemas import OAuthCallbackParams
 from src.application.dto import OAuthService
 from src.application.exceptions import UnlinkLastOAuthAccountError
-from src.core.config import Settings
+from src.core.config import settings
 from src.infrastructure.exceptions import YandexOAuthException
 from src.infrastructure.services.oauth import generate_pkce_pair, generate_state_value
 
@@ -33,7 +33,7 @@ async def login(oauth_provider_service: YandexOAuthServiceDep):
     cookie_params = {
         "max_age": 300,
         "httponly": True,
-        "secure": Settings.cookie.secure,
+        "secure": settings.cookie.secure,
         "samesite": "lax",
         "path": "/",
     }
